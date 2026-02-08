@@ -149,9 +149,8 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '' });
+  const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', exportHour: 'all' });
   const [visibleCount, setVisibleCount] = useState(15);
-  const [exportHour, setExportHour] = useState('all');
 
   const fetchData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -172,7 +171,7 @@ const App = () => {
       const idxMus = header.indexOf('musica');
       const idxTim = header.indexOf('tocou_em');
       const idxRad = header.indexOf('radio');
-      const idxGen = header.indexOf('genero'); // Identifica a nova coluna
+      const idxGen = header.indexOf('genero'); 
 
       const formatted = rows.slice(1).map((row, i) => {
         const rawTime = row[idxTim] || '';
@@ -202,9 +201,10 @@ const App = () => {
           genero: row[idxGen] || 'Desconhecido',
           data: datePart,
           hora: timePart,
+          hourOnly: timePart.split(':')[0],
           timestamp: ts
         };
-      }).filter(t => t.artista !== 'artista');
+      }).filter(t => t.artista.toLowerCase() !== 'artista');
 
       const sorted = formatted.sort((a, b) => b.timestamp - a.timestamp);
       setData(sorted);
@@ -218,27 +218,24 @@ const App = () => {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Filtro avançado incluindo gênero
+  // Filtro avançado incluindo gênero e agora o SELETOR DE HORA
   const filteredData = useMemo(() => {
     return data.filter(t => {
       const matchRadio = t.radio.trim() === filters.radio.trim();
       const matchDate = filters.date ? t.data === filters.date : true;
       const matchSearch = filters.search ? (t.artista + t.musica).toLowerCase().includes(filters.search.toLowerCase()) : true;
       const matchGenero = filters.genero ? t.genero === filters.genero : true;
-      return matchRadio && matchDate && matchSearch && matchGenero;
+      const matchHour = filters.exportHour === 'all' ? true : t.hourOnly === filters.exportHour;
+      return matchRadio && matchDate && matchSearch && matchGenero && matchHour;
     });
   }, [data, filters]);
 
-  // Cálculo para o Gráfico de Gêneros
+  // Cálculo para o Gráfico de Gêneros (Respeitando a hora selecionada)
   const genreData = useMemo(() => {
-    const filteredForStats = data.filter(t => {
-      const matchRadio = t.radio.trim() === filters.radio.trim();
-      const matchDate = filters.date ? t.data === filters.date : true;
-      return matchRadio && matchDate && t.genero && t.genero !== 'Desconhecido';
-    });
-    
     const genreCounts: Record<string, number> = {};
-    filteredForStats.forEach(t => {
+    const validGenresData = filteredData.filter(t => t.genero && t.genero !== 'Desconhecido');
+    
+    validGenresData.forEach(t => {
       genreCounts[t.genero] = (genreCounts[t.genero] || 0) + 1;
     });
 
@@ -246,17 +243,16 @@ const App = () => {
       .map(([name, value]) => ({
         name,
         value,
-        percentage: ((value / filteredForStats.length) * 100).toFixed(1)
+        percentage: ((value / (validGenresData.length || 1)) * 100).toFixed(1)
       }))
       .sort((a, b) => b.value - a.value);
-  }, [data, filters.radio, filters.date]);
+  }, [filteredData]);
 
   const uniqueDates = useMemo(() => {
     const dates = data.filter(t => t.radio === filters.radio).map(d => d.data);
     return [...new Set(dates)].sort().reverse();
   }, [data, filters.radio]);
 
-  // Lista única de gêneros para o seletor de filtro
   const uniqueGenres = useMemo(() => {
     const genres = data
       .filter(t => t.radio === filters.radio && (filters.date ? t.data === filters.date : true))
@@ -270,18 +266,8 @@ const App = () => {
   }, []);
 
   const exportPDF = () => {
-    const exportBaseRows = data.filter(t => {
-      const matchRadio = t.radio.trim() === filters.radio.trim();
-      const matchDate = filters.date ? t.data === filters.date : true;
-      return matchRadio && matchDate;
-    });
-    const exportRows = exportBaseRows.filter(t => {
-      if (exportHour === 'all') return true;
-      return t.hora.startsWith(`${exportHour}:`);
-    });
-
-    if (exportRows.length === 0) {
-      alert('Nenhum registro encontrado para o horário selecionado.');
+    if (filteredData.length === 0) {
+      alert('Nenhum registro encontrado para os filtros selecionados.');
       return;
     }
 
@@ -289,7 +275,7 @@ const App = () => {
     doc.setFontSize(18);
     doc.text(`RELATÓRIO DE MONITORAMENTO - ${filters.radio}`, 14, 20);
     doc.setFontSize(10);
-    const hourLabel = exportHour === 'all' ? 'Todas as horas' : `${exportHour}:00`;
+    const hourLabel = filters.exportHour === 'all' ? 'Todas as horas' : `${filters.exportHour}:00`;
     doc.text(`Data: ${filters.date} | Hora: ${hourLabel} | Gerado em: ${new Date().toLocaleString()}`, 14, 28);
 
     let y = 40;
@@ -298,13 +284,13 @@ const App = () => {
       doc.text("HORA", 14, y);
       doc.text("ARTISTA", 40, y);
       doc.text("MÚSICA", 100, y);
-      doc.text("GÊNERO", 160, y); // Nova coluna no PDF
+      doc.text("GÊNERO", 160, y);
       doc.line(14, y + 2, 196, y + 2);
       doc.setFont("helvetica", "normal");
     };
 
     renderHeader();
-    exportRows.forEach(t => {
+    filteredData.forEach(t => {
       y += 8;
       if (y > 280) {
         doc.addPage();
@@ -338,7 +324,7 @@ const App = () => {
         <div className="bg-white p-6 rounded-[2.5rem] shadow-xl mb-10 border border-slate-100">
           <div className="flex gap-2 mb-4 p-1 bg-slate-100 rounded-2xl">
             {['Metropolitana FM', 'Antena 1', 'Forbes Radio'].map(r => (
-              <button key={r} onClick={() => { setFilters(f => ({ ...f, radio: r, date: '', genero: '' })); setVisibleCount(15); }} className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase transition-all ${filters.radio === r ? 'bg-white shadow-md text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}>{r}</button>
+              <button key={r} onClick={() => { setFilters(f => ({ ...f, radio: r, date: '', genero: '', exportHour: 'all' })); setVisibleCount(15); }} className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase transition-all ${filters.radio === r ? 'bg-white shadow-md text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}>{r}</button>
             ))}
           </div>
           
@@ -366,9 +352,9 @@ const App = () => {
 
           <div className="relative mb-4">
             <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-500" size={18} />
-            <select className="w-full pl-12 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-600 appearance-none outline-none" value={exportHour} onChange={e => setExportHour(e.target.value)}>
-              <option value="all">Exportar: Todas as horas</option>
-              {hourOptions.map(h => <option key={h} value={h}>Exportar: {h}:00</option>)}
+            <select className="w-full pl-12 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-600 appearance-none outline-none" value={filters.exportHour} onChange={e => setFilters(f => ({ ...f, exportHour: e.target.value }))}>
+              <option value="all">Filtrar/Exportar: Todas as horas</option>
+              {hourOptions.map(h => <option key={h} value={h}>Filtrar/Exportar: {h}:00</option>)}
             </select>
           </div>
 
@@ -389,7 +375,7 @@ const App = () => {
           ) : filteredData.length > 0 ? (
             <>
               {filteredData.slice(0, visibleCount).map((track, idx) => (
-                <MusicCard key={track.id} track={track} isNowPlaying={idx === 0 && !filters.search} />
+                <MusicCard key={track.id} track={track} isNowPlaying={idx === 0 && filters.exportHour === 'all' && !filters.search} />
               ))}
               {filteredData.length > visibleCount && (
                 <button onClick={() => setVisibleCount(c => c + 15)} className="w-full py-6 rounded-[2rem] border-2 border-dashed border-slate-200 text-slate-400 font-bold hover:bg-white transition-all uppercase text-[10px] tracking-widest">
