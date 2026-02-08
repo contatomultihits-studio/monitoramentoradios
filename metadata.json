@@ -1,0 +1,5 @@
+{
+  "name": "Radio Director Dashboard",
+  "description": "A modern dashboard for radio directors to monitor played tracks, featuring iTunes cover art integration, smart filtering, and PDF export.",
+  "requestFramePermissions": []
+}
