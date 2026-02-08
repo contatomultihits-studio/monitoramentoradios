@@ -60,13 +60,13 @@ const MusicCard = ({ track, isNowPlaying }: { track: any, isNowPlaying: boolean 
         <h3 className={`font-black uppercase truncate leading-tight text-lg ${isNowPlaying ? "text-white" : "text-slate-800"}`}>{track.musica}</h3>
         <p className={`font-bold uppercase truncate text-sm mb-2 ${isNowPlaying ? "text-yellow-400" : "text-sky-500"}`}>{track.artista}</p>
         <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-black tabular-nums text-[10px] ${isNowPlaying ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-500'}`}><Clock size={12} /> {track.hora}</div>
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-bold tabular-nums text-[10px] ${isNowPlaying ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-500'}`}><Clock size={12} /> {track.hora}</div>
           {track.genero && track.genero !== 'Desconhecido' && (
             <span className="px-2 py-1 rounded-full text-[9px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#D3D3D3' }}>
               {track.genero}
             </span>
           )}
-          <span className={`text-[10px] font-black uppercase tracking-widest ${isNowPlaying ? 'text-white/40' : 'text-slate-400'}`}>{track.data}</span>
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${isNowPlaying ? 'text-white/40' : 'text-slate-400'}`}>{track.data}</span>
         </div>
       </div>
     </div>
@@ -83,7 +83,7 @@ const GenreChart = ({ data }: { data: any[] }) => {
         </div>
         <div>
           <h2 className="font-black text-xl tracking-tighter text-slate-900 uppercase">Gêneros Musicais</h2>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Soma baseada no filtro de hora</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Distribuição por estilo</p>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={300}>
@@ -113,8 +113,9 @@ const App = () => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', exportHour: 'all' });
-  const [visibleCount, setVisibleCount] = useState(10);
+  const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '' });
+  const [visibleCount, setVisibleCount] = useState(15);
+  const [exportHour, setExportHour] = useState('all');
 
   const fetchData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -138,13 +139,8 @@ const App = () => {
 
       const formatted = rows.slice(1).map((row, i) => {
         const rawTime = row[idxTim !== -1 ? idxTim : 2] || '';
-        // CORREÇÃO ANTENA 1: Resolve formato ISO 2026-02-08T20:56...
-        const dObj = new Date(rawTime.replace('T', ' ').replace(/\..+/, ''));
-        const isValid = !isNaN(dObj.getTime());
-
-        const dataPart = isValid ? dObj.toISOString().split('T')[0] : (rawTime.split(' ')[0] || "---");
-        const horaCompleta = isValid ? dObj.toTimeString().substring(0, 5) : (rawTime.split(' ')[1]?.substring(0, 5) || "00:00");
-        const hourOnly = horaCompleta.split(':')[0];
+        let dObj = new Date(rawTime.replace(/-/g, '/'));
+        if (isNaN(dObj.getTime())) dObj = new Date(rawTime);
 
         return {
           id: `t-${i}`,
@@ -152,10 +148,9 @@ const App = () => {
           musica: row[idxMus !== -1 ? idxMus : 1] || 'Sem Título',
           radio: row[idxRad !== -1 ? idxRad : 3] || 'Metropolitana FM',
           genero: row[idxGen !== -1 ? idxGen : 5] || 'Desconhecido',
-          data: dataPart,
-          hora: horaCompleta,
-          hourOnly: hourOnly,
-          timestamp: isValid ? dObj.getTime() : 0
+          data: !isNaN(dObj.getTime()) ? dObj.toISOString().split('T')[0] : (rawTime.split(' ')[0] || "---"),
+          hora: !isNaN(dObj.getTime()) ? dObj.toTimeString().substring(0, 5) : (rawTime.split(' ')[1]?.substring(0, 5) || "00:00"),
+          timestamp: !isNaN(dObj.getTime()) ? dObj.getTime() : 0
         };
       }).filter(t => t.artista.toLowerCase() !== 'artista');
 
@@ -171,48 +166,32 @@ const App = () => {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Filtro de rádio e data fixo
-  const baseFiltered = useMemo(() => {
-    return data.filter(t => t.radio.trim() === filters.radio.trim() && t.data === filters.date);
-  }, [data, filters.radio, filters.date]);
-
-  // Filtro de exibição (Hora + Busca + Gênero)
-  const displayFiltered = useMemo(() => {
-    return baseFiltered.filter(t => 
-      (filters.exportHour === 'all' ? true : t.hourOnly === filters.exportHour) &&
-      (filters.search ? (t.artista + t.musica).toLowerCase().includes(filters.search.toLowerCase()) : true) &&
-      (filters.genero ? t.genero === filters.genero : true)
-    );
-  }, [baseFiltered, filters]);
+  const filteredData = useMemo(() => {
+    return data.filter(t => (t.radio.trim() === filters.radio.trim()) && (filters.date ? t.data === filters.date : true) && (filters.search ? (t.artista + t.musica).toLowerCase().includes(filters.search.toLowerCase()) : true) && (filters.genero ? t.genero === filters.genero : true));
+  }, [data, filters]);
 
   const genreData = useMemo(() => {
-    if (displayFiltered.length === 0) return [];
+    const filtered = data.filter(t => (t.radio.trim() === filters.radio.trim()) && (filters.date ? t.data === filters.date : true) && t.genero && t.genero !== 'Desconhecido');
+    if (filtered.length === 0) return [];
     const counts: Record<string, number> = {};
-    const validGenres = displayFiltered.filter(t => t.genero !== 'Desconhecido');
-    validGenres.forEach(t => counts[t.genero] = (counts[t.genero] || 0) + 1);
-    return Object.entries(counts).map(([name, value]) => ({ 
-      name, 
-      value, 
-      percentage: ((value / (validGenres.length || 1)) * 100).toFixed(1) 
-    })).sort((a, b) => b.value - a.value);
-  }, [displayFiltered]);
+    filtered.forEach(t => counts[t.genero] = (counts[t.genero] || 0) + 1);
+    return Object.entries(counts).map(([name, value]) => ({ name, value, percentage: ((value / filtered.length) * 100).toFixed(1) })).sort((a, b) => b.value - a.value);
+  }, [data, filters.radio, filters.date]);
 
   const uniqueDates = useMemo(() => [...new Set(data.filter(t => t.radio === filters.radio).map(d => d.data))].sort().reverse(), [data, filters.radio]);
-  const uniqueGenres = useMemo(() => [...new Set(baseFiltered.filter(t => t.genero !== 'Desconhecido').map(d => d.genero))].sort(), [baseFiltered]);
+  const uniqueGenres = useMemo(() => [...new Set(data.filter(t => t.radio === filters.radio && (filters.date ? t.data === filters.date : true) && t.genero !== 'Desconhecido').map(d => d.genero))].sort(), [data, filters.radio, filters.date]);
 
   const exportPDF = () => {
+    const exportRows = data.filter(t => (t.radio.trim() === filters.radio.trim()) && (filters.date ? t.data === filters.date : true)).filter(t => exportHour === 'all' ? true : t.hora.startsWith(`${exportHour}:`));
     const doc = new jsPDF();
     doc.setFontSize(18); doc.text(`RELATÓRIO - ${filters.radio}`, 14, 20);
     doc.setFontSize(10); doc.text(`Data: ${filters.date} | Gerado em: ${new Date().toLocaleString()}`, 14, 28);
     let y = 40;
     const header = () => { doc.setFont("helvetica", "bold"); doc.text("HORA", 14, y); doc.text("ARTISTA", 40, y); doc.text("MÚSICA", 100, y); doc.text("GÊNERO", 160, y); doc.line(14, y + 2, 196, y + 2); doc.setFont("helvetica", "normal"); };
     header();
-    displayFiltered.forEach(t => { y += 8; if (y > 280) { doc.addPage(); y = 20; header(); } doc.text(t.hora, 14, y); doc.text(t.artista.substring(0, 25), 40, y); doc.text(t.musica.substring(0, 30), 100, y); doc.text(t.genero.substring(0, 15), 160, y); });
+    exportRows.forEach(t => { y += 8; if (y > 280) { doc.addPage(); y = 20; header(); } doc.text(t.hora, 14, y); doc.text(t.artista.substring(0, 25), 40, y); doc.text(t.musica.substring(0, 30), 100, y); doc.text(t.genero.substring(0, 15), 160, y); });
     doc.save(`Playlist_${filters.radio}.pdf`);
   };
-
-  const nowPlaying = displayFiltered[0];
-  const history = displayFiltered.slice(1, visibleCount);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -228,41 +207,23 @@ const App = () => {
       <main className="max-w-3xl mx-auto px-6 py-10">
         <div className="bg-white p-6 rounded-[2.5rem] shadow-xl mb-10 border border-slate-100">
           <div className="flex gap-2 mb-4 p-1 bg-slate-100 rounded-2xl">
-            {['Metropolitana FM', 'Antena 1', 'Forbes Radio'].map(r => <button key={r} onClick={() => setFilters(f => ({ ...f, radio: r, date: '', genero: '', exportHour: 'all' }))} className={`flex-1 py-4 rounded-xl font-black text-[10px] uppercase transition-all ${filters.radio === r ? 'bg-white shadow-md text-slate-900' : 'text-slate-400'}`}>{r}</button>)}
+            {['Metropolitana FM', 'Antena 1', 'Forbes Radio'].map(r => <button key={r} onClick={() => setFilters(f => ({ ...f, radio: r, date: '', genero: '' }))} className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase transition-all ${filters.radio === r ? 'bg-white shadow-md text-slate-900' : 'text-slate-400'}`}>{r}</button>)}
           </div>
-          <div className="relative mb-4"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} /><input type="text" placeholder="Pesquisar..." className="w-full pl-12 pr-4 py-5 bg-slate-50 rounded-[2rem] outline-none font-black text-slate-700" value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} /></div>
-          
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <div className="relative col-span-1"><Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500" size={16} /><select className="w-full pl-10 pr-4 py-5 bg-slate-50 rounded-2xl font-black text-[10px] text-slate-600 appearance-none outline-none" value={filters.date} onChange={e => setFilters(f => ({ ...f, date: e.target.value }))}>{uniqueDates.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
-            <div className="relative col-span-1"><Music className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-500" size={16} /><select className="w-full pl-10 pr-4 py-5 bg-slate-50 rounded-2xl font-black text-[10px] text-slate-600 appearance-none outline-none" value={filters.genero} onChange={e => setFilters(f => ({ ...f, genero: e.target.value }))}><option value="">Gêneros</option>{uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
-            <div className="relative col-span-1"><Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500" size={16} /><select className="w-full pl-10 pr-4 py-5 bg-slate-50 rounded-2xl font-black text-[10px] text-slate-600 appearance-none outline-none" value={filters.exportHour} onChange={e => setFilters(f => ({ ...f, exportHour: e.target.value }))}><option value="all">Horas</option>{Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => <option key={h} value={h}>{h}:00</option>)}</select></div>
-          </div>
-
-          <button onClick={exportPDF} className="w-full py-5 bg-yellow-400 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all"><Download size={18} /> Exportar PDF</button>
+          <div className="relative mb-4"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} /><input type="text" placeholder="Pesquisar..." className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700" value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} /></div>
+          <div className="relative mb-4"><Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-500" size={18} /><select className="w-full pl-12 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-600 appearance-none outline-none" value={filters.date} onChange={e => setFilters(f => ({ ...f, date: e.target.value }))}>{uniqueDates.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
+          <div className="relative mb-4"><Music className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-500" size={18} /><select className="w-full pl-12 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-600 appearance-none outline-none" value={filters.genero} onChange={e => setFilters(f => ({ ...f, genero: e.target.value }))}><option value="">Todos os gêneros</option>{uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
+          <div className="relative"><Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-500" size={18} /><select className="w-full pl-12 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-600 appearance-none outline-none" value={exportHour} onChange={e => setExportHour(e.target.value)}><option value="all">Todas as horas</option>{Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => <option key={h} value={h}>{h}:00</option>)}</select></div>
+          <button onClick={exportPDF} className="w-full mt-4 py-4 bg-yellow-400 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 shadow-lg active:scale-95"><Download size={18} /> Exportar Playlist PDF</button>
         </div>
 
-        {loading ? (
-          <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-sky-400 mb-4" size={40} /><p className="font-black text-slate-400 text-[12px] uppercase tracking-widest leading-none">Sincronizando Dados...</p></div>
-        ) : (
-          <>
-            {nowPlaying && (
-              <div className="mb-10">
-                <MusicCard track={nowPlaying} isNowPlaying={true} />
-              </div>
-            )}
+        {genreData.length > 0 && <GenreChart data={genreData} />}
 
-            <GenreChart data={genreData} />
-
-            <div className="space-y-4">
-              <h4 className="font-black text-slate-400 uppercase text-[10px] tracking-[0.3em] ml-6 mb-4 leading-none">Histórico Recente</h4>
-              {history.map(track => <MusicCard key={track.id} track={track} isNowPlaying={false} />)}
-              {displayFiltered.length > visibleCount && (
-                <button onClick={() => setVisibleCount(c => c + 15)} className="w-full py-8 rounded-[3rem] border-4 border-dashed border-slate-200 text-slate-400 font-black hover:bg-white hover:text-sky-500 transition-all uppercase text-[10px] tracking-widest leading-none"><Plus size={16} className="mx-auto mb-2" /> Carregar Mais</button>
-              )}
-              {displayFiltered.length === 0 && <div className="bg-white p-20 rounded-[3rem] text-center border-4 border-dashed border-slate-100"><p className="font-black text-slate-300 uppercase text-xs tracking-widest leading-none">Nenhum registro</p></div>}
-            </div>
-          </>
-        )}
+        <div className="space-y-4">
+          {loading ? <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-sky-400 mb-4" size={40} /><p className="font-bold text-slate-400 text-[10px] uppercase tracking-widest">Sincronizando...</p></div> : 
+          filteredData.length > 0 ? (
+            <>{filteredData.slice(0, visibleCount).map((track, idx) => <MusicCard key={track.id} track={track} isNowPlaying={idx === 0 && !filters.search} />)}{filteredData.length > visibleCount && <button onClick={() => setVisibleCount(c => c + 15)} className="w-full py-6 rounded-[2rem] border-2 border-dashed border-slate-200 text-slate-400 font-bold hover:bg-white transition-all uppercase text-[10px] tracking-widest"><Plus size={16} /> Carregar Mais</button>}</>
+          ) : <div className="bg-white p-20 rounded-[3rem] text-center border-4 border-dashed border-slate-100"><p className="font-black text-slate-300 uppercase text-xs tracking-widest">Nenhum registro</p></div>}
+        </div>
       </main>
     </div>
   );
@@ -277,3 +238,4 @@ if (container) {
     </React.StrictMode>
   );
 }
+
