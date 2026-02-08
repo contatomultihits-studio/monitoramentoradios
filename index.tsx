@@ -138,13 +138,12 @@ const App = () => {
 
       const formatted = rows.slice(1).map((row, i) => {
         const rawTime = row[idxTim !== -1 ? idxTim : 2] || '';
-        
-        // CORREÇÃO ANTENA 1: Resolve o formato 2026-02-08T20:56:16.002
-        const dateObj = new Date(rawTime.replace('T', ' ').replace(/\..+/, ''));
-        const isValid = !isNaN(dateObj.getTime());
+        // CORREÇÃO ANTENA 1: Resolve formato ISO 2026-02-08T20:56...
+        const dObj = new Date(rawTime.replace('T', ' ').replace(/\..+/, ''));
+        const isValid = !isNaN(dObj.getTime());
 
-        const dataPart = isValid ? dateObj.toISOString().split('T')[0] : (rawTime.split(' ')[0] || "---");
-        const horaCompleta = isValid ? dateObj.toTimeString().substring(0, 5) : (rawTime.split(' ')[1]?.substring(0, 5) || "00:00");
+        const dataPart = isValid ? dObj.toISOString().split('T')[0] : (rawTime.split(' ')[0] || "---");
+        const horaCompleta = isValid ? dObj.toTimeString().substring(0, 5) : (rawTime.split(' ')[1]?.substring(0, 5) || "00:00");
         const hourOnly = horaCompleta.split(':')[0];
 
         return {
@@ -156,7 +155,7 @@ const App = () => {
           data: dataPart,
           hora: horaCompleta,
           hourOnly: hourOnly,
-          timestamp: isValid ? dateObj.getTime() : 0
+          timestamp: isValid ? dObj.getTime() : 0
         };
       }).filter(t => t.artista.toLowerCase() !== 'artista');
 
@@ -172,10 +171,12 @@ const App = () => {
     return () => clearInterval(interval);
   }, [fetchData]);
 
+  // Filtro de rádio e data fixo
   const baseFiltered = useMemo(() => {
     return data.filter(t => t.radio.trim() === filters.radio.trim() && t.data === filters.date);
   }, [data, filters.radio, filters.date]);
 
+  // Filtro de exibição (Hora + Busca + Gênero)
   const displayFiltered = useMemo(() => {
     return baseFiltered.filter(t => 
       (filters.exportHour === 'all' ? true : t.hourOnly === filters.exportHour) &&
@@ -227,17 +228,17 @@ const App = () => {
       <main className="max-w-3xl mx-auto px-6 py-10">
         <div className="bg-white p-6 rounded-[2.5rem] shadow-xl mb-10 border border-slate-100">
           <div className="flex gap-2 mb-4 p-1 bg-slate-100 rounded-2xl">
-            {['Metropolitana FM', 'Antena 1', 'Forbes Radio'].map(r => <button key={r} onClick={() => setFilters(f => ({ ...f, radio: r, date: '', genero: '', exportHour: 'all' }))} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase transition-all ${filters.radio === r ? 'bg-white shadow-md text-slate-900' : 'text-slate-400'}`}>{r}</button>)}
+            {['Metropolitana FM', 'Antena 1', 'Forbes Radio'].map(r => <button key={r} onClick={() => setFilters(f => ({ ...f, radio: r, date: '', genero: '', exportHour: 'all' }))} className={`flex-1 py-4 rounded-xl font-black text-[10px] uppercase transition-all ${filters.radio === r ? 'bg-white shadow-md text-slate-900' : 'text-slate-400'}`}>{r}</button>)}
           </div>
-          <div className="relative mb-4"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} /><input type="text" placeholder="Pesquisar..." className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-[2rem] outline-none font-black text-slate-700" value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} /></div>
+          <div className="relative mb-4"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} /><input type="text" placeholder="Pesquisar..." className="w-full pl-12 pr-4 py-5 bg-slate-50 rounded-[2rem] outline-none font-black text-slate-700" value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} /></div>
           
           <div className="grid grid-cols-3 gap-2 mb-4">
-            <div className="relative col-span-1"><Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500" size={16} /><select className="w-full pl-10 pr-4 py-4 bg-slate-50 rounded-2xl font-black text-[10px] text-slate-600 appearance-none outline-none" value={filters.date} onChange={e => setFilters(f => ({ ...f, date: e.target.value }))}>{uniqueDates.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
-            <div className="relative col-span-1"><Music className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-500" size={16} /><select className="w-full pl-10 pr-4 py-4 bg-slate-50 rounded-2xl font-black text-[10px] text-slate-600 appearance-none outline-none" value={filters.genero} onChange={e => setFilters(f => ({ ...f, genero: e.target.value }))}><option value="">Gêneros</option>{uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
-            <div className="relative col-span-1"><Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500" size={16} /><select className="w-full pl-10 pr-4 py-4 bg-slate-50 rounded-2xl font-black text-[10px] text-slate-600 appearance-none outline-none" value={filters.exportHour} onChange={e => setFilters(f => ({ ...f, exportHour: e.target.value }))}><option value="all">Horas</option>{Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => <option key={h} value={h}>{h}:00</option>)}</select></div>
+            <div className="relative col-span-1"><Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500" size={16} /><select className="w-full pl-10 pr-4 py-5 bg-slate-50 rounded-2xl font-black text-[10px] text-slate-600 appearance-none outline-none" value={filters.date} onChange={e => setFilters(f => ({ ...f, date: e.target.value }))}>{uniqueDates.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
+            <div className="relative col-span-1"><Music className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-500" size={16} /><select className="w-full pl-10 pr-4 py-5 bg-slate-50 rounded-2xl font-black text-[10px] text-slate-600 appearance-none outline-none" value={filters.genero} onChange={e => setFilters(f => ({ ...f, genero: e.target.value }))}><option value="">Gêneros</option>{uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
+            <div className="relative col-span-1"><Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500" size={16} /><select className="w-full pl-10 pr-4 py-5 bg-slate-50 rounded-2xl font-black text-[10px] text-slate-600 appearance-none outline-none" value={filters.exportHour} onChange={e => setFilters(f => ({ ...f, exportHour: e.target.value }))}><option value="all">Horas</option>{Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => <option key={h} value={h}>{h}:00</option>)}</select></div>
           </div>
 
-          <button onClick={exportPDF} className="w-full py-5 bg-yellow-400 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 shadow-lg active:scale-95"><Download size={18} /> Exportar PDF</button>
+          <button onClick={exportPDF} className="w-full py-5 bg-yellow-400 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all"><Download size={18} /> Exportar PDF</button>
         </div>
 
         {loading ? (
@@ -253,7 +254,7 @@ const App = () => {
             <GenreChart data={genreData} />
 
             <div className="space-y-4">
-              <h4 className="font-black text-slate-400 uppercase text-[10px] tracking-[0.3em] ml-6 mb-4 leading-none">Próximas Músicas</h4>
+              <h4 className="font-black text-slate-400 uppercase text-[10px] tracking-[0.3em] ml-6 mb-4 leading-none">Histórico Recente</h4>
               {history.map(track => <MusicCard key={track.id} track={track} isNowPlaying={false} />)}
               {displayFiltered.length > visibleCount && (
                 <button onClick={() => setVisibleCount(c => c + 15)} className="w-full py-8 rounded-[3rem] border-4 border-dashed border-slate-200 text-slate-400 font-black hover:bg-white hover:text-sky-500 transition-all uppercase text-[10px] tracking-widest leading-none"><Plus size={16} className="mx-auto mb-2" /> Carregar Mais</button>
