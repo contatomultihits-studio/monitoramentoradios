@@ -10,8 +10,22 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
       },
       plugins: [react()],
+      build: {
+        rollupOptions: {
+          // AQUI ESTÁ O SEGREDO: 
+          // Diz ao Vite para NÃO empacotar essas bibliotecas, 
+          // pois o seu index.html já as carrega via ESM.sh
+          external: [
+            'react',
+            'react-dom',
+            'react-dom/client',
+            'lucide-react',
+            'recharts',
+            'jspdf'
+          ],
+        },
+      },
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
       },
       resolve: {
