@@ -97,7 +97,7 @@ const NowPlayingCard = ({ track }: { track: any }) => {
               {track.genero && track.genero !== 'Desconhecido' && (
                 <span 
                   className="px-4 py-2 rounded-full text-sm font-black uppercase text-white shadow-lg"
-                  style={{ backgroundColor: GENRE_COLORS[track.genero] }}
+                  style={{ backgroundColor: GENRE_COLORS[track.genero] || '#B8B8B8' }}
                 >
                   {track.genero}
                 </span>
@@ -159,7 +159,7 @@ const MusicCard = ({ track }: { track: any }) => {
             {track.genero && track.genero !== 'Desconhecido' && (
               <span 
                 className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white"
-                style={{ backgroundColor: GENRE_COLORS[track.genero] }}
+                style={{ backgroundColor: GENRE_COLORS[track.genero] || '#B8B8B8' }}
               >
                 {track.genero}
               </span>
@@ -171,9 +171,29 @@ const MusicCard = ({ track }: { track: any }) => {
   );
 };
 
-// Gráfico de pizza MODERNIZADO com imagem para PDF
+// Gráfico de pizza MODERNIZADO com lógica de "Outros" e sem "Desconhecido"
 const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObject<HTMLDivElement> }) => {
   if (!data || data.length === 0) return null;
+
+  // Lógica de agrupamento e limpeza
+  const MIN_PERCENTAGE = 3;
+  const knownGenres = data.filter(g => g.name !== 'Desconhecido');
+  if (knownGenres.length === 0) return null;
+  
+  const mainGenres = knownGenres.filter(g => parseFloat(g.percentage) >= MIN_PERCENTAGE);
+  const smallGenres = knownGenres.filter(g => parseFloat(g.percentage) < MIN_PERCENTAGE);
+  
+  let chartData = [...mainGenres];
+  if (smallGenres.length > 0) {
+    const othersValue = smallGenres.reduce((sum, g) => sum + g.value, 0);
+    const totalKnown = knownGenres.reduce((sum, g) => sum + g.value, 0);
+    chartData.push({
+      name: 'Outros',
+      value: othersValue,
+      percentage: ((othersValue / totalKnown) * 100).toFixed(1)
+    });
+  }
+  chartData = chartData.sort((a, b) => b.value - a.value);
 
   return (
     <div ref={chartRef} className="bg-gradient-to-br from-purple-50 to-pink-50 p-8 rounded-3xl shadow-xl mb-8 border border-purple-100">
@@ -183,7 +203,7 @@ const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObjec
         </div>
         <div>
           <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Análise de Gêneros</h2>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical</p>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical (Sem Desconhecidos)</p>
         </div>
       </div>
       
@@ -191,7 +211,7 @@ const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObjec
         <ResponsiveContainer width="100%" height={350}>
           <PieChart>
             <Pie
-              data={data}
+              data={chartData}
               cx="50%"
               cy="50%"
               labelLine={false}
@@ -202,10 +222,10 @@ const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObjec
               dataKey="value"
               paddingAngle={2}
             >
-              {data.map((entry, index) => (
+              {chartData.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={GENRE_COLORS[entry.name] || '#D3D3D3'}
+                  fill={GENRE_COLORS[entry.name] || '#B8B8B8'}
                   stroke="#fff"
                   strokeWidth={2}
                 />
@@ -220,11 +240,11 @@ const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObjec
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
-        {data.map((genre) => (
+        {chartData.map((genre) => (
           <div key={genre.name} className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
             <div 
               className="w-5 h-5 rounded-full shadow-md flex-shrink-0" 
-              style={{ backgroundColor: GENRE_COLORS[genre.name] || '#D3D3D3' }}
+              style={{ backgroundColor: GENRE_COLORS[genre.name] || '#B8B8B8' }}
             />
             <div className="flex-1 min-w-0">
               <p className="font-black text-sm text-slate-700 uppercase truncate">{genre.name}</p>
@@ -382,14 +402,12 @@ const App = () => {
 
   const exportPDF = async () => {
     const exportRows = filteredData;
-
     if (exportRows.length === 0) {
       alert('Nenhum registro encontrado para exportar.');
       return;
     }
 
     const doc = new jsPDF();
-    
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
     doc.text(`IA NO RADIO - ${filters.radio}`, 14, 20);
@@ -402,40 +420,34 @@ const App = () => {
 
     let y = 45;
 
+    // Tentar adicionar o gráfico no PDF se ele existir
     if (chartRef.current && genreData.length > 0) {
       try {
         const html2canvas = (await import('https://esm.sh/html2canvas@1.4.1')).default;
-        const canvas = await html2canvas(chartRef.current, {
-          backgroundColor: '#ffffff',
-          scale: 2
-        });
+        const canvas = await html2canvas(chartRef.current, { backgroundColor: '#ffffff', scale: 2 });
         const imgData = canvas.toDataURL('image/png');
         doc.addImage(imgData, 'PNG', 14, y, 180, 90);
         y += 100;
-      } catch (err) {
-        console.error('Erro ao adicionar grafico:', err);
-      }
+      } catch (err) { console.error('Erro ao adicionar gráfico:', err); }
     }
 
-    if (y > 240) {
-      doc.addPage();
-      y = 20;
-    }
+    if (y > 240) { doc.addPage(); y = 20; }
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.text("PLAYLIST", 14, y);
     y += 8;
 
     const renderHeader = () => {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      doc.text("HORA", 14, y);
-      doc.text("ARTISTA", 35, y);
-      doc.text("MUSICA", 95, y);
-      doc.text("GENERO", 155, y);
-      doc.line(14, y + 2, 196, y + 2);
+      doc.setFontSize(8);
+      doc.text("HORA", 14, y);      // Coluna HORA (Aprox 18px)
+      doc.text("ARTISTA", 32, y);   // Coluna ARTISTA (Aprox 63px)
+      doc.text("MUSICA", 95, y);    // Coluna MUSICA (Aprox 63px)
+      doc.text("GENERO", 158, y);   // Coluna GENERO (Aprox 38px)
+      doc.line(14, y + 1, 196, y + 1);
       doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);           // Fonte menor conforme solicitado
     };
 
     renderHeader();
@@ -448,11 +460,11 @@ const App = () => {
         renderHeader();
         y += 6;
       }
-      doc.setFontSize(8);
+      const generoTxt = t.genero === 'Desconhecido' ? '' : t.genero;
       doc.text(t.hora, 14, y); 
-      doc.text(t.artista.substring(0, 28), 35, y); 
-      doc.text(t.musica.substring(0, 28), 95, y);
-      doc.text(t.genero.substring(0, 18), 155, y);
+      doc.text(t.artista.substring(0, 30), 32, y); 
+      doc.text(t.musica.substring(0, 38), 95, y);
+      doc.text(generoTxt.substring(0, 18), 158, y);
       y += 6;
     });
 
