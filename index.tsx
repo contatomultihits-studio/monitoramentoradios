@@ -218,21 +218,24 @@ const App = () => {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Filtro avançado incluindo gênero e a HORA SELECIONADA NA TELA
+  // Filtro avançado incluindo gênero
   const filteredData = useMemo(() => {
     return data.filter(t => {
       const matchRadio = t.radio.trim() === filters.radio.trim();
       const matchDate = filters.date ? t.data === filters.date : true;
       const matchSearch = filters.search ? (t.artista + t.musica).toLowerCase().includes(filters.search.toLowerCase()) : true;
       const matchGenero = filters.genero ? t.genero === filters.genero : true;
-      const matchHour = exportHour === 'all' ? true : t.hora.startsWith(`${exportHour}:`);
-      return matchRadio && matchDate && matchSearch && matchGenero && matchHour;
+      return matchRadio && matchDate && matchSearch && matchGenero;
     });
-  }, [data, filters, exportHour]);
+  }, [data, filters]);
 
-  // Cálculo para o Gráfico de Gêneros (Respeitando os filtros da tela)
+  // Cálculo para o Gráfico de Gêneros
   const genreData = useMemo(() => {
-    const filteredForStats = filteredData.filter(t => t.genero && t.genero !== 'Desconhecido');
+    const filteredForStats = data.filter(t => {
+      const matchRadio = t.radio.trim() === filters.radio.trim();
+      const matchDate = filters.date ? t.data === filters.date : true;
+      return matchRadio && matchDate && t.genero && t.genero !== 'Desconhecido';
+    });
     
     const genreCounts: Record<string, number> = {};
     filteredForStats.forEach(t => {
@@ -243,10 +246,10 @@ const App = () => {
       .map(([name, value]) => ({
         name,
         value,
-        percentage: ((value / (filteredForStats.length || 1)) * 100).toFixed(1)
+        percentage: ((value / filteredForStats.length) * 100).toFixed(1)
       }))
       .sort((a, b) => b.value - a.value);
-  }, [filteredData]);
+  }, [data, filters.radio, filters.date]);
 
   const uniqueDates = useMemo(() => {
     const dates = data.filter(t => t.radio === filters.radio).map(d => d.data);
@@ -267,7 +270,17 @@ const App = () => {
   }, []);
 
   const exportPDF = () => {
-    if (filteredData.length === 0) {
+    const exportBaseRows = data.filter(t => {
+      const matchRadio = t.radio.trim() === filters.radio.trim();
+      const matchDate = filters.date ? t.data === filters.date : true;
+      return matchRadio && matchDate;
+    });
+    const exportRows = exportBaseRows.filter(t => {
+      if (exportHour === 'all') return true;
+      return t.hora.startsWith(`${exportHour}:`);
+    });
+
+    if (exportRows.length === 0) {
       alert('Nenhum registro encontrado para o horário selecionado.');
       return;
     }
@@ -291,7 +304,7 @@ const App = () => {
     };
 
     renderHeader();
-    filteredData.forEach(t => {
+    exportRows.forEach(t => {
       y += 8;
       if (y > 280) {
         doc.addPage();
@@ -354,8 +367,8 @@ const App = () => {
           <div className="relative mb-4">
             <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-500" size={18} />
             <select className="w-full pl-12 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-600 appearance-none outline-none" value={exportHour} onChange={e => setExportHour(e.target.value)}>
-              <option value="all">Filtrar/Exportar: Todas as horas</option>
-              {hourOptions.map(h => <option key={h} value={h}>Filtrar/Exportar: {h}:00</option>)}
+              <option value="all">Exportar: Todas as horas</option>
+              {hourOptions.map(h => <option key={h} value={h}>Exportar: {h}:00</option>)}
             </select>
           </div>
 
@@ -376,7 +389,7 @@ const App = () => {
           ) : filteredData.length > 0 ? (
             <>
               {filteredData.slice(0, visibleCount).map((track, idx) => (
-                <MusicCard key={track.id} track={track} isNowPlaying={idx === 0 && exportHour === 'all' && !filters.search} />
+                <MusicCard key={track.id} track={track} isNowPlaying={idx === 0 && !filters.search} />
               ))}
               {filteredData.length > visibleCount && (
                 <button onClick={() => setVisibleCount(c => c + 15)} className="w-full py-6 rounded-[2rem] border-2 border-dashed border-slate-200 text-slate-400 font-bold hover:bg-white transition-all uppercase text-[10px] tracking-widest">
