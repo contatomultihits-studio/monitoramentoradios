@@ -60,13 +60,13 @@ const MusicCard = ({ track, isNowPlaying }: { track: any, isNowPlaying: boolean 
         <h3 className={`font-black uppercase truncate leading-tight text-lg ${isNowPlaying ? "text-white" : "text-slate-800"}`}>{track.musica}</h3>
         <p className={`font-bold uppercase truncate text-sm mb-2 ${isNowPlaying ? "text-yellow-400" : "text-sky-500"}`}>{track.artista}</p>
         <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-bold tabular-nums text-[10px] ${isNowPlaying ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-500'}`}><Clock size={12} /> {track.hora}</div>
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-black tabular-nums text-[10px] ${isNowPlaying ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-500'}`}><Clock size={12} /> {track.hora}</div>
           {track.genero && track.genero !== 'Desconhecido' && (
             <span className="px-2 py-1 rounded-full text-[9px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#D3D3D3' }}>
               {track.genero}
             </span>
           )}
-          <span className={`text-[10px] font-bold uppercase tracking-widest ${isNowPlaying ? 'text-white/40' : 'text-slate-400'}`}>{track.data}</span>
+          <span className={`text-[10px] font-black uppercase tracking-widest ${isNowPlaying ? 'text-white/40' : 'text-slate-400'}`}>{track.data}</span>
         </div>
       </div>
     </div>
@@ -114,7 +114,7 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', exportHour: 'all' });
-  const [visibleCount, setVisibleCount] = useState(10); // Inicial 1 + 9 (Total 10)
+  const [visibleCount, setVisibleCount] = useState(10);
 
   const fetchData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
@@ -138,11 +138,14 @@ const App = () => {
 
       const formatted = rows.slice(1).map((row, i) => {
         const rawTime = row[idxTim !== -1 ? idxTim : 2] || '';
-        // Normalização de data para Antena 1 e Forbes não aparecerem errado
-        let dObj = new Date(rawTime.replace(/-/g, '/'));
-        if (isNaN(dObj.getTime())) dObj = new Date(rawTime);
+        
+        // CORREÇÃO ANTENA 1: Resolve o formato 2026-02-08T20:56:16.002
+        const dateObj = new Date(rawTime.replace('T', ' ').replace(/\..+/, ''));
+        const isValid = !isNaN(dateObj.getTime());
 
-        const timePart = rawTime.split(' ')[1] || "00:00";
+        const dataPart = isValid ? dateObj.toISOString().split('T')[0] : (rawTime.split(' ')[0] || "---");
+        const horaCompleta = isValid ? dateObj.toTimeString().substring(0, 5) : (rawTime.split(' ')[1]?.substring(0, 5) || "00:00");
+        const hourOnly = horaCompleta.split(':')[0];
 
         return {
           id: `t-${i}`,
@@ -150,10 +153,10 @@ const App = () => {
           musica: row[idxMus !== -1 ? idxMus : 1] || 'Sem Título',
           radio: row[idxRad !== -1 ? idxRad : 3] || 'Metropolitana FM',
           genero: row[idxGen !== -1 ? idxGen : 5] || 'Desconhecido',
-          data: !isNaN(dObj.getTime()) ? dObj.toISOString().split('T')[0] : (rawTime.split(' ')[0] || "---"),
-          hora: timePart.substring(0, 5),
-          hourOnly: timePart.split(':')[0],
-          timestamp: !isNaN(dObj.getTime()) ? dObj.getTime() : 0
+          data: dataPart,
+          hora: horaCompleta,
+          hourOnly: hourOnly,
+          timestamp: isValid ? dateObj.getTime() : 0
         };
       }).filter(t => t.artista.toLowerCase() !== 'artista');
 
@@ -169,12 +172,8 @@ const App = () => {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Filtro Unificado (Hora + Rádio + Data)
   const baseFiltered = useMemo(() => {
-    return data.filter(t => 
-      t.radio.trim() === filters.radio.trim() && 
-      t.data === filters.date
-    );
+    return data.filter(t => t.radio.trim() === filters.radio.trim() && t.data === filters.date);
   }, [data, filters.radio, filters.date]);
 
   const displayFiltered = useMemo(() => {
@@ -193,7 +192,7 @@ const App = () => {
     return Object.entries(counts).map(([name, value]) => ({ 
       name, 
       value, 
-      percentage: ((value / validGenres.length) * 100).toFixed(1) 
+      percentage: ((value / (validGenres.length || 1)) * 100).toFixed(1) 
     })).sort((a, b) => b.value - a.value);
   }, [displayFiltered]);
 
@@ -226,44 +225,40 @@ const App = () => {
         </div>
       </header>
       <main className="max-w-3xl mx-auto px-6 py-10">
-        {/* FILTROS NO TOPO */}
         <div className="bg-white p-6 rounded-[2.5rem] shadow-xl mb-10 border border-slate-100">
           <div className="flex gap-2 mb-4 p-1 bg-slate-100 rounded-2xl">
-            {['Metropolitana FM', 'Antena 1', 'Forbes Radio'].map(r => <button key={r} onClick={() => setFilters(f => ({ ...f, radio: r, date: '', genero: '', exportHour: 'all' }))} className={`flex-1 py-3 rounded-xl font-bold text-xs uppercase transition-all ${filters.radio === r ? 'bg-white shadow-md text-slate-900' : 'text-slate-400'}`}>{r}</button>)}
+            {['Metropolitana FM', 'Antena 1', 'Forbes Radio'].map(r => <button key={r} onClick={() => setFilters(f => ({ ...f, radio: r, date: '', genero: '', exportHour: 'all' }))} className={`flex-1 py-3 rounded-xl font-black text-[10px] uppercase transition-all ${filters.radio === r ? 'bg-white shadow-md text-slate-900' : 'text-slate-400'}`}>{r}</button>)}
           </div>
-          <div className="relative mb-4"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} /><input type="text" placeholder="Pesquisar..." className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700" value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} /></div>
+          <div className="relative mb-4"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} /><input type="text" placeholder="Pesquisar..." className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-[2rem] outline-none font-black text-slate-700" value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} /></div>
           
           <div className="grid grid-cols-3 gap-2 mb-4">
-            <div className="relative col-span-1"><Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500" size={16} /><select className="w-full pl-10 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-[10px] text-slate-600 appearance-none outline-none" value={filters.date} onChange={e => setFilters(f => ({ ...f, date: e.target.value }))}>{uniqueDates.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
-            <div className="relative col-span-1"><Music className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-500" size={16} /><select className="w-full pl-10 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-[10px] text-slate-600 appearance-none outline-none" value={filters.genero} onChange={e => setFilters(f => ({ ...f, genero: e.target.value }))}><option value="">Gêneros</option>{uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
-            <div className="relative col-span-1"><Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500" size={16} /><select className="w-full pl-10 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-[10px] text-slate-600 appearance-none outline-none" value={filters.exportHour} onChange={e => setFilters(f => ({ ...f, exportHour: e.target.value }))}><option value="all">Horas</option>{Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => <option key={h} value={h}>{h}:00</option>)}</select></div>
+            <div className="relative col-span-1"><Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500" size={16} /><select className="w-full pl-10 pr-4 py-4 bg-slate-50 rounded-2xl font-black text-[10px] text-slate-600 appearance-none outline-none" value={filters.date} onChange={e => setFilters(f => ({ ...f, date: e.target.value }))}>{uniqueDates.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
+            <div className="relative col-span-1"><Music className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-500" size={16} /><select className="w-full pl-10 pr-4 py-4 bg-slate-50 rounded-2xl font-black text-[10px] text-slate-600 appearance-none outline-none" value={filters.genero} onChange={e => setFilters(f => ({ ...f, genero: e.target.value }))}><option value="">Gêneros</option>{uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
+            <div className="relative col-span-1"><Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500" size={16} /><select className="w-full pl-10 pr-4 py-4 bg-slate-50 rounded-2xl font-black text-[10px] text-slate-600 appearance-none outline-none" value={filters.exportHour} onChange={e => setFilters(f => ({ ...f, exportHour: e.target.value }))}><option value="all">Horas</option>{Array.from({length: 24}, (_, i) => String(i).padStart(2, '0')).map(h => <option key={h} value={h}>{h}:00</option>)}</select></div>
           </div>
 
-          <button onClick={exportPDF} className="w-full py-4 bg-yellow-400 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 shadow-lg active:scale-95"><Download size={18} /> Exportar PDF</button>
+          <button onClick={exportPDF} className="w-full py-5 bg-yellow-400 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 shadow-lg active:scale-95"><Download size={18} /> Exportar PDF</button>
         </div>
 
         {loading ? (
-          <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-sky-400 mb-4" size={40} /><p className="font-bold text-slate-400 text-[10px] uppercase tracking-widest">Sincronizando...</p></div>
+          <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto text-sky-400 mb-4" size={40} /><p className="font-black text-slate-400 text-[12px] uppercase tracking-widest leading-none">Sincronizando Dados...</p></div>
         ) : (
           <>
-            {/* 1. MÚSICA ATUAL */}
             {nowPlaying && (
               <div className="mb-10">
                 <MusicCard track={nowPlaying} isNowPlaying={true} />
               </div>
             )}
 
-            {/* 2. GRÁFICO (RESPEITANDO A HORA) */}
             <GenreChart data={genreData} />
 
-            {/* 3. HISTÓRICO (9 MÚSICAS + CARREGAR MAIS) */}
             <div className="space-y-4">
-              <h4 className="font-black text-slate-400 uppercase text-[10px] tracking-widest ml-4 mb-2">Próximas Músicas</h4>
+              <h4 className="font-black text-slate-400 uppercase text-[10px] tracking-[0.3em] ml-6 mb-4 leading-none">Próximas Músicas</h4>
               {history.map(track => <MusicCard key={track.id} track={track} isNowPlaying={false} />)}
               {displayFiltered.length > visibleCount && (
-                <button onClick={() => setVisibleCount(c => c + 15)} className="w-full py-6 rounded-[2rem] border-2 border-dashed border-slate-200 text-slate-400 font-bold hover:bg-white transition-all uppercase text-[10px] tracking-widest"><Plus size={16} className="mx-auto" /></button>
+                <button onClick={() => setVisibleCount(c => c + 15)} className="w-full py-8 rounded-[3rem] border-4 border-dashed border-slate-200 text-slate-400 font-black hover:bg-white hover:text-sky-500 transition-all uppercase text-[10px] tracking-widest leading-none"><Plus size={16} className="mx-auto mb-2" /> Carregar Mais</button>
               )}
-              {displayFiltered.length === 0 && <div className="bg-white p-20 rounded-[3rem] text-center border-4 border-dashed border-slate-100"><p className="font-black text-slate-300 uppercase text-xs tracking-widest">Nenhum registro</p></div>}
+              {displayFiltered.length === 0 && <div className="bg-white p-20 rounded-[3rem] text-center border-4 border-dashed border-slate-100"><p className="font-black text-slate-300 uppercase text-xs tracking-widest leading-none">Nenhum registro</p></div>}
             </div>
           </>
         )}
