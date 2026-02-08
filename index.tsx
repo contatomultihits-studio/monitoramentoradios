@@ -96,5 +96,9 @@ const App = () => {
   );
 };
 
-const root = document.getElementById('root');
-if (root) createRoot(root).render(<App />);
+const container = document.getElementById('root');
+if (container) {
+  const root = createRoot(container);
+  root.render(<App />);
+}
+
