@@ -313,8 +313,11 @@ const App = () => {
       const formatted = rows.slice(1).map((row, i) => {
         const rawTime = row[idxTim] || '';
         const normalizedTime = rawTime.replace(/-/g, '/');
+        
         let dObj = new Date(normalizedTime);
-        if (isNaN(dObj.getTime())) dObj = new Date(rawTime);
+        if (isNaN(dObj.getTime())) {
+          dObj = new Date(rawTime);
+        }
         
         if (row[idxRad] === 'Antena 1' && rawTime.includes('T')) {
           dObj.setHours(dObj.getHours() - 3);
@@ -322,7 +325,9 @@ const App = () => {
 
         let datePart = '', timePart = '00:00', ts = 0;
         if (!isNaN(dObj.getTime())) {
-          datePart = dObj.toISOString().split('T')[0];
+          // Ajuste para evitar pular data por causa de fuso horário
+          const localDate = new Date(dObj.getTime() - (dObj.getTimezoneOffset() * 60000));
+          datePart = localDate.toISOString().split('T')[0];
           timePart = dObj.toTimeString().substring(0, 5);
           ts = dObj.getTime();
         } else {
@@ -332,7 +337,6 @@ const App = () => {
           ts = 0;
         }
 
-        // Regra para renomear Jamendo para Independente
         let artistaRaw = row[idxArt] || 'Desconhecido';
         const artistaFinal = artistaRaw.toLowerCase() === 'jamendo' ? 'Independente' : artistaRaw;
 
@@ -346,12 +350,15 @@ const App = () => {
           hora: timePart,
           timestamp: ts
         };
-      }).filter(t => t.artista !== 'artista');
+      }).filter(t => t.artista !== 'artista' && t.data !== "---");
 
       const sorted = formatted.sort((a, b) => b.timestamp - a.timestamp);
       setData(sorted);
+
+      // CORREÇÃO DA DATA: Só define a data inicial se ela ainda não existir nos filtros
+      // E garante que seja a data mais recente que REALMENTE possua dados
       if (sorted.length > 0 && !filters.date) {
-        setFilters(prev => ({ ...prev, date: sorted[0].data }));
+         setFilters(prev => ({ ...prev, date: sorted[0].data }));
       }
     } catch (err: any) { 
       if (!isSilent) setError(err.message); 
