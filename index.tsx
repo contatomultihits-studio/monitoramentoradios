@@ -32,7 +32,7 @@ const GENRE_COLORS: Record<string, string> = {
   'Outros': '#B8B8B8'
 };
 
-// Tooltip para mostrar gêneros dentro de "Outros"
+// Componente de Tooltip Customizado para detalhar o grupo "Outros"
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
@@ -42,7 +42,7 @@ const CustomTooltip = ({ active, payload }: any) => {
         <p className="font-bold text-blue-600 text-xs">{data.value} músicas ({data.percentage}%)</p>
         {data.subGenres && (
           <div className="mt-2 pt-2 border-t border-slate-100">
-            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Inclui:</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Composição:</p>
             <p className="text-[10px] text-slate-600 leading-tight">{data.subGenres.join(', ')}</p>
           </div>
         )}
@@ -129,6 +129,7 @@ const NowPlayingCard = ({ track }: { track: any }) => {
   );
 };
 
+// Card de música normal (lista)
 const MusicCard = ({ track }: { track: any }) => {
   const [artwork, setArtwork] = useState<string | null>(null);
   const [loadingCover, setLoadingCover] = useState(true);
@@ -189,6 +190,7 @@ const MusicCard = ({ track }: { track: any }) => {
   );
 };
 
+// Gráfico de pizza com lógica de "Outros" e detalhamento
 const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObject<HTMLDivElement> }) => {
   if (!data || data.length === 0) return null;
 
@@ -220,7 +222,7 @@ const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObjec
         </div>
         <div>
           <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Análise de Gêneros</h2>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical</p>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical (Sem Desconhecidos)</p>
         </div>
       </div>
       
@@ -300,8 +302,7 @@ const App = () => {
         return result;
       });
 
-      // Normalização robusta do cabeçalho
-      const header = rows[0].map(h => h.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+      const header = rows[0].map(h => h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
       const idxArt = header.indexOf('artista');
       const idxMus = header.indexOf('musica');
       const idxTim = header.indexOf('tocou_em');
@@ -311,11 +312,8 @@ const App = () => {
       const formatted = rows.slice(1).map((row, i) => {
         const rawTime = row[idxTim] || '';
         const normalizedTime = rawTime.replace(/-/g, '/');
-        
         let dObj = new Date(normalizedTime);
-        if (isNaN(dObj.getTime())) {
-          dObj = new Date(rawTime);
-        }
+        if (isNaN(dObj.getTime())) dObj = new Date(rawTime);
         
         if (row[idxRad] === 'Antena 1' && rawTime.includes('T')) {
           dObj.setHours(dObj.getHours() - 3);
@@ -323,14 +321,13 @@ const App = () => {
 
         let datePart = '', timePart = '00:00', ts = 0;
         if (!isNaN(dObj.getTime())) {
-          // Ajuste para garantir a data local correta
+          // Ajuste rigoroso para data local (evita pular dia)
           const localOffset = dObj.getTimezoneOffset() * 60000;
           const localDate = new Date(dObj.getTime() - localOffset);
           datePart = localDate.toISOString().split('T')[0];
           timePart = dObj.toTimeString().substring(0, 5);
           ts = dObj.getTime();
         } else {
-          // Fallback para strings de data manuais
           const parts = rawTime.split(' ');
           datePart = parts[0] || "---";
           timePart = parts[1]?.substring(0, 5) || "00:00";
@@ -338,7 +335,7 @@ const App = () => {
         }
 
         return {
-          id: `t-${i}-${Math.random()}`,
+          id: `t-${i}`,
           artista: row[idxArt] || 'Desconhecido',
           musica: row[idxMus] || 'Sem Título',
           radio: row[idxRad] || 'Metropolitana FM',
@@ -347,13 +344,12 @@ const App = () => {
           hora: timePart,
           timestamp: ts
         };
-      }).filter(t => t.musica && t.musica.toLowerCase() !== 'musica' && t.data !== "---");
+      }).filter(t => t.artista !== 'artista');
 
       const sorted = formatted.sort((a, b) => b.timestamp - a.timestamp);
       setData(sorted);
-
       if (sorted.length > 0 && !filters.date) {
-         setFilters(prev => ({ ...prev, date: sorted[0].data }));
+        setFilters(prev => ({ ...prev, date: sorted[0].data }));
       }
     } catch (err: any) { 
       if (!isSilent) setError(err.message); 
@@ -463,13 +459,13 @@ const App = () => {
     const renderHeader = () => {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
-      doc.text("HORA", 14, y);      
-      doc.text("ARTISTA", 32, y);   
-      doc.text("MUSICA", 95, y);    
-      doc.text("GENERO", 158, y);   
+      doc.text("HORA", 14, y);
+      doc.text("ARTISTA", 32, y);
+      doc.text("MUSICA", 95, y);
+      doc.text("GENERO", 158, y);
       doc.line(14, y + 1, 196, y + 1);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(7);           
+      doc.setFontSize(7);
     };
 
     renderHeader();
@@ -494,8 +490,8 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <header className="bg-white/80 backdrop-blur-md border-b border-blue-100 sticky top-0 z-50 shadow-sm">
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-5xl mx-auto px-6 h-24 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-lg">
@@ -539,7 +535,7 @@ const App = () => {
                 }} 
                 className={`py-5 rounded-2xl font-black text-sm uppercase transition-all transform hover:scale-105 active:scale-95 ${
                   filters.radio === r 
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl' 
+                    ? 'bg-blue-600 text-white shadow-xl' 
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -572,9 +568,9 @@ const App = () => {
             </div>
 
             <div className="relative">
-              <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-600" size={20} />
+              <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600" size={20} />
               <select 
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 appearance-none outline-none border-2 border-transparent focus:border-sky-300 transition-all cursor-pointer" 
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 appearance-none outline-none border-2 border-transparent focus:border-blue-300 transition-all cursor-pointer" 
                 value={filters.hour} 
                 onChange={e => setFilters(f => ({ ...f, hour: e.target.value }))}
               >
@@ -598,7 +594,7 @@ const App = () => {
 
           <button 
             onClick={exportPDF} 
-            className="w-full mt-6 py-5 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95"
+            className="w-full mt-6 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95"
           >
             <Download size={20} /> Exportar Relatório PDF
           </button>
@@ -634,7 +630,7 @@ const App = () => {
                   onClick={() => setVisibleCount(c => c + 9)} 
                   className="w-full py-6 rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 font-black hover:bg-blue-100 transition-all uppercase text-sm tracking-wider flex items-center justify-center gap-2 hover:scale-105 active:scale-95"
                 >
-                  <Plus size={16} /> Carregar Mais Músicas
+                  <Plus size={20} /> Carregar Mais Músicas
                 </button>
               )}
             </>
