@@ -13,7 +13,7 @@ const SHEET_ID = '1xFRBBHpmn38TiBdZcwN2556811FKkfbEEB3HmmdxT1s';
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 const REFRESH_INTERVAL_MS = 30000;
 
-// Cores vibrantes com base azul moderna para os gêneros
+// Cores vibrantes em tons de AZUL para os gêneros
 const GENRE_COLORS: Record<string, string> = {
   'Sertanejo': '#3B82F6',
   'Pop': '#0EA5E9',
@@ -32,7 +32,7 @@ const GENRE_COLORS: Record<string, string> = {
   'Outros': '#B8B8B8'
 };
 
-// Componente de Tooltip Customizado para mostrar gêneros dentro de "Outros"
+// Tooltip para mostrar gêneros dentro de "Outros"
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
@@ -42,7 +42,7 @@ const CustomTooltip = ({ active, payload }: any) => {
         <p className="font-bold text-blue-600 text-xs">{data.value} músicas ({data.percentage}%)</p>
         {data.subGenres && (
           <div className="mt-2 pt-2 border-t border-slate-100">
-            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Composição:</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Inclui:</p>
             <p className="text-[10px] text-slate-600 leading-tight">{data.subGenres.join(', ')}</p>
           </div>
         )}
@@ -52,7 +52,7 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-// Card da música tocando AGORA - Destaque em Azul Moderno
+// Card da música tocando AGORA - TEMA AZUL
 const NowPlayingCard = ({ track }: { track: any }) => {
   const [artwork, setArtwork] = useState<string | null>(null);
   const [loadingCover, setLoadingCover] = useState(true);
@@ -99,7 +99,6 @@ const NowPlayingCard = ({ track }: { track: any }) => {
                 </div>
               )}
             </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/10 rounded-2xl"></div>
           </div>
 
           <div className="flex-1 min-w-0">
@@ -191,7 +190,7 @@ const MusicCard = ({ track }: { track: any }) => {
   );
 };
 
-// Gráfico de pizza com lógica de "Outros" detalhada e Tooltip Blue
+// Gráfico de pizza com lógica de "Outros"
 const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObject<HTMLDivElement> }) => {
   if (!data || data.length === 0) return null;
 
@@ -325,8 +324,9 @@ const App = () => {
 
         let datePart = '', timePart = '00:00', ts = 0;
         if (!isNaN(dObj.getTime())) {
-          // Ajuste para evitar pular data por causa de fuso horário
-          const localDate = new Date(dObj.getTime() - (dObj.getTimezoneOffset() * 60000));
+          // Ajuste rigoroso para garantir a data local correta vinda do CSV
+          const localOffset = dObj.getTimezoneOffset() * 60000;
+          const localDate = new Date(dObj.getTime() - localOffset);
           datePart = localDate.toISOString().split('T')[0];
           timePart = dObj.toTimeString().substring(0, 5);
           ts = dObj.getTime();
@@ -337,12 +337,9 @@ const App = () => {
           ts = 0;
         }
 
-        let artistaRaw = row[idxArt] || 'Desconhecido';
-        const artistaFinal = artistaRaw.toLowerCase() === 'jamendo' ? 'Independente' : artistaRaw;
-
         return {
           id: `t-${i}`,
-          artista: artistaFinal,
+          artista: row[idxArt] || 'Desconhecido',
           musica: row[idxMus] || 'Sem Título',
           radio: row[idxRad] || 'Metropolitana FM',
           genero: row[idxGen] || 'Desconhecido',
@@ -355,8 +352,6 @@ const App = () => {
       const sorted = formatted.sort((a, b) => b.timestamp - a.timestamp);
       setData(sorted);
 
-      // CORREÇÃO DA DATA: Só define a data inicial se ela ainda não existir nos filtros
-      // E garante que seja a data mais recente que REALMENTE possua dados
       if (sorted.length > 0 && !filters.date) {
          setFilters(prev => ({ ...prev, date: sorted[0].data }));
       }
@@ -639,7 +634,7 @@ const App = () => {
                   onClick={() => setVisibleCount(c => c + 9)} 
                   className="w-full py-6 rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 font-black hover:bg-blue-100 transition-all uppercase text-sm tracking-wider flex items-center justify-center gap-2 hover:scale-105 active:scale-95"
                 >
-                  <Plus size={20} /> Carregar Mais Músicas
+                  <Plus size={16} /> Carregar Mais Músicas
                 </button>
               )}
             </>
