@@ -13,7 +13,7 @@ const SHEET_ID = '1xFRBBHpmn38TiBdZcwN2556811FKkfbEEB3HmmdxT1s';
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 const REFRESH_INTERVAL_MS = 30000;
 
-// Cores vibrantes em tons de AZUL para os gêneros (Padrão Rádio Disney)
+// Cores vibrantes em tons de AZUL para os gêneros
 const GENRE_COLORS: Record<string, string> = {
   'Sertanejo': '#3B82F6',
   'Pop': '#0EA5E9',
@@ -129,6 +129,7 @@ const NowPlayingCard = ({ track }: { track: any }) => {
   );
 };
 
+// Card de música normal (lista)
 const MusicCard = ({ track }: { track: any }) => {
   const [artwork, setArtwork] = useState<string | null>(null);
   const [loadingCover, setLoadingCover] = useState(true);
@@ -189,6 +190,7 @@ const MusicCard = ({ track }: { track: any }) => {
   );
 };
 
+// Gráfico de pizza com lógica de "Outros"
 const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObject<HTMLDivElement> }) => {
   if (!data || data.length === 0) return null;
 
@@ -282,7 +284,7 @@ const App = () => {
   const [visibleCount, setVisibleCount] = useState(9);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
-  // LOGICA DE LEITURA ORIGINAL QUE VOCE VALIDOU
+  // LOGICA QUE VOCE VALIDOU COMO FUNCIONAL
   const fetchData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     setRefreshing(true);
@@ -320,9 +322,7 @@ const App = () => {
 
         let datePart = '', timePart = '00:00', ts = 0;
         if (!isNaN(dObj.getTime())) {
-          const localOffset = dObj.getTimezoneOffset() * 60000;
-          const localDate = new Date(dObj.getTime() - localOffset);
-          datePart = localDate.toISOString().split('T')[0];
+          datePart = dObj.toISOString().split('T')[0];
           timePart = dObj.toTimeString().substring(0, 5);
           ts = dObj.getTime();
         } else {
@@ -579,7 +579,7 @@ const App = () => {
             <>
               <div className="flex items-center gap-3 mb-4">
                 <Music className="text-blue-600" size={24} />
-                <h3 className="font-black text-xl text-slate-900 uppercase">Últimas Execuções</h3>
+                <h3 className="font-black text-xl text-slate-900 uppercase">Últimas Execuções ({filteredData.length} músicas)</h3>
               </div>
               {filteredData.slice(filters.search ? 0 : 1, visibleCount + 1).map((track) => (
                 <MusicCard key={track.id} track={track} />
