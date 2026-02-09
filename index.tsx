@@ -129,7 +129,6 @@ const NowPlayingCard = ({ track }: { track: any }) => {
   );
 };
 
-// Card de música normal (lista)
 const MusicCard = ({ track }: { track: any }) => {
   const [artwork, setArtwork] = useState<string | null>(null);
   const [loadingCover, setLoadingCover] = useState(true);
@@ -190,7 +189,6 @@ const MusicCard = ({ track }: { track: any }) => {
   );
 };
 
-// Gráfico de pizza com lógica de "Outros"
 const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObject<HTMLDivElement> }) => {
   if (!data || data.length === 0) return null;
 
@@ -302,7 +300,8 @@ const App = () => {
         return result;
       });
 
-      const header = rows[0].map(h => h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+      // Normalização robusta do cabeçalho
+      const header = rows[0].map(h => h.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
       const idxArt = header.indexOf('artista');
       const idxMus = header.indexOf('musica');
       const idxTim = header.indexOf('tocou_em');
@@ -324,13 +323,14 @@ const App = () => {
 
         let datePart = '', timePart = '00:00', ts = 0;
         if (!isNaN(dObj.getTime())) {
-          // Ajuste rigoroso para garantir a data local correta vinda do CSV
+          // Ajuste para garantir a data local correta
           const localOffset = dObj.getTimezoneOffset() * 60000;
           const localDate = new Date(dObj.getTime() - localOffset);
           datePart = localDate.toISOString().split('T')[0];
           timePart = dObj.toTimeString().substring(0, 5);
           ts = dObj.getTime();
         } else {
+          // Fallback para strings de data manuais
           const parts = rawTime.split(' ');
           datePart = parts[0] || "---";
           timePart = parts[1]?.substring(0, 5) || "00:00";
@@ -338,7 +338,7 @@ const App = () => {
         }
 
         return {
-          id: `t-${i}`,
+          id: `t-${i}-${Math.random()}`,
           artista: row[idxArt] || 'Desconhecido',
           musica: row[idxMus] || 'Sem Título',
           radio: row[idxRad] || 'Metropolitana FM',
@@ -347,7 +347,7 @@ const App = () => {
           hora: timePart,
           timestamp: ts
         };
-      }).filter(t => t.artista !== 'artista' && t.data !== "---");
+      }).filter(t => t.musica && t.musica.toLowerCase() !== 'musica' && t.data !== "---");
 
       const sorted = formatted.sort((a, b) => b.timestamp - a.timestamp);
       setData(sorted);
