@@ -13,26 +13,46 @@ const SHEET_ID = '1xFRBBHpmn38TiBdZcwN2556811FKkfbEEB3HmmdxT1s';
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 const REFRESH_INTERVAL_MS = 30000;
 
-// Cores vibrantes para os gêneros
+// Cores vibrantes com base azul moderna para os gêneros
 const GENRE_COLORS: Record<string, string> = {
-  'Sertanejo': '#FF6B6B',
-  'Pop': '#4ECDC4',
-  'Rock': '#95E1D3',
-  'MPB': '#F38181',
-  'Funk': '#AA96DA',
-  'Pagode': '#FCBAD3',
-  'Rap/Hip Hop': '#A8D8EA',
-  'Eletrônica': '#FFAAA6',
-  'Gospel': '#FFD3B5',
-  'Samba': '#FFA5BA',
-  'Forró': '#FFB86F',
-  'Reggae': '#5FD068',
-  'Jazz': '#8E7CC3',
+  'Sertanejo': '#3B82F6',
+  'Pop': '#0EA5E9',
+  'Rock': '#1E40AF',
+  'MPB': '#60A5FA',
+  'Funk': '#2563EB',
+  'Pagode': '#0284C7',
+  'Rap/Hip Hop': '#1D4ED8',
+  'Eletrônica': '#06B6D4',
+  'Gospel': '#7DD3FC',
+  'Samba': '#1E3A8A',
+  'Forró': '#93C5FD',
+  'Reggae': '#34D399',
+  'Jazz': '#1e293b',
   'Desconhecido': '#D3D3D3',
   'Outros': '#B8B8B8'
 };
 
-// Card da música tocando AGORA - Destaque especial
+// Componente de Tooltip Customizado para mostrar gêneros dentro de "Outros"
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white p-4 rounded-xl shadow-2xl border border-slate-100">
+        <p className="font-black text-slate-800 uppercase text-xs mb-1">{data.name}</p>
+        <p className="font-bold text-blue-600 text-xs">{data.value} músicas ({data.percentage}%)</p>
+        {data.subGenres && (
+          <div className="mt-2 pt-2 border-t border-slate-100">
+            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Composição:</p>
+            <p className="text-[10px] text-slate-600 leading-tight">{data.subGenres.join(', ')}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+  return null;
+};
+
+// Card da música tocando AGORA - Destaque em Azul Moderno
 const NowPlayingCard = ({ track }: { track: any }) => {
   const [artwork, setArtwork] = useState<string | null>(null);
   const [loadingCover, setLoadingCover] = useState(true);
@@ -50,14 +70,14 @@ const NowPlayingCard = ({ track }: { track: any }) => {
   }, [track.artista, track.musica]);
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-pink-600 to-red-600 p-8 rounded-3xl shadow-2xl mb-8">
+    <div className="relative overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-800 p-8 rounded-3xl shadow-2xl mb-8">
       <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent animate-pulse"></div>
       
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-4">
           <span className="flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-sky-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-300"></span>
           </span>
           <span className="text-white/90 font-black text-sm uppercase tracking-wider flex items-center gap-2">
             <Sparkles size={16} /> Tocando Agora
@@ -86,7 +106,7 @@ const NowPlayingCard = ({ track }: { track: any }) => {
             <h2 className="font-black text-3xl sm:text-4xl text-white mb-2 leading-tight drop-shadow-lg">
               {track.musica}
             </h2>
-            <p className="font-bold text-xl sm:text-2xl text-yellow-300 mb-4 drop-shadow-md">
+            <p className="font-bold text-xl sm:text-2xl text-sky-200 mb-4 drop-shadow-md">
               {track.artista}
             </p>
             <div className="flex items-center gap-3 flex-wrap">
@@ -97,7 +117,7 @@ const NowPlayingCard = ({ track }: { track: any }) => {
               {track.genero && track.genero !== 'Desconhecido' && (
                 <span 
                   className="px-4 py-2 rounded-full text-sm font-black uppercase text-white shadow-lg"
-                  style={{ backgroundColor: GENRE_COLORS[track.genero] || '#B8B8B8' }}
+                  style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}
                 >
                   {track.genero}
                 </span>
@@ -148,7 +168,7 @@ const MusicCard = ({ track }: { track: any }) => {
           <h3 className="font-black text-slate-800 text-base truncate leading-tight mb-1">
             {track.musica}
           </h3>
-          <p className="font-bold text-sky-600 text-sm truncate mb-2">
+          <p className="font-bold text-blue-600 text-sm truncate mb-2">
             {track.artista}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
@@ -159,7 +179,7 @@ const MusicCard = ({ track }: { track: any }) => {
             {track.genero && track.genero !== 'Desconhecido' && (
               <span 
                 className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white"
-                style={{ backgroundColor: GENRE_COLORS[track.genero] || '#B8B8B8' }}
+                style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}
               >
                 {track.genero}
               </span>
@@ -171,11 +191,10 @@ const MusicCard = ({ track }: { track: any }) => {
   );
 };
 
-// Gráfico de pizza MODERNIZADO com lógica de "Outros" e sem "Desconhecido"
+// Gráfico de pizza com lógica de "Outros" detalhada e Tooltip Blue
 const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObject<HTMLDivElement> }) => {
   if (!data || data.length === 0) return null;
 
-  // Lógica de agrupamento e limpeza
   const MIN_PERCENTAGE = 3;
   const knownGenres = data.filter(g => g.name !== 'Desconhecido');
   if (knownGenres.length === 0) return null;
@@ -190,20 +209,21 @@ const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObjec
     chartData.push({
       name: 'Outros',
       value: othersValue,
-      percentage: ((othersValue / totalKnown) * 100).toFixed(1)
+      percentage: ((othersValue / totalKnown) * 100).toFixed(1),
+      subGenres: smallGenres.map(g => g.name)
     });
   }
   chartData = chartData.sort((a, b) => b.value - a.value);
 
   return (
-    <div ref={chartRef} className="bg-gradient-to-br from-purple-50 to-pink-50 p-8 rounded-3xl shadow-xl mb-8 border border-purple-100">
+    <div ref={chartRef} className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-3xl shadow-xl mb-8 border border-blue-100">
       <div className="flex items-center gap-4 mb-6">
-        <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-2xl shadow-lg">
+        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-lg">
           <TrendingUp className="text-white" size={28} />
         </div>
         <div>
           <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Análise de Gêneros</h2>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical (Sem Desconhecidos)</p>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical</p>
         </div>
       </div>
       
@@ -218,7 +238,7 @@ const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObjec
               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
               outerRadius={120}
               innerRadius={60}
-              fill="#8884d8"
+              fill="#3B82F6"
               dataKey="value"
               paddingAngle={2}
             >
@@ -231,10 +251,7 @@ const GenreChart = ({ data, chartRef }: { data: any[], chartRef?: React.RefObjec
                 />
               ))}
             </Pie>
-            <Tooltip 
-              formatter={(value: any) => `${value} músicas`}
-              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-            />
+            <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -315,9 +332,13 @@ const App = () => {
           ts = 0;
         }
 
+        // Regra para renomear Jamendo para Independente
+        let artistaRaw = row[idxArt] || 'Desconhecido';
+        const artistaFinal = artistaRaw.toLowerCase() === 'jamendo' ? 'Independente' : artistaRaw;
+
         return {
           id: `t-${i}`,
-          artista: row[idxArt] || 'Desconhecido',
+          artista: artistaFinal,
           musica: row[idxMus] || 'Sem Título',
           radio: row[idxRad] || 'Metropolitana FM',
           genero: row[idxGen] || 'Desconhecido',
@@ -420,7 +441,6 @@ const App = () => {
 
     let y = 45;
 
-    // Tentar adicionar o gráfico no PDF se ele existir
     if (chartRef.current && genreData.length > 0) {
       try {
         const html2canvas = (await import('https://esm.sh/html2canvas@1.4.1')).default;
@@ -441,13 +461,13 @@ const App = () => {
     const renderHeader = () => {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
-      doc.text("HORA", 14, y);      // Coluna HORA (Aprox 18px)
-      doc.text("ARTISTA", 32, y);   // Coluna ARTISTA (Aprox 63px)
-      doc.text("MUSICA", 95, y);    // Coluna MUSICA (Aprox 63px)
-      doc.text("GENERO", 158, y);   // Coluna GENERO (Aprox 38px)
+      doc.text("HORA", 14, y);      
+      doc.text("ARTISTA", 32, y);   
+      doc.text("MUSICA", 95, y);    
+      doc.text("GENERO", 158, y);   
       doc.line(14, y + 1, 196, y + 1);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(7);           // Fonte menor conforme solicitado
+      doc.setFontSize(7);           
     };
 
     renderHeader();
@@ -472,28 +492,28 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <header className="bg-white/80 backdrop-blur-md border-b border-blue-100 sticky top-0 z-50 shadow-sm">
         <div className="max-w-5xl mx-auto px-6 h-24 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-2xl shadow-lg">
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-lg">
               <Radio size={32} className="text-white" />
             </div>
             <div>
               <h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">
                 IA NO RÁDIO
               </h1>
-              <p className="text-xs font-bold text-purple-600 uppercase tracking-wider mt-1">
+              <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">
                 Monitoramento Inteligente
               </p>
             </div>
           </div>
           <button 
             onClick={() => fetchData()} 
-            className="p-4 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-all hover:scale-105 active:scale-95"
+            className="p-4 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-all hover:scale-105 active:scale-95"
           >
             <RefreshCw 
-              className={refreshing ? 'animate-spin text-purple-600' : 'text-slate-600'} 
+              className={refreshing ? 'animate-spin text-blue-600' : 'text-blue-600'} 
               size={24} 
             />
           </button>
@@ -503,7 +523,7 @@ const App = () => {
       <main className="max-w-5xl mx-auto px-6 py-10">
         <div className="bg-white p-8 rounded-3xl shadow-xl mb-8 border border-slate-200">
           <div className="flex items-center gap-3 mb-6">
-            <Filter className="text-purple-600" size={24} />
+            <Filter className="text-blue-600" size={24} />
             <h3 className="font-black text-xl text-slate-900 uppercase tracking-tight">Filtros</h3>
           </div>
 
@@ -517,7 +537,7 @@ const App = () => {
                 }} 
                 className={`py-5 rounded-2xl font-black text-sm uppercase transition-all transform hover:scale-105 active:scale-95 ${
                   filters.radio === r 
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl' 
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl' 
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -531,7 +551,7 @@ const App = () => {
             <input 
               type="text" 
               placeholder="Buscar artista ou música..." 
-              className="w-full pl-14 pr-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-purple-300 transition-all" 
+              className="w-full pl-14 pr-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 transition-all" 
               value={filters.search} 
               onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} 
             />
@@ -539,9 +559,9 @@ const App = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
-              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-600" size={20} />
+              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600" size={20} />
               <select 
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 appearance-none outline-none border-2 border-transparent focus:border-purple-300 transition-all cursor-pointer" 
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 appearance-none outline-none border-2 border-transparent focus:border-blue-300 transition-all cursor-pointer" 
                 value={filters.date} 
                 onChange={e => setFilters(f => ({ ...f, date: e.target.value }))}
               >
@@ -550,9 +570,9 @@ const App = () => {
             </div>
 
             <div className="relative">
-              <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-600" size={20} />
+              <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-600" size={20} />
               <select 
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 appearance-none outline-none border-2 border-transparent focus:border-pink-300 transition-all cursor-pointer" 
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 appearance-none outline-none border-2 border-transparent focus:border-sky-300 transition-all cursor-pointer" 
                 value={filters.hour} 
                 onChange={e => setFilters(f => ({ ...f, hour: e.target.value }))}
               >
@@ -562,9 +582,9 @@ const App = () => {
             </div>
 
             <div className="relative">
-              <Music className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-600" size={20} />
+              <Music className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600" size={20} />
               <select 
-                className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 appearance-none outline-none border-2 border-transparent focus:border-purple-300 transition-all cursor-pointer" 
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 appearance-none outline-none border-2 border-transparent focus:border-blue-300 transition-all cursor-pointer" 
                 value={filters.genero} 
                 onChange={e => setFilters(f => ({ ...f, genero: e.target.value }))}
               >
@@ -576,7 +596,7 @@ const App = () => {
 
           <button 
             onClick={exportPDF} 
-            className="w-full mt-6 py-5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95"
+            className="w-full mt-6 py-5 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95"
           >
             <Download size={20} /> Exportar Relatório PDF
           </button>
@@ -589,7 +609,7 @@ const App = () => {
         <div className="space-y-3">
           {loading ? (
             <div className="py-32 text-center">
-              <Loader2 className="animate-spin mx-auto text-purple-600 mb-6" size={48} />
+              <Loader2 className="animate-spin mx-auto text-blue-600 mb-6" size={48} />
               <p className="font-bold text-slate-500 text-sm uppercase tracking-wider">
                 Carregando dados...
               </p>
@@ -597,9 +617,9 @@ const App = () => {
           ) : filteredData.length > 0 ? (
             <>
               <div className="flex items-center gap-3 mb-4">
-                <Music className="text-purple-600" size={24} />
+                <Music className="text-blue-600" size={24} />
                 <h3 className="font-black text-xl text-slate-900 uppercase">
-                  Últimas Execuções ({filteredData.length} músicas)
+                  Últimas Execuções
                 </h3>
               </div>
               
@@ -610,7 +630,7 @@ const App = () => {
               {filteredData.length > visibleCount + 1 && (
                 <button 
                   onClick={() => setVisibleCount(c => c + 9)} 
-                  className="w-full py-6 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50 text-purple-700 font-black hover:bg-purple-100 transition-all uppercase text-sm tracking-wider flex items-center justify-center gap-2 hover:scale-105 active:scale-95"
+                  className="w-full py-6 rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 font-black hover:bg-blue-100 transition-all uppercase text-sm tracking-wider flex items-center justify-center gap-2 hover:scale-105 active:scale-95"
                 >
                   <Plus size={20} /> Carregar Mais Músicas
                 </button>
