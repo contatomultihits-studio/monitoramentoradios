@@ -147,7 +147,7 @@ const MusicCard = ({ track }: { track: any }) => {
   }, [track.artista, track.musica]);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 mb-3">
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
       <div className="flex items-center gap-4">
         <div className="relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shadow-md">
           {loadingCover ? (
@@ -284,7 +284,7 @@ const App = () => {
   const [visibleCount, setVisibleCount] = useState(9);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
-  // LOGICA QUE VOCE VALIDOU COMO FUNCIONAL
+  // LOGICA DE CARREGAMENTO QUE FUNCIONA
   const fetchData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     setRefreshing(true);
@@ -322,7 +322,9 @@ const App = () => {
 
         let datePart = '', timePart = '00:00', ts = 0;
         if (!isNaN(dObj.getTime())) {
-          datePart = dObj.toISOString().split('T')[0];
+          const localOffset = dObj.getTimezoneOffset() * 60000;
+          const localDate = new Date(dObj.getTime() - localOffset);
+          datePart = localDate.toISOString().split('T')[0];
           timePart = dObj.toTimeString().substring(0, 5);
           ts = dObj.getTime();
         } else {
@@ -342,10 +344,11 @@ const App = () => {
           hora: timePart,
           timestamp: ts
         };
-      }).filter(t => t.artista !== 'artista');
+      }).filter(t => t.artista !== 'artista' && t.data !== "---");
 
       const sorted = formatted.sort((a, b) => b.timestamp - a.timestamp);
       setData(sorted);
+
       if (sorted.length > 0 && !filters.date) {
         setFilters(prev => ({ ...prev, date: sorted[0].data }));
       }
@@ -423,16 +426,20 @@ const App = () => {
       alert('Nenhum registro encontrado para exportar.');
       return;
     }
+
     const doc = new jsPDF();
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
     doc.text(`IA NO RADIO - ${filters.radio}`, 14, 20);
+    
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     const hourLabel = filters.hour === 'all' ? 'Todas as horas' : `${filters.hour}:00`;
     doc.text(`Data: ${filters.date} | Horario: ${hourLabel}`, 14, 28);
     doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 34);
+
     let y = 45;
+
     if (chartRef.current && genreData.length > 0) {
       try {
         const html2canvas = (await import('https://esm.sh/html2canvas@1.4.1')).default;
@@ -442,11 +449,14 @@ const App = () => {
         y += 100;
       } catch (err) { console.error('Erro ao adicionar gráfico:', err); }
     }
+
     if (y > 240) { doc.addPage(); y = 20; }
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.text("PLAYLIST", 14, y);
     y += 8;
+
     const renderHeader = () => {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
@@ -458,8 +468,10 @@ const App = () => {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
     };
+
     renderHeader();
     y += 6;
+
     exportRows.forEach(t => {
       if (y > 280) {
         doc.addPage();
@@ -474,6 +486,7 @@ const App = () => {
       doc.text(generoTxt.substring(0, 18), 158, y);
       y += 6;
     });
+
     doc.save(`IAnoRadio_${filters.radio}_${filters.date}_${hourLabel}.pdf`);
   };
 
