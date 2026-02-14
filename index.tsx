@@ -316,11 +316,12 @@ const App = () => {
         let dObj = new Date(normalizedTime);
         if (isNaN(dObj.getTime())) dObj = new Date(rawTime);
         
-        // CORREÇÃO: Converte UTC para São Paulo (-3h)
-        // O banco salva em UTC, então precisamos ajustar para SP
+        // CORREÇÃO: Converte UTC para São Paulo (subtrai 3h do UTC)
         if (!isNaN(dObj.getTime())) {
           dObj.setHours(dObj.getHours() - 3);
         }
+
+        let datePart = '', timePart = '00:00', ts = 0;
         if (!isNaN(dObj.getTime())) {
           const localOffset = dObj.getTimezoneOffset() * 60000;
           const localDate = new Date(dObj.getTime() - localOffset);
