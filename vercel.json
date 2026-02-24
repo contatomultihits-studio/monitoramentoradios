@@ -1,4 +1,12 @@
 {
-  "cleanUrls": true,
-  "trailingSlash": false
+  "rewrites": [
+    {
+      "source": "/musical",
+      "destination": "/musical.html"
+    },
+    {
+      "source": "/comercial",
+      "destination": "/comercial.html"
+    }
+  ]
 }
