@@ -10,25 +10,76 @@
         body { 
             font-family: 'Inter', sans-serif; 
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .font-black { font-weight: 900 !important; }
+        .btn-monitor {
+            transition: all 0.3s ease;
+        }
+        .btn-monitor:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        .btn-monitor:active {
+            transform: translateY(-4px);
+        }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@19.0.0",
-    "react-dom": "https://esm.sh/react-dom@19.0.0",
-    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "lucide-react": "https://esm.sh/lucide-react@0.460.0",
-    "jspdf": "https://esm.sh/jspdf@2.5.1",
-    "recharts": "https://esm.sh/recharts@2.15.0",
-    "d3-shape": "https://esm.sh/d3-shape@3.2.0"
-  }
-}
-</script>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <div class="max-w-5xl mx-auto px-6 py-10 text-center">
+        <!-- HEADER -->
+        <div class="mb-12">
+            <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-3xl shadow-2xl inline-block mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/>
+                    <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/>
+                    <circle cx="12" cy="12" r="2"/>
+                    <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/>
+                    <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/>
+                </svg>
+            </div>
+            <h1 class="font-black text-5xl tracking-tight text-slate-900 uppercase leading-none mb-4">IA NO RÁDIO</h1>
+            <p class="text-xl font-bold text-blue-600 uppercase tracking-wider">Sistema de Monitoramento Inteligente</p>
+        </div>
+
+        <!-- BOTÕES -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <!-- BOTÃO MUSICAL -->
+            <a href="musical.html" class="btn-monitor block bg-white rounded-3xl shadow-xl p-10 border-4 border-transparent hover:border-purple-400">
+                <div class="bg-gradient-to-br from-purple-500 to-pink-600 p-6 rounded-2xl shadow-lg inline-block mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 18V5l12-2v13"/>
+                        <circle cx="6" cy="18" r="3"/>
+                        <circle cx="18" cy="16" r="3"/>
+                    </svg>
+                </div>
+                <h2 class="font-black text-3xl text-slate-900 uppercase mb-3">Monitoramento<br/>Musical</h2>
+                <p class="text-slate-600 font-bold">Acompanhe músicas e execuções</p>
+            </a>
+
+            <!-- BOTÃO COMERCIAL -->
+            <a href="comercial.html" class="btn-monitor block bg-white rounded-3xl shadow-xl p-10 border-4 border-transparent hover:border-blue-400">
+                <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-2xl shadow-lg inline-block mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/>
+                        <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/>
+                        <circle cx="12" cy="12" r="2"/>
+                        <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/>
+                        <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/>
+                    </svg>
+                </div>
+                <h2 class="font-black text-3xl text-slate-900 uppercase mb-3">Monitoramento<br/>Comercial</h2>
+                <p class="text-slate-600 font-bold">Acompanhe anúncios e inserções</p>
+            </a>
+        </div>
+
+        <!-- FOOTER -->
+        <p class="text-center text-xs font-bold text-slate-300 uppercase tracking-widest mt-16">
+            IA NO RÁDIO · Monitoramento em Tempo Real
+        </p>
+    </div>
 </body>
 </html>
