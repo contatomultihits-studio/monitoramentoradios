@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/musical", "destination": "/musical" },
+    { "source": "/comercial", "destination": "/comercial" }
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false
+}
