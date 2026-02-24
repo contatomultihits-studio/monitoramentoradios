@@ -18,6 +18,7 @@
         .font-black { font-weight: 900 !important; }
         .btn-monitor {
             transition: all 0.3s ease;
+            cursor: pointer;
         }
         .btn-monitor:hover {
             transform: translateY(-8px);
@@ -48,7 +49,7 @@
         <!-- BOTÕES -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <!-- BOTÃO MUSICAL -->
-            <a href="musical.html" class="btn-monitor block bg-white rounded-3xl shadow-xl p-10 border-4 border-transparent hover:border-purple-400">
+            <div onclick="window.location.href='https://monitoramento.ianoradio.com?page=musical'" class="btn-monitor block bg-white rounded-3xl shadow-xl p-10 border-4 border-transparent hover:border-purple-400">
                 <div class="bg-gradient-to-br from-purple-500 to-pink-600 p-6 rounded-2xl shadow-lg inline-block mb-6">
                     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 18V5l12-2v13"/>
@@ -58,10 +59,10 @@
                 </div>
                 <h2 class="font-black text-3xl text-slate-900 uppercase mb-3">Monitoramento<br/>Musical</h2>
                 <p class="text-slate-600 font-bold">Acompanhe músicas e execuções</p>
-            </a>
+            </div>
 
             <!-- BOTÃO COMERCIAL -->
-            <a href="comercial.html" class="btn-monitor block bg-white rounded-3xl shadow-xl p-10 border-4 border-transparent hover:border-blue-400">
+            <div onclick="window.location.href='https://monitoramento.ianoradio.com?page=comercial'" class="btn-monitor block bg-white rounded-3xl shadow-xl p-10 border-4 border-transparent hover:border-blue-400">
                 <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-2xl shadow-lg inline-block mb-6">
                     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/>
@@ -73,7 +74,7 @@
                 </div>
                 <h2 class="font-black text-3xl text-slate-900 uppercase mb-3">Monitoramento<br/>Comercial</h2>
                 <p class="text-slate-600 font-bold">Acompanhe anúncios e inserções</p>
-            </a>
+            </div>
         </div>
 
         <!-- FOOTER -->
@@ -81,5 +82,50 @@
             IA NO RÁDIO · Monitoramento em Tempo Real
         </p>
     </div>
+
+    <script>
+        // Redireciona baseado no parâmetro da URL
+        const params = new URLSearchParams(window.location.search);
+        const page = params.get('page');
+        
+        if (page === 'musical') {
+            // Carrega o conteúdo musical (React)
+            document.body.innerHTML = '<div id="root"></div>';
+            const script = document.createElement('script');
+            script.type = 'module';
+            script.src = '/index.tsx';
+            document.body.appendChild(script);
+            
+            // Adiciona importmap para React
+            const importMap = document.createElement('script');
+            importMap.type = 'importmap';
+            importMap.textContent = JSON.stringify({
+                imports: {
+                    "react": "https://esm.sh/react@19.0.0",
+                    "react-dom": "https://esm.sh/react-dom@19.0.0",
+                    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+                    "lucide-react": "https://esm.sh/lucide-react@0.460.0",
+                    "jspdf": "https://esm.sh/jspdf@2.5.1",
+                    "recharts": "https://esm.sh/recharts@2.15.0",
+                    "d3-shape": "https://esm.sh/d3-shape@3.2.0"
+                }
+            });
+            document.head.appendChild(importMap);
+        } else if (page === 'comercial') {
+            // Redireciona para página comercial
+            window.location.href = 'https://monitoramento.ianoradio.com?page=comercial&load=true';
+        }
+        
+        // Se tiver load=true, carrega o comercial
+        if (page === 'comercial' && params.get('load') === 'true') {
+            fetch('comercial.html')
+                .then(r => r.text())
+                .then(html => {
+                    document.open();
+                    document.write(html.replace('href="index.html"', 'href="https://monitoramento.ianoradio.com"'));
+                    document.close();
+                });
+        }
+    </script>
 </body>
 </html>
