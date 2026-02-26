@@ -27,13 +27,14 @@
 (async () => {
   const SUPABASE_URL = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
-  const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-  const { data: { session } } = await _sb.auth.getSession();
+  // sbGuard evita conflito com window.supabase global do CDN
+  const sbGuard = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  const { data: { session } } = await sbGuard.auth.getSession();
   if (!session) {
-    window.location.href = '/login.html?redirect=/comercial.html';
+    window.location.href = '/login?redirect=/comercial';
   } else {
     window._supabaseSession = session;
-    window._supabaseClient = _sb;
+    window._supabaseClient = sbGuard;
   }
 })();
 </script>
@@ -65,25 +66,21 @@
 
 <main class="max-w-5xl mx-auto px-6 py-10">
 
-  <!-- ERRO -->
   <div id="erro-box" class="hidden mb-6 bg-red-50 border border-red-200 rounded-2xl p-5">
     <p class="font-bold text-red-600 text-sm" id="erro-msg"></p>
   </div>
 
-  <!-- FILTROS -->
   <div class="bg-white p-8 rounded-3xl shadow-xl mb-8 border border-slate-200">
     <div class="flex items-center gap-3 mb-6">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
       <h3 class="font-black text-xl text-slate-900 uppercase tracking-tight">Filtros</h3>
     </div>
-
     <div class="relative mb-4">
-      <svg class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <svg class="absolute left-5 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       <input type="text" id="inp-search" placeholder="Buscar anunciante ou produto..."
         class="w-full pl-14 pr-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 transition-all"
         oninput="onFiltroChange()" />
     </div>
-
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       <div class="relative">
         <svg class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
@@ -105,7 +102,6 @@
         </select>
       </div>
     </div>
-
     <button onclick="exportPDF()"
       class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
@@ -113,7 +109,7 @@
     </button>
   </div>
 
-  <div class="grid grid-cols-2 md:grid-cols-2 gap-4 mb-8">
+  <div class="grid grid-cols-2 gap-4 mb-8">
     <div class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 hover:shadow-2xl hover:-translate-y-1 transition-all">
       <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">📢 Total Comerciais</p>
       <p class="font-black text-4xl text-blue-600" id="stat-comerciais">—</p>
@@ -130,10 +126,7 @@
     <div class="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent"></div>
     <div class="relative z-10">
       <div class="flex items-center gap-3 mb-4">
-        <span class="relative flex h-3 w-3">
-          <span class="animate-ping2 absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-sky-300"></span>
-        </span>
+        <span class="relative flex h-3 w-3"><span class="animate-ping2 absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-sky-300"></span></span>
         <span class="text-white/90 font-black text-sm uppercase tracking-wider">✨ Último Comercial</span>
       </div>
       <div id="destaque-inner"></div>
@@ -150,9 +143,7 @@
         <p class="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição comercial</p>
       </div>
     </div>
-    <div class="bg-white p-6 rounded-2xl shadow-inner">
-      <canvas id="pizza" width="340" height="220" style="display:block;margin:0 auto"></canvas>
-    </div>
+    <div class="bg-white p-6 rounded-2xl shadow-inner"><canvas id="pizza" width="340" height="220" style="display:block;margin:0 auto"></canvas></div>
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6" id="pizza-legend"></div>
   </div>
 
@@ -182,10 +173,7 @@
     <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="top5-grid"></div>
   </div>
 
-  <p class="text-center text-xs font-bold text-slate-300 uppercase tracking-widest mt-12">
-    IA NO RÁDIO · Monitoramento em Tempo Real · Atualização a cada 60s
-  </p>
-
+  <p class="text-center text-xs font-bold text-slate-300 uppercase tracking-widest mt-12">IA NO RÁDIO · Monitoramento em Tempo Real · Atualização a cada 60s</p>
 </main>
 
 <script>
@@ -195,13 +183,12 @@ const TABLE = 'logs_ia_completo';
 const RADIO = 'Maringá FM';
 
 async function fazerLogout() {
-  const sb = window._supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  await sb.auth.signOut();
-  window.location.href = '/login.html';
+  const sb = window._supabaseClient;
+  if (sb) await sb.auth.signOut();
+  window.location.href = '/login';
 }
 
 const PIZZA_CORES = ['#2563eb','#7c3aed','#059669','#ea580c','#0891b2','#db2777','#65a30d','#d97706','#dc2626','#0f766e'];
-
 const SEG_CORES = {
   'Varejo':         { bg:'#eff6ff', text:'#2563eb', border:'#bfdbfe' },
   'Automóveis':     { bg:'#f0fdf4', text:'#16a34a', border:'#bbf7d0' },
@@ -227,7 +214,6 @@ function fmtDateTime(iso) {
   const hRaw=get('hour'), h=hRaw==='24'?'00':hRaw, min=get('minute');
   return { data:`${year}-${month}-${day}`, hora:`${h}:${min}`, dataLabel:`${day}/${month}/${year}`, horaH:h };
 }
-
 function getHojeSaoPaulo() {
   const agora = new Date();
   const fmt = new Intl.DateTimeFormat('en-CA', { timeZone:'America/Sao_Paulo', year:'numeric', month:'2-digit', day:'2-digit' });
@@ -235,13 +221,11 @@ function getHojeSaoPaulo() {
   const get = t => parts.find(p=>p.type===t)?.value||'00';
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
-
 function getAudioInfo(link, offset) {
   if (!link) return null;
   try { return { fileName:link.split('/').pop(), offsetSeg:offset!=null?Number(offset):0 }; } catch(e){return null;}
 }
 async function getAudioBlob(fn) { return `${SUPABASE_URL}/storage/v1/object/public/provas-de-audio/${fn}`; }
-
 async function downloadAudio(link, offset, marca) {
   const info = getAudioInfo(link, offset);
   if (!info) { alert('❌ Arquivo de áudio indisponível'); return; }
@@ -252,31 +236,22 @@ async function downloadAudio(link, offset, marca) {
     const blob = await response.blob();
     const blobUrl = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = blobUrl;
+    a.style.display = 'none'; a.href = blobUrl;
     a.download = `${marca.replace(/[^a-z0-9]/gi, '_')}_${info.fileName}`;
-    document.body.appendChild(a);
-    a.click();
+    document.body.appendChild(a); a.click();
     setTimeout(() => { window.URL.revokeObjectURL(blobUrl); document.body.removeChild(a); }, 100);
   } catch (e) { alert('❌ Erro ao baixar: ' + e.message); }
 }
 
 async function loadData(silent=false) {
   if (!silent) {
-    document.getElementById('lista-container').innerHTML = `
-      <div class="py-32 text-center">
-        <svg class="animate-spin mx-auto text-blue-600 mb-6" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-        <p class="font-black text-slate-400 text-sm uppercase tracking-wider">Carregando dados...</p>
-      </div>`;
+    document.getElementById('lista-container').innerHTML = `<div class="py-32 text-center"><svg class="animate-spin mx-auto text-blue-600 mb-6" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p class="font-black text-slate-400 text-sm uppercase tracking-wider">Carregando dados...</p></div>`;
   }
   const ico = document.getElementById('ico-refresh');
   ico.style.animation = 'spin 1s linear infinite';
   if (!document.getElementById('spin-style')) {
-    const s = document.createElement('style');
-    s.id='spin-style'; s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';
-    document.head.appendChild(s);
+    const s = document.createElement('style'); s.id='spin-style'; s.textContent='@keyframes spin{to{transform:rotate(360deg)}}'; document.head.appendChild(s);
   }
-
   const df = document.getElementById('sel-data').value;
   const tipoFilter = 'tipo_registro=eq.COMERCIAL';
   let url;
@@ -299,9 +274,7 @@ async function loadData(silent=false) {
     document.getElementById('erro-box').classList.remove('hidden');
     document.getElementById('erro-msg').textContent = '⚠️ ' + e.message;
     document.getElementById('lista-container').innerHTML = '';
-  } finally {
-    ico.style.animation = '';
-  }
+  } finally { ico.style.animation = ''; }
 }
 
 function populateDatas() {
@@ -312,12 +285,10 @@ function populateDatas() {
   const datas = datasExistentes.sort().reverse();
   sel.innerHTML='<option value="">Todas as datas</option>'+datas.map(d=>{
     const[y,m,dia]=d.split('-');
-    const isHoje = d === hoje;
-    const label = isHoje ? `${dia}/${m}/${y} (Hoje)` : `${dia}/${m}/${y}`;
+    const label = d===hoje ? `${dia}/${m}/${y} (Hoje)` : `${dia}/${m}/${y}`;
     return`<option value="${d}" ${d===atual?'selected':''}>${label}</option>`;
   }).join('');
 }
-
 function populateHoras() {
   const sel=document.getElementById('sel-hora'), atual=sel.value;
   const df=document.getElementById('sel-data').value;
@@ -333,11 +304,9 @@ function populateSegs() {
   sel.innerHTML='<option value="">Todos os segmentos</option>'+segs.map(s=>`<option value="${s}" ${s===atual?'selected':''}>${s}</option>`).join('');
   if(atual)sel.value=atual;
 }
-
 function getHoraFiltro(){return document.getElementById('sel-hora').value;}
 function getSearch(){return(document.getElementById('inp-search').value||'').toLowerCase();}
 function getSegFiltro(){return document.getElementById('sel-seg').value;}
-
 function getDadosFiltrados() {
   const search=getSearch(), hora=getHoraFiltro(), seg=getSegFiltro();
   return allData.filter(r=>{
@@ -352,25 +321,19 @@ function getBaseFiltrada() {
   const hora=getHoraFiltro(), seg=getSegFiltro();
   return allData.filter(r=>{
     const{horaH}=fmtDateTime(r.horario_execucao);
-    const mH=hora?horaH===hora:true;
-    const mSeg=seg?r.segmento_genero===seg:true;
-    return mH&&mSeg;
+    return (hora?horaH===hora:true)&&(seg?r.segmento_genero===seg:true);
   });
 }
-
 function onFiltroChange(reloadHoras=false) {
   visibleCount=10;
   if(reloadHoras){document.getElementById('sel-hora').value='';loadData(true);}else renderTudo();
 }
-
 function renderTudo(){updateStats();renderDestaque();renderTop5();renderPizza();renderLista();}
-
 function updateStats() {
   const l=getDadosFiltrados();
   document.getElementById('stat-comerciais').textContent = l.length;
   document.getElementById('stat-anunciantes').textContent = new Set(l.map(r=>r.marca_artista)).size;
 }
-
 function renderDestaque() {
   const base=getBaseFiltrada(), ul=base[0], sec=document.getElementById('destaque-sec');
   if(!ul){sec.classList.add('hidden');return;}
@@ -386,18 +349,14 @@ function renderDestaque() {
         <h2 class="font-black text-3xl sm:text-4xl text-white mb-1 leading-tight drop-shadow-lg">${(ul.marca_artista||'').toUpperCase()}</h2>
         <p class="font-bold text-sky-200 text-lg mb-4">${ul.produto_titulo||''}</p>
         <div class="flex items-center gap-3 flex-wrap">
-          <div class="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full">
-            <span class="font-bold text-white text-sm">🕐 ${dataLabel} às ${hora}</span>
-          </div>
+          <div class="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full"><span class="font-bold text-white text-sm">🕐 ${dataLabel} às ${hora}</span></div>
           ${ul.segmento_genero?`<span class="px-4 py-2 rounded-full text-sm font-black text-white shadow-lg" style="background:${sc.text}">🏷 ${ul.segmento_genero}</span>`:''}
           ${ul.duracao_segundos>0?`<span class="px-4 py-2 bg-orange-500/80 rounded-full text-sm font-black text-white">⏱ ${ul.duracao_segundos}s</span>`:''}
         </div>
-        ${info?`<button class="mt-4 flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-full font-bold text-white text-sm transition-all" onclick="loadDestaqueAudio(this)">🎧 Ouvir prova de áudio</button>
-        <audio id="audio-destaque" controls data-link="${ul.link_prova_audio}" data-offset="${ul.offset_segundos??0}" style="display:none;max-width:380px;width:100%;margin-top:10px"></audio>`:`<div class="mt-4 px-4 py-2 bg-white/10 rounded-full inline-block"><span class="text-white/50 text-xs font-bold">🎧 Áudio disponível em breve</span></div>`}
+        ${info?`<button class="mt-4 flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-full font-bold text-white text-sm transition-all" onclick="loadDestaqueAudio(this)">🎧 Ouvir prova de áudio</button><audio id="audio-destaque" controls data-link="${ul.link_prova_audio}" data-offset="${ul.offset_segundos??0}" style="display:none;max-width:380px;width:100%;margin-top:10px"></audio>`:`<div class="mt-4 px-4 py-2 bg-white/10 rounded-full inline-block"><span class="text-white/50 text-xs font-bold">🎧 Áudio disponível em breve</span></div>`}
       </div>
     </div>`;
 }
-
 function renderTop5() {
   const base=getBaseFiltrada(), sec=document.getElementById('top5-sec');
   if(!base.length){sec.classList.add('hidden');return;}
@@ -414,7 +373,6 @@ function renderTop5() {
       <div class="absolute bottom-0 left-0 h-1 rounded-r-full bg-gradient-to-r from-blue-500 to-indigo-400" style="width:${(count/max*100).toFixed(0)}%"></div>
     </div>`).join('');
 }
-
 function renderPizza() {
   const base=getBaseFiltrada(), sec=document.getElementById('grafico-sec');
   if(!base.length){sec.classList.add('hidden');return;}
@@ -440,25 +398,14 @@ function renderPizza() {
   ctx.font='700 11px Inter,sans-serif';ctx.fillStyle='#94a3b8';ctx.fillText('inserções',cx,cy+11);
   document.getElementById('pizza-legend').innerHTML=arr.map(([nome,val],i)=>{
     const pct=((val/total)*100).toFixed(0);
-    return `<div class="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
-      <div class="w-5 h-5 rounded-full shadow-md flex-shrink-0" style="background:${PIZZA_CORES[i%PIZZA_CORES.length]}"></div>
-      <div class="flex-1 min-w-0">
-        <p class="font-black text-sm text-slate-700 uppercase truncate">${nome}</p>
-        <p class="text-xs text-slate-500 font-bold">${val} registros • ${pct}%</p>
-      </div>
-    </div>`;
+    return `<div class="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow"><div class="w-5 h-5 rounded-full shadow-md flex-shrink-0" style="background:${PIZZA_CORES[i%PIZZA_CORES.length]}"></div><div class="flex-1 min-w-0"><p class="font-black text-sm text-slate-700 uppercase truncate">${nome}</p><p class="text-xs text-slate-500 font-bold">${val} registros • ${pct}%</p></div></div>`;
   }).join('');
 }
-
 function renderLista() {
   const lista=getDadosFiltrados();
   document.getElementById('lista-titulo').textContent=`${lista.length} comercia${lista.length!==1?'is':'l'}`;
   if(!lista.length){
-    document.getElementById('lista-container').innerHTML=`
-      <div class="bg-white p-24 rounded-3xl text-center border-4 border-dashed border-slate-200">
-        <p style="font-size:64px;margin-bottom:16px">📭</p>
-        <p class="font-black text-slate-400 uppercase text-lg tracking-wider">Nenhum comercial encontrado</p>
-      </div>`;
+    document.getElementById('lista-container').innerHTML=`<div class="bg-white p-24 rounded-3xl text-center border-4 border-dashed border-slate-200"><p style="font-size:64px;margin-bottom:16px">📭</p><p class="font-black text-slate-400 uppercase text-lg tracking-wider">Nenhum comercial encontrado</p></div>`;
     document.getElementById('btn-mais').classList.add('hidden');
     return;
   }
@@ -466,41 +413,12 @@ function renderLista() {
     const{hora,dataLabel}=fmtDateTime(item.horario_execucao);
     const info=getAudioInfo(item.link_prova_audio,item.offset_segundos);
     const aid=`aw-${i}`, sc=segCor(item.segmento_genero);
-    return `
-    <div class="bg-white border border-slate-200 rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 mb-3 fade-up" style="animation-delay:${Math.min(i*15,200)}ms">
-      <div class="flex items-center gap-4">
-        <div class="relative flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-md bg-blue-100">📢</div>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 mb-1 flex-wrap">
-            <span class="font-black text-slate-800 text-base truncate">${(item.marca_artista||'').toUpperCase()}</span>
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white bg-blue-600">COMERCIAL</span>
-          </div>
-          <p class="font-bold text-slate-500 text-sm truncate mb-2">${item.produto_titulo||''}</p>
-          <div class="flex items-center gap-2 flex-wrap">
-            ${item.segmento_genero?`<span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase" style="background:${sc.bg};color:${sc.text};border:1px solid ${sc.border}">🏷 ${item.segmento_genero}</span>`:''}
-            ${item.duracao_segundos>0?`<span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-orange-100 text-orange-600">⏱ ${item.duracao_segundos}s</span>`:''}
-          </div>
-          ${info?`
-          <div class="flex gap-2 mt-3">
-            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-blue-200 bg-blue-50 text-blue-600 font-bold text-xs hover:bg-blue-600 hover:text-white transition-all" onclick="toggleAudio('${aid}',this)">🎧 Ouvir</button>
-            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600 font-bold text-xs hover:bg-emerald-600 hover:text-white transition-all" onclick="downloadAudio('${item.link_prova_audio}',${item.offset_segundos??0},'${(item.marca_artista||'').replace(/'/g,'')}')">📥 Baixar</button>
-          </div>
-          <div id="${aid}" style="display:none;margin-top:8px">
-            <audio controls data-link="${item.link_prova_audio}" data-offset="${item.offset_segundos??0}" style="width:100%;height:34px"></audio>
-          </div>`:''}
-        </div>
-        <div class="text-right flex-shrink-0 min-w-[80px]">
-          <p class="font-black text-slate-700 text-sm">${hora}</p>
-          <p class="text-xs font-bold text-slate-400 mt-1">${dataLabel}</p>
-        </div>
-      </div>
-    </div>`;
+    return `<div class="bg-white border border-slate-200 rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 mb-3 fade-up" style="animation-delay:${Math.min(i*15,200)}ms"><div class="flex items-center gap-4"><div class="relative flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-md bg-blue-100">📢</div><div class="flex-1 min-w-0"><div class="flex items-center gap-2 mb-1 flex-wrap"><span class="font-black text-slate-800 text-base truncate">${(item.marca_artista||'').toUpperCase()}</span><span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white bg-blue-600">COMERCIAL</span></div><p class="font-bold text-slate-500 text-sm truncate mb-2">${item.produto_titulo||''}</p><div class="flex items-center gap-2 flex-wrap">${item.segmento_genero?`<span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase" style="background:${sc.bg};color:${sc.text};border:1px solid ${sc.border}">🏷 ${item.segmento_genero}</span>`:''}${item.duracao_segundos>0?`<span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-orange-100 text-orange-600">⏱ ${item.duracao_segundos}s</span>`:''}</div>${info?`<div class="flex gap-2 mt-3"><button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-blue-200 bg-blue-50 text-blue-600 font-bold text-xs hover:bg-blue-600 hover:text-white transition-all" onclick="toggleAudio('${aid}',this)">🎧 Ouvir</button><button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600 font-bold text-xs hover:bg-emerald-600 hover:text-white transition-all" onclick="downloadAudio('${item.link_prova_audio}',${item.offset_segundos??0},'${(item.marca_artista||'').replace(/'/g,'')}')">📥 Baixar</button></div><div id="${aid}" style="display:none;margin-top:8px"><audio controls data-link="${item.link_prova_audio}" data-offset="${item.offset_segundos??0}" style="width:100%;height:34px"></audio></div>`:''}</div><div class="text-right flex-shrink-0 min-w-[80px]"><p class="font-black text-slate-700 text-sm">${hora}</p><p class="text-xs font-bold text-slate-400 mt-1">${dataLabel}</p></div></div></div>`;
   }).join('');
   const resto=lista.length-visibleCount;
   const btn=document.getElementById('btn-mais');
   if(resto>0){btn.classList.remove('hidden');}else btn.classList.add('hidden');
 }
-
 async function toggleAudio(id,btn){
   const el=document.getElementById(id), aberto=el.style.display!=='none';
   if(aberto){el.style.display='none';btn.innerHTML='🎧 Ouvir';btn.className='flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-blue-200 bg-blue-50 text-blue-600 font-bold text-xs hover:bg-blue-600 hover:text-white transition-all';return;}
@@ -513,9 +431,7 @@ async function toggleAudio(id,btn){
   audio.addEventListener('canplay',()=>{if(info.offsetSeg>0)audio.currentTime=info.offsetSeg;audio.play();},{once:true});
   el.style.display='block';btn.innerHTML='🔇 Fechar';btn.disabled=false;
 }
-
 function carregarMais(){visibleCount+=10;renderLista();}
-
 async function loadDestaqueAudio(btn){
   const audio=document.getElementById('audio-destaque');if(!audio)return;
   btn.innerHTML='⏳ Carregando...';btn.disabled=true;
@@ -525,7 +441,6 @@ async function loadDestaqueAudio(btn){
   audio.addEventListener('canplay',()=>{if(info.offsetSeg>0)audio.currentTime=info.offsetSeg;audio.play();},{once:true});
   audio.style.display='block';btn.style.display='none';
 }
-
 function exportPDF(){
   const lista=getDadosFiltrados();
   if(!lista.length){alert('Nenhum registro para exportar.');return;}
@@ -584,7 +499,6 @@ function exportPDF(){
   for(let p=1;p<=pgs;p++){doc.setPage(p);doc.setFontSize(7);doc.setTextColor(203,213,225);doc.text(`IA NO RADIO — PAG ${p}/${pgs}`,14,292);}
   doc.save(`IAnoRadio_${dataLabel.replace(/\//g,'-')}_${hf||'completo'}.pdf`);
 }
-
 function hexToRgb(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return[r,g,b];}
 
 loadData();
