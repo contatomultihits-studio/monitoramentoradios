@@ -34,13 +34,14 @@
     (async () => {
       const SUPABASE_URL = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
       const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
-      const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-      const { data: { session } } = await _sb.auth.getSession();
+      // sbGuard evita conflito com window.supabase global do CDN
+      const sbGuard = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+      const { data: { session } } = await sbGuard.auth.getSession();
       if (!session) {
-        window.location.href = '/login.html?redirect=/musical.html';
+        window.location.href = '/login?redirect=/musical';
       } else {
         window._supabaseSession = session;
-        window._supabaseClient = _sb;
+        window._supabaseClient = sbGuard;
       }
     })();
     </script>
