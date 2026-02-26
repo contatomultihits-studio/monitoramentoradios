@@ -6,6 +6,7 @@
     <title>IA NO RÁDIO - Monitoramento Musical</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { 
             font-family: 'Inter', sans-serif; 
@@ -28,6 +29,21 @@
 </script>
 </head>
 <body>
+    <!-- AUTH GUARD -->
+    <script>
+    (async () => {
+      const SUPABASE_URL = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
+      const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
+      const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+      const { data: { session } } = await _sb.auth.getSession();
+      if (!session) {
+        window.location.href = '/login.html?redirect=/musical.html';
+      } else {
+        window._supabaseSession = session;
+        window._supabaseClient = _sb;
+      }
+    })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
