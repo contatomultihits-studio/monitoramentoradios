@@ -9,7 +9,8 @@ export default defineConfig({
       input: {
         main: './index.html',
         musical: './musical.html',
-        comercial: './comercial.html'
+        comercial: './comercial.html',
+        login: './login.html'
       }
     }
   }
