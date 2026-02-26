@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IA NO RÁDIO — Criar sua senha</title>
+  <link rel="icon" href="data:," />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    .fade-up { animation: fadeUp 0.35s ease forwards; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 0.8s linear infinite; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+
+  <div class="w-full max-w-md fade-up">
+
+    <div class="text-center mb-10">
+      <div class="inline-flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 p-5 rounded-3xl shadow-2xl mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h1 class="font-black text-3xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1>
+      <p class="text-sm font-bold text-blue-600 uppercase tracking-wider mt-2">Primeiro Acesso · Crie sua senha</p>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
+
+      <div class="bg-blue-50 border border-blue-200 rounded-2xl px-5 py-4 mb-6">
+        <p class="font-bold text-blue-700 text-sm">👋 Bem-vindo! Por segurança, crie uma senha pessoal para continuar.</p>
+      </div>
+
+      <div id="alerta" class="hidden mb-5 bg-red-50 border border-red-200 rounded-2xl px-5 py-4">
+        <p class="font-bold text-red-600 text-sm" id="alerta-msg"></p>
+      </div>
+
+      <form onsubmit="trocarSenha(event)">
+        <div class="mb-4">
+          <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Nova Senha</label>
+          <div class="relative">
+            <svg class="absolute left-4 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input id="inp-nova" type="password" placeholder="Mínimo 8 caracteres" required minlength="8"
+              class="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 transition-all" />
+          </div>
+        </div>
+        <div class="mb-6">
+          <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Confirmar Senha</label>
+          <div class="relative">
+            <svg class="absolute left-4 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input id="inp-confirma" type="password" placeholder="Repita a nova senha" required minlength="8"
+              class="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 transition-all" />
+          </div>
+        </div>
+        <button type="submit" id="btn-trocar"
+          class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+          Salvar minha senha
+        </button>
+      </form>
+    </div>
+
+    <p class="text-center text-xs font-bold text-slate-300 uppercase tracking-widest mt-8">
+      IA NO RÁDIO · Seus dados estão protegidos
+    </p>
+  </div>
+
+<script>
+  const SUPABASE_URL = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
+  const sbTrocar = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  // Verifica se está logado
+  (async () => {
+    const { data: { session } } = await sbTrocar.auth.getSession();
+    if (!session) {
+      window.location.href = '/login';
+    }
+  })();
+
+  async function trocarSenha(e) {
+    e.preventDefault();
+    const nova = document.getElementById('inp-nova').value;
+    const confirma = document.getElementById('inp-confirma').value;
+    const btn = document.getElementById('btn-trocar');
+
+    if (nova !== confirma) {
+      document.getElementById('alerta').classList.remove('hidden');
+      document.getElementById('alerta-msg').textContent = '❌ As senhas não coincidem. Tente novamente.';
+      return;
+    }
+    if (nova.length < 8) {
+      document.getElementById('alerta').classList.remove('hidden');
+      document.getElementById('alerta-msg').textContent = '❌ A senha precisa ter pelo menos 8 caracteres.';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Salvando...';
+    document.getElementById('alerta').classList.add('hidden');
+
+    // 1. Atualiza a senha no Supabase Auth
+    const { error: errSenha } = await sbTrocar.auth.updateUser({ password: nova });
+    if (errSenha) {
+      btn.disabled = false;
+      btn.innerHTML = 'Salvar minha senha';
+      document.getElementById('alerta').classList.remove('hidden');
+      document.getElementById('alerta-msg').textContent = '❌ Erro ao salvar senha: ' + errSenha.message;
+      return;
+    }
+
+    // 2. Marca senha_alterada = true na tabela perfis_usuarios
+    const { data: { session } } = await sbTrocar.auth.getSession();
+    await sbTrocar.from('perfis_usuarios')
+      .update({ senha_alterada: true })
+      .eq('user_id', session.user.id);
+
+    // 3. Redireciona para o sistema
+    const redirect = new URLSearchParams(window.location.search).get('redirect') || '/comercial';
+    window.location.href = redirect;
+  }
+</script>
+</body>
+</html>
