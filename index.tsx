@@ -14,13 +14,6 @@ const REFRESH_INTERVAL_MS = 30000;
 // Pega Supabase client do window (já criado no musical.html)
 const getSupabaseClient = () => (window as any)._supabaseClient;
 
-// Função para converter UTC para horário de Brasília (UTC-3)
-const convertToBrazilTime = (utcDate: Date) => {
-  // Cria nova data ajustando para Brasília (UTC-3)
-  const brazilDate = new Date(utcDate.getTime() - (3 * 60 * 60 * 1000));
-  return brazilDate;
-};
-
 // Cores vibrantes em tons de AZUL para os gêneros
 const GENRE_COLORS: Record<string, string> = {
   'Sertanejo': '#3B82F6',
@@ -266,7 +259,7 @@ const App = () => {
   const [visibleCount, setVisibleCount] = useState(9);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
-  // Busca dados do Supabase com conversão de timezone
+  // Busca dados do Supabase
   const fetchData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     setRefreshing(true);
@@ -284,9 +277,24 @@ const App = () => {
       if (queryError) throw queryError;
       
       const formatted = tracks.map((t: any) => {
-        // Converte UTC para Brasília
+        // Cria objeto Date a partir do timestamp UTC do banco
         const utcDate = new Date(t.tocou_em);
-        const brazilDate = convertToBrazilTime(utcDate);
+        
+        // Formata para timezone de São Paulo
+        const brazilDateStr = utcDate.toLocaleString('pt-BR', { 
+          timeZone: 'America/Sao_Paulo',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+        
+        // Extrai data e hora do formato brasileiro
+        const [datePart, timePart] = brazilDateStr.split(', ');
+        const [day, month, year] = datePart.split('/');
+        const isoDate = `${year}-${month}-${day}`;
         
         return {
           id: t.id,
@@ -294,9 +302,9 @@ const App = () => {
           musica: t.musica || 'Sem Título',
           radio: t.radio || 'Metropolitana FM',
           genero: t.genero || 'Desconhecido',
-          data: brazilDate.toISOString().split('T')[0],
-          hora: brazilDate.toTimeString().substring(0, 5),
-          timestamp: brazilDate.getTime(),
+          data: isoDate,
+          hora: timePart,
+          timestamp: utcDate.getTime(),
           capa: t.capa,
           bpm: t.bpm
         };
