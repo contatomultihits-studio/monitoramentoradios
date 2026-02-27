@@ -14,6 +14,13 @@ const REFRESH_INTERVAL_MS = 30000;
 // Pega Supabase client do window (já criado no musical.html)
 const getSupabaseClient = () => (window as any)._supabaseClient;
 
+// Função para converter UTC para horário de Brasília (UTC-3)
+const convertToBrazilTime = (utcDate: Date) => {
+  // Cria nova data ajustando para Brasília (UTC-3)
+  const brazilDate = new Date(utcDate.getTime() - (3 * 60 * 60 * 1000));
+  return brazilDate;
+};
+
 // Cores vibrantes em tons de AZUL para os gêneros
 const GENRE_COLORS: Record<string, string> = {
   'Sertanejo': '#3B82F6',
@@ -259,7 +266,7 @@ const App = () => {
   const [visibleCount, setVisibleCount] = useState(9);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
-  // NOVA LÓGICA: Busca dados do Supabase
+  // Busca dados do Supabase com conversão de timezone
   const fetchData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     setRefreshing(true);
@@ -277,7 +284,9 @@ const App = () => {
       if (queryError) throw queryError;
       
       const formatted = tracks.map((t: any) => {
-        const dObj = new Date(t.tocou_em);
+        // Converte UTC para Brasília
+        const utcDate = new Date(t.tocou_em);
+        const brazilDate = convertToBrazilTime(utcDate);
         
         return {
           id: t.id,
@@ -285,9 +294,9 @@ const App = () => {
           musica: t.musica || 'Sem Título',
           radio: t.radio || 'Metropolitana FM',
           genero: t.genero || 'Desconhecido',
-          data: dObj.toISOString().split('T')[0],
-          hora: dObj.toTimeString().substring(0, 5),
-          timestamp: dObj.getTime(),
+          data: brazilDate.toISOString().split('T')[0],
+          hora: brazilDate.toTimeString().substring(0, 5),
+          timestamp: brazilDate.getTime(),
           capa: t.capa,
           bpm: t.bpm
         };
