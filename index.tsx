@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { 
   Search, Calendar, Clock, RefreshCw, Radio, 
@@ -258,8 +258,11 @@ const App = () => {
   const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', bpm: 'all' });
   const [visibleCount, setVisibleCount] = useState(9);
   const chartRef = React.useRef<HTMLDivElement>(null);
+  
+  // ⭐ NOVO: useRef para manter referência estável do fetchData
+  const fetchDataRef = useRef<(isSilent?: boolean) => Promise<void>>();
 
-  // Busca dados do Supabase - SEM DEPENDÊNCIA DE filters.date!
+  // Busca dados do Supabase
   const fetchData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     setRefreshing(true);
@@ -277,10 +280,8 @@ const App = () => {
       if (queryError) throw queryError;
       
       const formatted = tracks.map((t: any) => {
-        // Cria objeto Date a partir do timestamp UTC do banco
         const utcDate = new Date(t.tocou_em);
         
-        // Formata para timezone de São Paulo
         const brazilDateStr = utcDate.toLocaleString('pt-BR', { 
           timeZone: 'America/Sao_Paulo',
           year: 'numeric',
@@ -291,7 +292,6 @@ const App = () => {
           hour12: false
         });
         
-        // Extrai data e hora do formato brasileiro
         const [datePart, timePart] = brazilDateStr.split(', ');
         const [day, month, year] = datePart.split('/');
         const isoDate = `${year}-${month}-${day}`;
@@ -326,18 +326,26 @@ const App = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []); // ⬅️ SEM DEPENDÊNCIAS! Resolve loop infinito
+  }, []);
+
+  // ⭐ Atualiza ref quando fetchData muda
+  useEffect(() => {
+    fetchDataRef.current = fetchData;
+  }, [fetchData]);
 
   // Carrega dados APENAS UMA VEZ ao montar
   useEffect(() => { 
     fetchData(); 
-  }, []); // ⬅️ Array vazio = executa só 1x
-
-  // Auto-refresh a cada 30s
-  useEffect(() => {
-    const interval = setInterval(() => fetchData(true), REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
   }, [fetchData]);
+
+  // ⭐ CORRIGIDO: Auto-refresh SEM fetchData nas dependências
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchDataRef.current?.(true);
+    }, REFRESH_INTERVAL_MS);
+    
+    return () => clearInterval(interval);
+  }, []); // ⬅️ Array vazio = sem re-renders!
 
   const filteredData = useMemo(() => {
     return data.filter(t => {
@@ -555,7 +563,8 @@ const App = () => {
             </select>
             <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.genero} onChange={e => setFilters(f => ({ ...f, genero: e.target.value }))}>
               <option value="">Todos os gêneros</option>
-              {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}</select>
+              {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
             <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.bpm} onChange={e => setFilters(f => ({ ...f, bpm: e.target.value }))}>
               <option value="all">Todos os BPMs</option>
               <option value="slow">🐢 Lento (&lt;100)</option>
