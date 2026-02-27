@@ -259,7 +259,7 @@ const App = () => {
   const [visibleCount, setVisibleCount] = useState(9);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
-  // Busca dados do Supabase
+  // Busca dados do Supabase - SEM DEPENDÊNCIA DE filters.date!
   const fetchData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     setRefreshing(true);
@@ -312,9 +312,13 @@ const App = () => {
       
       setData(formatted);
       
-      if (formatted.length > 0 && !filters.date) {
-        setFilters(prev => ({ ...prev, date: formatted[0].data }));
-      }
+      // Define data inicial APENAS se não tiver sido definida antes
+      setFilters(prev => {
+        if (!prev.date && formatted.length > 0) {
+          return { ...prev, date: formatted[0].data };
+        }
+        return prev;
+      });
     } catch (err: any) {
       console.error('Erro ao buscar dados:', err);
       if (!isSilent) setError(err.message);
@@ -322,9 +326,14 @@ const App = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [filters.date]);
+  }, []); // ⬅️ SEM DEPENDÊNCIAS! Resolve loop infinito
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // Carrega dados APENAS UMA VEZ ao montar
+  useEffect(() => { 
+    fetchData(); 
+  }, []); // ⬅️ Array vazio = executa só 1x
+
+  // Auto-refresh a cada 30s
   useEffect(() => {
     const interval = setInterval(() => fetchData(true), REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
@@ -546,8 +555,7 @@ const App = () => {
             </select>
             <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.genero} onChange={e => setFilters(f => ({ ...f, genero: e.target.value }))}>
               <option value="">Todos os gêneros</option>
-              {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}
-            </select>
+              {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}</select>
             <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.bpm} onChange={e => setFilters(f => ({ ...f, bpm: e.target.value }))}>
               <option value="all">Todos os BPMs</option>
               <option value="slow">🐢 Lento (&lt;100)</option>
