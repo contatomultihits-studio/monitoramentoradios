@@ -259,7 +259,6 @@ const App = () => {
   const [visibleCount, setVisibleCount] = useState(9);
   const chartRef = React.useRef<HTMLDivElement>(null);
   
-  // ⭐ NOVO: useRef para manter referência estável do fetchData
   const fetchDataRef = useRef<(isSilent?: boolean) => Promise<void>>();
 
   // Busca dados do Supabase
@@ -312,7 +311,6 @@ const App = () => {
       
       setData(formatted);
       
-      // Define data inicial APENAS se não tiver sido definida antes
       setFilters(prev => {
         if (!prev.date && formatted.length > 0) {
           return { ...prev, date: formatted[0].data };
@@ -328,24 +326,21 @@ const App = () => {
     }
   }, []);
 
-  // ⭐ Atualiza ref quando fetchData muda
   useEffect(() => {
     fetchDataRef.current = fetchData;
   }, [fetchData]);
 
-  // Carrega dados APENAS UMA VEZ ao montar
   useEffect(() => { 
     fetchData(); 
   }, [fetchData]);
 
-  // ⭐ CORRIGIDO: Auto-refresh SEM fetchData nas dependências
   useEffect(() => {
     const interval = setInterval(() => {
       fetchDataRef.current?.(true);
     }, REFRESH_INTERVAL_MS);
     
     return () => clearInterval(interval);
-  }, []); // ⬅️ Array vazio = sem re-renders!
+  }, []);
 
   const filteredData = useMemo(() => {
     return data.filter(t => {
@@ -356,7 +351,6 @@ const App = () => {
       const matchGenero = filters.genero ? t.genero === filters.genero : true;
       const matchHour = filters.hour !== 'all' ? t.hora.startsWith(`${filters.hour}:`) : true;
       
-      // Filtro BPM
       let matchBpm = true;
       if (filters.bpm !== 'all' && t.bpm) {
         if (filters.bpm === 'slow') matchBpm = t.bpm < 100;
@@ -618,5 +612,36 @@ const App = () => {
   );
 };
 
-const root = createRoot(document.getElementById('root')!);
-root.render(<App />);
+// ⭐ AGUARDA SUPABASE CLIENT ESTAR PRONTO ANTES DE RENDERIZAR
+(async () => {
+  const maxAttempts = 10;
+  let attempts = 0;
+  
+  console.log('[REACT] Aguardando Supabase client...');
+  
+  while (attempts < maxAttempts) {
+    if ((window as any)._supabaseReady && (window as any)._supabaseClient) {
+      console.log('[REACT] ✅ Client pronto, renderizando App!');
+      const root = createRoot(document.getElementById('root')!);
+      root.render(<App />);
+      return;
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    attempts++;
+    console.log(`[REACT] Tentativa ${attempts}/${maxAttempts}...`);
+  }
+  
+  console.error('[REACT] ❌ Timeout: Supabase client não inicializou');
+  document.getElementById('root')!.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#EF4444,#DC2626);">
+      <div style="text-align:center;color:white;padding:2rem;">
+        <h1 style="font-size:2rem;font-weight:900;margin-bottom:1rem;">❌ Erro de Inicialização</h1>
+        <p style="margin-bottom:2rem;">Não foi possível conectar ao banco de dados.</p>
+        <button onclick="location.reload()" style="background:white;color:#DC2626;padding:1rem 2rem;border:none;border-radius:0.5rem;font-weight:bold;cursor:pointer;">
+          Tentar Novamente
+        </button>
+      </div>
+    </div>
+  `;
+})();
