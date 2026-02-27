@@ -13,31 +13,6 @@
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
         }
         .font-black { font-weight: 900 !important; }
-        
-        /* Loader enquanto inicializa */
-        #init-loader {
-            position: fixed;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
-            z-index: 9999;
-        }
-        #init-loader.hidden {
-            display: none;
-        }
-        .spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
     </style>
 <script type="importmap">
 {
@@ -54,68 +29,34 @@
 </script>
 </head>
 <body>
-    <!-- LOADER INICIAL -->
-    <div id="init-loader">
-        <div>
-            <div class="spinner"></div>
-            <p class="text-white font-bold text-sm mt-4 text-center">Carregando...</p>
-        </div>
-    </div>
-
-    <!-- AUTH GUARD + SUPABASE INIT -->
+    <!-- AUTH GUARD -->
     <script>
     (async () => {
-      try {
-        const SUPABASE_URL = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
-        const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
-        
-        console.log('[INIT] Criando Supabase client...');
-        const sbGuard = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-        
-        console.log('[INIT] Verificando sessão...');
-        const { data: { session } } = await sbGuard.auth.getSession();
-        
-        if (!session) {
-          console.log('[INIT] Sem sessão, redirecionando para login...');
-          window.location.href = '/login?redirect=/musical';
-          return;
-        }
-        
-        console.log('[INIT] Sessão válida, configurando client global...');
-        window._supabaseSession = session;
-        window._supabaseClient = sbGuard;
-        
-        // ⭐ AGUARDA 100ms para garantir que window._supabaseClient está disponível
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        console.log('[INIT] Client pronto, carregando React app...');
-        
-        // Remove loader
-        document.getElementById('init-loader').classList.add('hidden');
-        
-        // Carrega o React app APENAS DEPOIS que o client está pronto
-        const script = document.createElement('script');
-        script.type = 'module';
-        script.src = '/index.tsx';
-        document.body.appendChild(script);
-        
-        console.log('[INIT] ✅ Inicialização completa!');
-        
-      } catch (error) {
-        console.error('[INIT] ❌ Erro fatal:', error);
-        document.getElementById('init-loader').innerHTML = `
-          <div class="text-center text-white">
-            <p class="font-bold text-lg mb-2">❌ Erro ao inicializar</p>
-            <p class="text-sm opacity-80">${error.message}</p>
-            <button onclick="location.reload()" class="mt-4 px-6 py-2 bg-white text-blue-600 rounded-lg font-bold hover:bg-blue-50">
-              Tentar Novamente
-            </button>
-          </div>
-        `;
+      const SUPABASE_URL = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
+      const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
+      
+      console.log('[INIT] Criando Supabase client...');
+      const sbGuard = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+      
+      console.log('[INIT] Verificando sessão...');
+      const { data: { session } } = await sbGuard.auth.getSession();
+      
+      if (!session) {
+        console.log('[INIT] Sem sessão, redirecionando...');
+        window.location.href = '/login?redirect=/musical';
+        return;
       }
+      
+      console.log('[INIT] Sessão válida, configurando globals...');
+      window._supabaseSession = session;
+      window._supabaseClient = sbGuard;
+      window._supabaseReady = true; // ⭐ FLAG para index.tsx saber que pode iniciar
+      
+      console.log('[INIT] ✅ Client pronto!');
     })();
     </script>
     
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>
