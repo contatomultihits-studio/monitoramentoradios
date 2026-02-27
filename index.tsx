@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { 
   Search, Calendar, Clock, RefreshCw, Radio, 
   Music, Loader2, Plus, Download, PieChart as PieChartIcon,
-  TrendingUp, Sparkles, Filter
+  TrendingUp, Sparkles, Filter, Megaphone
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -504,19 +504,24 @@ const App = () => {
                 IA NO RÁDIO
               </h1>
               <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">
-                Monitoramento Inteligente
+                Monitoramento Musical
               </p>
             </div>
           </div>
-          <button 
-            onClick={() => fetchData()} 
-            className="p-4 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-all hover:scale-105 active:scale-95"
-          >
-            <RefreshCw 
-              className={refreshing ? 'animate-spin text-blue-600' : 'text-blue-600'} 
-              size={24} 
-            />
-          </button>
+          <div className="flex items-center gap-3">
+            <a href="/comercial" className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 rounded-xl font-bold text-emerald-700 text-xs uppercase tracking-wider transition-all flex items-center gap-2">
+              <Megaphone size={14} /> Ver Comercial
+            </a>
+            <button 
+              onClick={() => fetchData()} 
+              className="p-4 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-all hover:scale-105 active:scale-95"
+            >
+              <RefreshCw 
+                className={refreshing ? 'animate-spin text-blue-600' : 'text-blue-600'} 
+                size={24} 
+              />
+            </button>
+          </div>
         </div>
       </header>
 
