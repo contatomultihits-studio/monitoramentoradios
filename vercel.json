@@ -18,6 +18,10 @@
       "destination": "/comercial.html"
     },
     {
+      "source": "/comercial-dashboard",
+      "destination": "/comercial-dashboard.html"
+    },
+    {
       "source": "/",
       "destination": "/index.html"
     }
