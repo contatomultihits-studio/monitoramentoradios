@@ -3,15 +3,16 @@ import { createRoot } from 'react-dom/client';
 import { 
   Search, Calendar, Clock, RefreshCw, Radio, 
   Music, Loader2, Plus, Download, PieChart as PieChartIcon,
-  TrendingUp, Sparkles, Filter, Megaphone
+  TrendingUp, Sparkles, Filter, Megaphone, Activity
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 // --- CONFIGURAÇÕES ---
-const SHEET_ID = '1xFRBBHpmn38TiBdZcwN2556811FKkfbEEB3HmmdxT1s';
-const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 const REFRESH_INTERVAL_MS = 30000;
+
+// Pega Supabase client do window (já criado no musical.html)
+const getSupabaseClient = () => (window as any)._supabaseClient;
 
 // Cores vibrantes em tons de AZUL para os gêneros
 const GENRE_COLORS: Record<string, string> = {
@@ -54,21 +55,6 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 // Card da música tocando AGORA - TEMA AZUL
 const NowPlayingCard = ({ track }: { track: any }) => {
-  const [artwork, setArtwork] = useState<string | null>(null);
-  const [loadingCover, setLoadingCover] = useState(true);
-
-  useEffect(() => {
-    const fetchCover = async () => {
-      const query = `${track.artista} ${track.musica}`.toLowerCase().trim();
-      try {
-        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=1`);
-        const data = await res.json();
-        setArtwork(data.results?.[0]?.artworkUrl100 || null);
-      } catch (e) { setArtwork(null); } finally { setLoadingCover(false); }
-    };
-    fetchCover();
-  }, [track.artista, track.musica]);
-
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-800 p-8 rounded-3xl shadow-2xl mb-8">
       <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent animate-pulse"></div>
@@ -87,12 +73,8 @@ const NowPlayingCard = ({ track }: { track: any }) => {
         <div className="flex items-center gap-6">
           <div className="relative flex-shrink-0">
             <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/20">
-              {loadingCover ? (
-                <div className="w-full h-full animate-pulse bg-white/10 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-white/40" size={32} />
-                </div>
-              ) : artwork ? (
-                <img src={artwork.replace('100x100', '600x600')} alt="Capa" className="w-full h-full object-cover" />
+              {track.capa ? (
+                <img src={track.capa} alt="Capa" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-white/10">
                   <Music size={48} className="text-white/40" />
@@ -121,6 +103,12 @@ const NowPlayingCard = ({ track }: { track: any }) => {
                   {track.genero}
                 </span>
               )}
+              {track.bpm && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500 rounded-full shadow-lg">
+                  <Activity size={16} className="text-white" />
+                  <span className="font-black text-white text-sm">{track.bpm} BPM</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -131,31 +119,12 @@ const NowPlayingCard = ({ track }: { track: any }) => {
 
 // Card de música normal (lista)
 const MusicCard = ({ track }: { track: any }) => {
-  const [artwork, setArtwork] = useState<string | null>(null);
-  const [loadingCover, setLoadingCover] = useState(true);
-
-  useEffect(() => {
-    const fetchCover = async () => {
-      const query = `${track.artista} ${track.musica}`.toLowerCase().trim();
-      try {
-        const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=1`);
-        const data = await res.json();
-        setArtwork(data.results?.[0]?.artworkUrl100 || null);
-      } catch (e) { setArtwork(null); } finally { setLoadingCover(false); }
-    };
-    fetchCover();
-  }, [track.artista, track.musica]);
-
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
       <div className="flex items-center gap-4">
         <div className="relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shadow-md">
-          {loadingCover ? (
-            <div className="w-full h-full animate-pulse bg-slate-200 flex items-center justify-center">
-              <Loader2 className="animate-spin text-slate-300" size={16} />
-            </div>
-          ) : artwork ? (
-            <img src={artwork.replace('100x100', '300x300')} alt="Capa" className="w-full h-full object-cover" />
+          {track.capa ? (
+            <img src={track.capa} alt="Capa" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-300">
               <Music size={20} />
@@ -182,6 +151,12 @@ const MusicCard = ({ track }: { track: any }) => {
               >
                 {track.genero}
               </span>
+            )}
+            {track.bpm && (
+              <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500 rounded-full">
+                <Activity size={10} className="text-white" />
+                <span className="font-black text-[10px] text-white">{track.bpm} BPM</span>
+              </div>
             )}
           </div>
         </div>
@@ -280,84 +255,55 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all' });
+  const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', bpm: 'all' });
   const [visibleCount, setVisibleCount] = useState(9);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
-  // LOGICA DE CARREGAMENTO QUE FUNCIONA
+  // NOVA LÓGICA: Busca dados do Supabase
   const fetchData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     setRefreshing(true);
+    
     try {
-      const response = await fetch(`${CSV_URL}&cache_bust=${Date.now()}`);
-      const csvText = await response.text();
-      const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
-      const rows = lines.map(line => {
-        const result = []; let cur = ''; let inQuotes = false;
-        for (let char of line) { 
-          if (char === '"') inQuotes = !inQuotes; 
-          else if (char === ',' && !inQuotes) { result.push(cur.trim()); cur = ''; } 
-          else cur += char; 
-        }
-        result.push(cur.trim()); 
-        return result;
-      });
+      const supabase = getSupabaseClient();
+      if (!supabase) throw new Error('Supabase client não disponível');
 
-      const header = rows[0].map(h => h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
-      const idxArt = header.indexOf('artista');
-      const idxMus = header.indexOf('musica');
-      const idxTim = header.indexOf('tocou_em');
-      const idxRad = header.indexOf('radio');
-      const idxGen = header.indexOf('genero');
-
-      const formatted = rows.slice(1).map((row, i) => {
-        const rawTime = row[idxTim] || '';
-        const normalizedTime = rawTime.replace(/-/g, '/');
-        let dObj = new Date(normalizedTime);
-        if (isNaN(dObj.getTime())) dObj = new Date(rawTime);
+      const { data: tracks, error: queryError } = await supabase
+        .from('radio_airplay')
+        .select('*')
+        .order('tocou_em', { ascending: false })
+        .limit(1000);
+      
+      if (queryError) throw queryError;
+      
+      const formatted = tracks.map((t: any) => {
+        const dObj = new Date(t.tocou_em);
         
-        // CORREÇÃO: Converte UTC para São Paulo (subtrai 3h do UTC)
-        if (!isNaN(dObj.getTime())) {
-          dObj.setHours(dObj.getHours() - 3);
-        }
-
-        let datePart = '', timePart = '00:00', ts = 0;
-        if (!isNaN(dObj.getTime())) {
-          const localOffset = dObj.getTimezoneOffset() * 60000;
-          const localDate = new Date(dObj.getTime() - localOffset);
-          datePart = localDate.toISOString().split('T')[0];
-          timePart = dObj.toTimeString().substring(0, 5);
-          ts = dObj.getTime();
-        } else {
-          const parts = rawTime.split(' ');
-          datePart = parts[0] || "---";
-          timePart = parts[1]?.substring(0, 5) || "00:00";
-          ts = 0;
-        }
-
         return {
-          id: `t-${i}`,
-          artista: row[idxArt] || 'Desconhecido',
-          musica: row[idxMus] || 'Sem Título',
-          radio: row[idxRad] || 'Metropolitana FM',
-          genero: row[idxGen] || 'Desconhecido',
-          data: datePart,
-          hora: timePart,
-          timestamp: ts
+          id: t.id,
+          artista: t.artista || 'Desconhecido',
+          musica: t.musica || 'Sem Título',
+          radio: t.radio || 'Metropolitana FM',
+          genero: t.genero || 'Desconhecido',
+          data: dObj.toISOString().split('T')[0],
+          hora: dObj.toTimeString().substring(0, 5),
+          timestamp: dObj.getTime(),
+          capa: t.capa,
+          bpm: t.bpm
         };
-      }).filter(t => t.artista !== 'artista' && t.data !== "---");
-
-      const sorted = formatted.sort((a, b) => b.timestamp - a.timestamp);
-      setData(sorted);
-
-      if (sorted.length > 0 && !filters.date) {
-        setFilters(prev => ({ ...prev, date: sorted[0].data }));
+      });
+      
+      setData(formatted);
+      
+      if (formatted.length > 0 && !filters.date) {
+        setFilters(prev => ({ ...prev, date: formatted[0].data }));
       }
-    } catch (err: any) { 
-      if (!isSilent) setError(err.message); 
-    } finally { 
-      setLoading(false); 
-      setRefreshing(false); 
+    } catch (err: any) {
+      console.error('Erro ao buscar dados:', err);
+      if (!isSilent) setError(err.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   }, [filters.date]);
 
@@ -376,7 +322,15 @@ const App = () => {
       const matchGenero = filters.genero ? t.genero === filters.genero : true;
       const matchHour = filters.hour !== 'all' ? t.hora.startsWith(`${filters.hour}:`) : true;
       
-      return matchRadio && matchDate && matchSearch && matchGenero && matchHour;
+      // Filtro BPM
+      let matchBpm = true;
+      if (filters.bpm !== 'all' && t.bpm) {
+        if (filters.bpm === 'slow') matchBpm = t.bpm < 100;
+        else if (filters.bpm === 'moderate') matchBpm = t.bpm >= 100 && t.bpm <= 120;
+        else if (filters.bpm === 'fast') matchBpm = t.bpm > 120;
+      }
+      
+      return matchRadio && matchDate && matchSearch && matchGenero && matchHour && matchBpm;
     });
   }, [data, filters]);
 
@@ -465,6 +419,7 @@ const App = () => {
       doc.text("ARTISTA", 32, y);
       doc.text("MUSICA", 95, y);
       doc.text("GENERO", 158, y);
+      doc.text("BPM", 185, y);
       doc.line(14, y + 1, 196, y + 1);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
@@ -481,10 +436,12 @@ const App = () => {
         y += 6;
       }
       const generoTxt = t.genero === 'Desconhecido' ? '' : t.genero;
+      const bpmTxt = t.bpm ? String(t.bpm) : '';
       doc.text(t.hora, 14, y); 
       doc.text(t.artista.substring(0, 30), 32, y); 
       doc.text(t.musica.substring(0, 38), 95, y);
       doc.text(generoTxt.substring(0, 18), 158, y);
+      doc.text(bpmTxt, 185, y);
       y += 6;
     });
 
@@ -537,7 +494,7 @@ const App = () => {
               <button 
                 key={r} 
                 onClick={() => { 
-                  setFilters(f => ({ ...f, radio: r, date: '', genero: '', hour: 'all' })); 
+                  setFilters(f => ({ ...f, radio: r, date: '', genero: '', hour: 'all', bpm: 'all' })); 
                   setVisibleCount(9); 
                 }} 
                 className={`py-5 rounded-2xl font-black text-sm uppercase transition-all transform hover:scale-105 active:scale-95 ${
@@ -562,7 +519,7 @@ const App = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.date} onChange={e => setFilters(f => ({ ...f, date: e.target.value }))}>
               {uniqueDates.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
@@ -574,11 +531,17 @@ const App = () => {
               <option value="">Todos os gêneros</option>
               {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
+            <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.bpm} onChange={e => setFilters(f => ({ ...f, bpm: e.target.value }))}>
+              <option value="all">Todos os BPMs</option>
+              <option value="slow">🐢 Lento (&lt;100)</option>
+              <option value="moderate">🚶 Moderado (100-120)</option>
+              <option value="fast">🏃 Rápido (&gt;120)</option>
+            </select>
           </div>
 
           <button 
             onClick={exportPDF} 
-            className="w-full mt-6 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95"
+            className="w-full mt-2 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95"
           >
             <Download size={20} /> Exportar Relatório PDF
           </button>
