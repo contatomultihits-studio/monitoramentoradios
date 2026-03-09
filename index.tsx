@@ -13,6 +13,23 @@ const REFRESH_INTERVAL_MS = 30000;
 const LASTFM_API_KEY = '2a416b64ded1827a7e82e61d9a87b2e0';
 const getSupabaseClient = () => (window as any)._supabaseClient;
 
+// ─────────────────────────────────────────────────────────────
+// BLOQUEIO — breaks/vinhetas que não devem aparecer na dash
+// Adicione mais entradas conforme necessário: { artista, musica }
+// Use '*' para bloquear qualquer música de um artista,
+// ou deixe artista vazio para bloquear pela música independente do artista.
+// ─────────────────────────────────────────────────────────────
+const BLOCKED_TRACKS: { artista?: string; musica?: string }[] = [
+  { artista: 'SP' },   // break da Metropolitana FM
+];
+
+const isBlocked = (artista: string, musica: string): boolean =>
+  BLOCKED_TRACKS.some(b => {
+    const matchArtista = !b.artista || b.artista === '*' || b.artista.trim().toLowerCase() === artista.trim().toLowerCase();
+    const matchMusica  = !b.musica  || b.musica  === '*' || b.musica.trim().toLowerCase()  === musica.trim().toLowerCase();
+    return matchArtista && matchMusica;
+  });
+
 const GENRE_COLORS: Record<string, string> = {
   'Sertanejo': '#3B82F6', 'Pop': '#0EA5E9', 'Rock': '#1E40AF',
   'MPB': '#60A5FA', 'Funk': '#2563EB', 'Pagode': '#0284C7',
@@ -451,13 +468,15 @@ const App = () => {
       if (!supabase) throw new Error('Supabase client não disponível');
       const { data: tracks, error } = await supabase.from('radio_airplay').select('*').order('tocou_em', { ascending: false }).limit(1000);
       if (error) throw error;
-      const formatted = tracks.map((t: any) => {
-        const utcDate = new Date(t.tocou_em);
-        const str = utcDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
-        const [datePart, timePart] = str.split(', ');
-        const [day, month, year] = datePart.split('/');
-        return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio || 'Metropolitana FM', genero: t.genero || 'Desconhecido', data: `${year}-${month}-${day}`, hora: timePart, timestamp: utcDate.getTime(), capa: t.capa, bpm: t.bpm };
-      });
+      const formatted = tracks
+        .map((t: any) => {
+          const utcDate = new Date(t.tocou_em);
+          const str = utcDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+          const [datePart, timePart] = str.split(', ');
+          const [day, month, year] = datePart.split('/');
+          return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio || 'Metropolitana FM', genero: t.genero || 'Desconhecido', data: `${year}-${month}-${day}`, hora: timePart, timestamp: utcDate.getTime(), capa: t.capa, bpm: t.bpm };
+        })
+        .filter((t: any) => !isBlocked(t.artista, t.musica)); // ← bloqueia breaks/vinhetas
       setData(formatted);
       setFilters(prev => (!prev.date && formatted.length > 0) ? { ...prev, date: formatted[0].data } : prev);
     } catch (err: any) {
