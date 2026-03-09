@@ -4,8 +4,7 @@ import {
   Search, Clock, RefreshCw, Radio, 
   Music, Loader2, Plus, Download,
   TrendingUp, Sparkles, Filter, Megaphone, Activity,
-  Trophy, AlertTriangle, ChevronRight, ChevronLeft,
-  Youtube, X, ExternalLink, Play
+  Trophy, AlertTriangle, ChevronRight, ChevronLeft, Youtube
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -17,171 +16,40 @@ const getSupabaseClient = () => (window as any)._supabaseClient;
 const GENRE_COLORS: Record<string, string> = {
   'Sertanejo': '#3B82F6', 'Pop': '#0EA5E9', 'Rock': '#1E40AF',
   'MPB': '#60A5FA', 'Funk': '#2563EB', 'Pagode': '#0284C7',
-  'Rap/Hip Hop': '#1D4ED8', 'Eletrônica': '#06B6D4', 'Gospel': '#7DD3FC',
-  'Samba': '#1E3A8A', 'Forró': '#93C5FD', 'Reggae': '#34D399',
+  'Rap/Hip Hop': '#1D4ED8', 'Eletr\u00f4nica': '#06B6D4', 'Gospel': '#7DD3FC',
+  'Samba': '#1E3A8A', 'Forr\u00f3': '#93C5FD', 'Reggae': '#34D399',
   'Jazz': '#1e293b', 'Desconhecido': '#D3D3D3', 'Outros': '#B8B8B8'
 };
 
-// ─────────────────────────────────────────────────────────────
-// YOUTUBE UTILS
-// Busca precisa: "Artista" "Musica" — aspas para match exato no YT
-// ─────────────────────────────────────────────────────────────
-const buildYouTubeSearchURL = (artista: string, musica: string) => {
-  // Usa aspas para forçar match exato de artista + música
-  const query = `"${artista}" "${musica}"`;
-  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-};
-
-const buildYouTubeMusicURL = (artista: string, musica: string) => {
-  const query = `${artista} ${musica}`;
-  return `https://music.youtube.com/search?q=${encodeURIComponent(query)}`;
-};
+// Gera URL de busca precisa no YouTube com aspas
+const ytURL = (artista: string, musica: string) =>
+  `https://www.youtube.com/results?search_query=${encodeURIComponent(`"${artista}" "${musica}"`)}` ;
 
 // ─────────────────────────────────────────────────────────────
-// YOUTUBE MODAL — card de pré-visualização + botões de abrir
+// BOT\u00c3O YT — link direto, sem modal
 // ─────────────────────────────────────────────────────────────
-const YouTubeModal = ({
-  track,
-  onClose
+const YTButton = ({
+  artista, musica, size = 'sm'
 }: {
-  track: { artista: string; musica: string; capa?: string; genero?: string; bpm?: number } | null;
-  onClose: () => void;
+  artista: string; musica: string; size?: 'sm' | 'md' | 'lg'
 }) => {
-  useEffect(() => {
-    if (!track) return;
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', handleKey);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', handleKey);
-      document.body.style.overflow = '';
-    };
-  }, [track, onClose]);
-
-  if (!track) return null;
-
-  const ytSearch = buildYouTubeSearchURL(track.artista, track.musica);
-  const ytMusic  = buildYouTubeMusicURL(track.artista, track.musica);
-
-  return (
-    <div
-      className="fixed inset-0 z-[999] flex items-center justify-center p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ backgroundColor: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(10px)' }}
-    >
-      <div
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
-        style={{ animation: 'modalIn 0.22s cubic-bezier(0.34,1.56,0.64,1)' }}
-      >
-        {/* Header vermelho YT */}
-        <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="bg-white/20 p-2 rounded-xl flex-shrink-0">
-              <Youtube size={20} className="text-white" />
-            </div>
-            <div className="min-w-0">
-              <p className="font-black text-white text-sm truncate leading-tight">{track.musica}</p>
-              <p className="font-bold text-red-200 text-xs truncate">{track.artista}</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-all flex-shrink-0 ml-3">
-            <X size={18} className="text-white" />
-          </button>
-        </div>
-
-        {/* Capa + info */}
-        <div className="p-6">
-          <div className="flex items-center gap-5 mb-6">
-            <div className="flex-shrink-0 w-28 h-28 rounded-2xl overflow-hidden bg-slate-100 shadow-xl ring-4 ring-slate-100">
-              {track.capa
-                ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center"><Music size={32} className="text-slate-300" /></div>
-              }
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="font-black text-slate-900 text-xl leading-tight mb-1">{track.musica}</h2>
-              <p className="font-bold text-blue-600 text-base mb-3">{track.artista}</p>
-              <div className="flex flex-wrap gap-2">
-                {track.genero && track.genero !== 'Desconhecido' && (
-                  <span className="px-3 py-1 rounded-full text-xs font-black uppercase text-white"
-                    style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>
-                    {track.genero}
-                  </span>
-                )}
-                {track.bpm && (
-                  <div className="flex items-center gap-1 px-3 py-1 bg-emerald-100 rounded-full">
-                    <Activity size={10} className="text-emerald-600" />
-                    <span className="font-black text-xs text-emerald-700">{track.bpm} BPM</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Botões */}
-          <div className="space-y-3">
-            {/* Botão principal: busca precisa com aspas */}
-            <a
-              href={ytSearch}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-3 w-full py-4 bg-red-500 hover:bg-red-600 active:scale-95 rounded-2xl font-black text-white text-sm uppercase tracking-wide transition-all shadow-lg hover:shadow-xl"
-            >
-              <Youtube size={18} />
-              Buscar no YouTube
-            </a>
-
-            {/* YouTube Music — ótimo para músicas brasileiras */}
-            <a
-              href={ytMusic}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-3 w-full py-4 bg-slate-800 hover:bg-slate-900 active:scale-95 rounded-2xl font-black text-white text-sm uppercase tracking-wide transition-all shadow-md hover:shadow-lg"
-            >
-              <Play size={16} />
-              YouTube Music
-            </a>
-
-            <button
-              onClick={onClose}
-              className="w-full py-3 bg-slate-100 hover:bg-slate-200 rounded-2xl font-black text-xs text-slate-500 uppercase tracking-wide transition-all"
-            >
-              Fechar
-            </button>
-          </div>
-
-          {/* Dica de query */}
-          <p className="mt-4 text-center text-[10px] text-slate-400 font-bold">
-            Buscando por: &ldquo;{track.artista}&rdquo; &ldquo;{track.musica}&rdquo;
-          </p>
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes modalIn {
-          from { opacity: 0; transform: scale(0.88) translateY(16px); }
-          to   { opacity: 1; transform: scale(1)   translateY(0px); }
-        }
-      `}</style>
-    </div>
-  );
-};
-
-// Botão reutilizável
-const YTButton = ({ track, onOpen, size = 'sm' }: { track: any; onOpen: (t: any) => void; size?: 'sm' | 'md' | 'lg' }) => {
   const cls = {
-    sm: 'px-2.5 py-1.5 text-[10px] gap-1',
-    md: 'px-4 py-2 text-xs gap-1.5',
-    lg: 'px-5 py-3 text-sm gap-2',
+    sm:  'px-2.5 py-1.5 text-[10px] gap-1',
+    md:  'px-4   py-2   text-xs    gap-1.5',
+    lg:  'px-5   py-3   text-sm    gap-2',
   };
   return (
-    <button
-      onClick={(e) => { e.stopPropagation(); onOpen(track); }}
+    <a
+      href={ytURL(artista, musica)}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
       className={`flex items-center ${cls[size]} bg-red-500 hover:bg-red-600 active:scale-95 rounded-full font-black text-white transition-all shadow-md hover:shadow-lg flex-shrink-0`}
+      title={`Buscar "${artista} - ${musica}" no YouTube`}
     >
       <Youtube size={size === 'lg' ? 16 : size === 'md' ? 13 : 11} />
       {size === 'lg' ? 'Ver no YouTube' : size === 'md' ? 'YouTube' : 'YT'}
-    </button>
+    </a>
   );
 };
 
@@ -203,7 +71,7 @@ const fetchArtistPhoto = async (artistName: string): Promise<string> => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// TOOLTIP GÊNEROS
+// TOOLTIP G\u00caNEROS
 // ─────────────────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
@@ -211,7 +79,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     return (
       <div className="bg-white p-4 rounded-xl shadow-2xl border border-slate-100">
         <p className="font-black text-slate-800 uppercase text-xs mb-1">{d.name}</p>
-        <p className="font-bold text-blue-600 text-xs">{d.value} músicas ({d.percentage}%)</p>
+        <p className="font-bold text-blue-600 text-xs">{d.value} m\u00fasicas ({d.percentage}%)</p>
         {d.subGenres && (
           <div className="mt-2 pt-2 border-t border-slate-100">
             <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Inclui:</p>
@@ -227,7 +95,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 // ─────────────────────────────────────────────────────────────
 // NOW PLAYING CARD
 // ─────────────────────────────────────────────────────────────
-const NowPlayingCard = ({ track, onOpenYT }: { track: any; onOpenYT: (t: any) => void }) => (
+const NowPlayingCard = ({ track }: { track: any }) => (
   <div className="relative overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-800 p-8 rounded-3xl shadow-2xl mb-8">
     <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent animate-pulse" />
     <div className="relative z-10">
@@ -267,7 +135,7 @@ const NowPlayingCard = ({ track, onOpenYT }: { track: any; onOpenYT: (t: any) =>
                 <span className="font-black text-white text-sm">{track.bpm} BPM</span>
               </div>
             )}
-            <YTButton track={track} onOpen={onOpenYT} size="lg" />
+            <YTButton artista={track.artista} musica={track.musica} size="lg" />
           </div>
         </div>
       </div>
@@ -278,7 +146,7 @@ const NowPlayingCard = ({ track, onOpenYT }: { track: any; onOpenYT: (t: any) =>
 // ─────────────────────────────────────────────────────────────
 // MUSIC CARD
 // ─────────────────────────────────────────────────────────────
-const MusicCard = ({ track, repeatCount, onOpenYT }: { track: any; repeatCount?: number; onOpenYT: (t: any) => void }) => (
+const MusicCard = ({ track, repeatCount }: { track: any; repeatCount?: number }) => (
   <div className={`bg-white border rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${
     repeatCount && repeatCount >= 3 ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'
   }`}>
@@ -309,12 +177,12 @@ const MusicCard = ({ track, repeatCount, onOpenYT }: { track: any; repeatCount?:
           )}
           {repeatCount && repeatCount >= 3 && (
             <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-400 rounded-full">
-              <span className="font-black text-[10px] text-white">🔁 Repetida {repeatCount}x</span>
+              <span className="font-black text-[10px] text-white">\uD83D\uDD01 Repetida {repeatCount}x</span>
             </div>
           )}
         </div>
       </div>
-      <YTButton track={track} onOpen={onOpenYT} size="md" />
+      <YTButton artista={track.artista} musica={track.musica} size="md" />
     </div>
   </div>
 );
@@ -322,7 +190,7 @@ const MusicCard = ({ track, repeatCount, onOpenYT }: { track: any; repeatCount?:
 // ─────────────────────────────────────────────────────────────
 // TOP 5 ARTISTAS
 // ─────────────────────────────────────────────────────────────
-const TopArtistsCard = ({ filteredData, onOpenYT }: { filteredData: any[]; onOpenYT: (t: any) => void }) => {
+const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
@@ -356,7 +224,7 @@ const TopArtistsCard = ({ filteredData, onOpenYT }: { filteredData: any[]; onOpe
         <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg"><Trophy className="text-white" size={28} /></div>
         <div>
           <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Top 5 Artistas</h2>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Mais tocados no período filtrado</p>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Mais tocados no per\u00edodo filtrado</p>
         </div>
       </div>
       <div className="grid grid-cols-5 gap-3">
@@ -367,12 +235,14 @@ const TopArtistsCard = ({ filteredData, onOpenYT }: { filteredData: any[]; onOpe
               <div className="relative mb-3">
                 <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${
                   idx === 0 ? 'bg-yellow-400 text-yellow-900' : idx === 1 ? 'bg-slate-300 text-slate-700' : idx === 2 ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-600'
-                }`}>{idx < 3 ? ['1°','2°','3°'][idx] : `${idx+1}°`}</div>
-                <div
-                  className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 cursor-pointer ${
+                }`}>{idx < 3 ? ['1\u00b0','2\u00b0','3\u00b0'][idx] : `${idx+1}\u00b0`}</div>
+                <a
+                  href={ytURL(artist.artista, artist.musica)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`relative block w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 ${
                     idx === 0 ? 'ring-yellow-400' : idx === 1 ? 'ring-slate-300' : idx === 2 ? 'ring-amber-500' : 'ring-slate-200'
                   }`}
-                  onClick={() => onOpenYT({ artista: artist.artista, musica: artist.musica, capa: photo, genero: artist.genero })}
                   title={`Ver ${artist.artista} no YouTube`}
                 >
                   {photo
@@ -382,7 +252,7 @@ const TopArtistsCard = ({ filteredData, onOpenYT }: { filteredData: any[]; onOpe
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
                     <Youtube size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
                   </div>
-                </div>
+                </a>
                 {loading && !photo && (
                   <div className="absolute inset-0 rounded-2xl bg-white/60 flex items-center justify-center">
                     <Loader2 size={16} className="animate-spin text-blue-500" />
@@ -390,7 +260,7 @@ const TopArtistsCard = ({ filteredData, onOpenYT }: { filteredData: any[]; onOpe
                 )}
               </div>
               <p className="font-black text-slate-800 text-xs leading-tight truncate w-full">{artist.artista}</p>
-              <p className="font-bold text-blue-600 text-[10px] mt-1">{artist.count} execuções</p>
+              <p className="font-bold text-blue-600 text-[10px] mt-1">{artist.count} execu\u00e7\u00f5es</p>
               {artist.genero && artist.genero !== 'Desconhecido' && (
                 <span className="mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white"
                   style={{ backgroundColor: GENRE_COLORS[artist.genero] || '#3B82F6' }}>{artist.genero}</span>
@@ -404,9 +274,9 @@ const TopArtistsCard = ({ filteredData, onOpenYT }: { filteredData: any[]; onOpe
 };
 
 // ─────────────────────────────────────────────────────────────
-// MÚSICAS REPETIDAS
+// M\u00daSICAS REPETIDAS
 // ─────────────────────────────────────────────────────────────
-const RepeatedTracksCard = ({ filteredData, onOpenYT }: { filteredData: any[]; onOpenYT: (t: any) => void }) => {
+const RepeatedTracksCard = ({ filteredData }: { filteredData: any[] }) => {
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 5;
   const MIN_REPEATS = 3;
@@ -433,8 +303,8 @@ const RepeatedTracksCard = ({ filteredData, onOpenYT }: { filteredData: any[]; o
         <div className="flex items-center gap-4">
           <div className="bg-gradient-to-br from-red-500 to-orange-500 p-4 rounded-2xl shadow-lg"><AlertTriangle className="text-white" size={28} /></div>
           <div>
-            <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Músicas Repetidas</h2>
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Tocadas {MIN_REPEATS}+ vezes • {repeatedTracks.length} música{repeatedTracks.length !== 1 ? 's' : ''}</p>
+            <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">M\u00fasicas Repetidas</h2>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Tocadas {MIN_REPEATS}+ vezes \u2022 {repeatedTracks.length} m\u00fasica{repeatedTracks.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
         {totalPages > 1 && (
@@ -456,7 +326,7 @@ const RepeatedTracksCard = ({ filteredData, onOpenYT }: { filteredData: any[]; o
             <div key={`${t.artista}-${t.musica}`} className="bg-white rounded-2xl p-4 shadow-sm border border-red-100 hover:shadow-md transition-all">
               <div className="flex items-center gap-4">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                  <span className="font-black text-xs text-red-600">{page * PAGE_SIZE + idx + 1}°</span>
+                  <span className="font-black text-xs text-red-600">{page * PAGE_SIZE + idx + 1}\u00b0</span>
                 </div>
                 <div className="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-slate-100 shadow-md">
                   {t.capa ? <img src={t.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Music size={18} /></div>}
@@ -477,11 +347,11 @@ const RepeatedTracksCard = ({ filteredData, onOpenYT }: { filteredData: any[]; o
                     )}
                   </div>
                 </div>
-                <YTButton track={t} onOpen={onOpenYT} size="md" />
+                <YTButton artista={t.artista} musica={t.musica} size="md" />
                 <div className="flex-shrink-0 flex flex-col items-center bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl px-4 py-3 shadow-lg">
                   <span className="text-2xl font-black text-white leading-none">{item.count}</span>
                   <span className="text-[9px] font-black text-white/80 uppercase mt-0.5">vezes</span>
-                  <span className="text-sm mt-1">🔁</span>
+                  <span className="text-sm mt-1">\uD83D\uDD01</span>
                 </div>
               </div>
             </div>
@@ -503,7 +373,7 @@ const RepeatedTracksCard = ({ filteredData, onOpenYT }: { filteredData: any[]; o
           </div>
           <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
             className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white shadow-sm border border-slate-200 font-black text-xs text-slate-600 uppercase hover:bg-slate-50 disabled:opacity-30 transition-all hover:scale-105 active:scale-95">
-            Próximas <ChevronRight size={14} /></button>
+            Pr\u00f3ximas <ChevronRight size={14} /></button>
         </div>
       )}
     </div>
@@ -511,7 +381,7 @@ const RepeatedTracksCard = ({ filteredData, onOpenYT }: { filteredData: any[]; o
 };
 
 // ─────────────────────────────────────────────────────────────
-// GRÁFICO DE GÊNEROS
+// GR\u00c1FICO DE G\u00caNEROS
 // ─────────────────────────────────────────────────────────────
 const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObject<HTMLDivElement> }) => {
   if (!data || !data.length) return null;
@@ -531,8 +401,8 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
       <div className="flex items-center gap-4 mb-6">
         <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-lg"><TrendingUp className="text-white" size={28} /></div>
         <div>
-          <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Análise de Gêneros</h2>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical (Sem Desconhecidos)</p>
+          <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">An\u00e1lise de G\u00eaneros</h2>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribui\u00e7\u00e3o Musical (Sem Desconhecidos)</p>
         </div>
       </div>
       <div className="bg-white p-6 rounded-2xl shadow-inner">
@@ -553,7 +423,7 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
             <div className="w-5 h-5 rounded-full shadow-md flex-shrink-0" style={{ backgroundColor: GENRE_COLORS[genre.name] || '#B8B8B8' }} />
             <div className="flex-1 min-w-0">
               <p className="font-black text-sm text-slate-700 uppercase truncate">{genre.name}</p>
-              <p className="text-xs text-slate-500 font-bold">{genre.value} músicas • {genre.percentage}%</p>
+              <p className="text-xs text-slate-500 font-bold">{genre.value} m\u00fasicas \u2022 {genre.percentage}%</p>
             </div>
           </div>
         ))}
@@ -571,7 +441,6 @@ const App = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', bpm: 'all' });
   const [visibleCount, setVisibleCount] = useState(9);
-  const [ytTrack, setYtTrack] = useState<any>(null);
   const chartRef = React.useRef<HTMLDivElement>(null);
   const fetchDataRef = useRef<(isSilent?: boolean) => Promise<void>>();
 
@@ -580,7 +449,7 @@ const App = () => {
     setRefreshing(true);
     try {
       const supabase = getSupabaseClient();
-      if (!supabase) throw new Error('Supabase client não disponível');
+      if (!supabase) throw new Error('Supabase client n\u00e3o dispon\u00edvel');
       const { data: tracks, error } = await supabase.from('radio_airplay').select('*').order('tocou_em', { ascending: false }).limit(1000);
       if (error) throw error;
       const formatted = tracks.map((t: any) => {
@@ -588,7 +457,7 @@ const App = () => {
         const str = utcDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
         const [datePart, timePart] = str.split(', ');
         const [day, month, year] = datePart.split('/');
-        return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio || 'Metropolitana FM', genero: t.genero || 'Desconhecido', data: `${year}-${month}-${day}`, hora: timePart, timestamp: utcDate.getTime(), capa: t.capa, bpm: t.bpm };
+        return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem T\u00edtulo', radio: t.radio || 'Metropolitana FM', genero: t.genero || 'Desconhecido', data: `${year}-${month}-${day}`, hora: timePart, timestamp: utcDate.getTime(), capa: t.capa, bpm: t.bpm };
       });
       setData(formatted);
       setFilters(prev => (!prev.date && formatted.length > 0) ? { ...prev, date: formatted[0].data } : prev);
@@ -671,14 +540,12 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <YouTubeModal track={ytTrack} onClose={() => setYtTrack(null)} />
-
       <header className="bg-white border-b border-blue-100 sticky top-0 z-50 shadow-sm">
         <div className="max-w-5xl mx-auto px-6 h-24 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-lg"><Radio size={32} className="text-white" /></div>
             <div>
-              <h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1>
+              <h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO R\u00c1DIO</h1>
               <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Monitoramento Musical</p>
             </div>
           </div>
@@ -709,7 +576,7 @@ const App = () => {
           </div>
           <div className="relative mb-4">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input type="text" placeholder="Buscar artista ou música..."
+            <input type="text" placeholder="Buscar artista ou m\u00fasica..."
               className="w-full pl-14 pr-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 transition-all"
               value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} />
           </div>
@@ -722,25 +589,25 @@ const App = () => {
               {hourOptions.map(h => <option key={h} value={h}>{h}:00</option>)}
             </select>
             <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.genero} onChange={e => setFilters(f => ({ ...f, genero: e.target.value }))}>
-              <option value="">Todos os gêneros</option>
+              <option value="">Todos os g\u00eaneros</option>
               {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
             <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.bpm} onChange={e => setFilters(f => ({ ...f, bpm: e.target.value }))}>
               <option value="all">Todos os BPMs</option>
-              <option value="slow">🐢 Lento (&lt;100)</option>
-              <option value="moderate">🚶 Moderado (100-120)</option>
-              <option value="fast">🏃 Rápido (&gt;120)</option>
+              <option value="slow">\uD83D\uDC22 Lento (&lt;100)</option>
+              <option value="moderate">\uD83D\uDEB6 Moderado (100-120)</option>
+              <option value="fast">\uD83C\uDFC3 R\u00e1pido (&gt;120)</option>
             </select>
           </div>
           <button onClick={exportPDF}
             className="w-full mt-2 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95">
-            <Download size={20} /> Exportar Relatório PDF
+            <Download size={20} /> Exportar Relat\u00f3rio PDF
           </button>
         </div>
 
-        {filteredData.length > 0 && !filters.search && <NowPlayingCard track={filteredData[0]} onOpenYT={setYtTrack} />}
-        {!loading && <TopArtistsCard filteredData={filteredData} onOpenYT={setYtTrack} />}
-        {!loading && <RepeatedTracksCard filteredData={filteredData} onOpenYT={setYtTrack} />}
+        {filteredData.length > 0 && !filters.search && <NowPlayingCard track={filteredData[0]} />}
+        {!loading && <TopArtistsCard filteredData={filteredData} />}
+        {!loading && <RepeatedTracksCard filteredData={filteredData} />}
         <GenreChart data={genreData} chartRef={chartRef} />
 
         <div className="space-y-3">
@@ -753,16 +620,16 @@ const App = () => {
             <>
               <div className="flex items-center gap-3 mb-4">
                 <Music className="text-blue-600" size={24} />
-                <h3 className="font-black text-xl text-slate-900 uppercase">Últimas Execuções ({filteredData.length} músicas)</h3>
+                <h3 className="font-black text-xl text-slate-900 uppercase">\u00daltimas Execu\u00e7\u00f5es ({filteredData.length} m\u00fasicas)</h3>
               </div>
               {filteredData.slice(filters.search ? 0 : 1, visibleCount + 1).map(track => {
                 const rc = repeatCountMap[`${track.artista}|||${track.musica}`];
-                return <MusicCard key={track.id} track={track} repeatCount={rc} onOpenYT={setYtTrack} />;
+                return <MusicCard key={track.id} track={track} repeatCount={rc} />;
               })}
               {filteredData.length > visibleCount + 1 && (
                 <button onClick={() => setVisibleCount(c => c + 9)}
                   className="w-full py-6 rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:scale-105 active:scale-95">
-                  <Plus size={20} /> Carregar Mais Músicas
+                  <Plus size={20} /> Carregar Mais M\u00fasicas
                 </button>
               )}
             </>
@@ -789,5 +656,5 @@ const App = () => {
     await new Promise(r => setTimeout(r, 500));
     attempts++;
   }
-  document.getElementById('root')!.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#EF4444"><div style="text-align:center;color:white;padding:2rem"><h1 style="font-size:2rem;font-weight:900;margin-bottom:1rem">❌ Erro</h1><button onclick="location.reload()" style="background:white;color:#DC2626;padding:1rem 2rem;border:none;border-radius:.5rem;font-weight:bold;cursor:pointer">Tentar Novamente</button></div></div>`;
+  document.getElementById('root')!.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#EF4444"><div style="text-align:center;color:white;padding:2rem"><h1 style="font-size:2rem;font-weight:900;margin-bottom:1rem">\u274c Erro</h1><button onclick="location.reload()" style="background:white;color:#DC2626;padding:1rem 2rem;border:none;border-radius:.5rem;font-weight:bold;cursor:pointer">Tentar Novamente</button></div></div>`;
 })();
