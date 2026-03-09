@@ -4,7 +4,7 @@ import {
   Search, Clock, RefreshCw, Radio, 
   Music, Loader2, Plus, Download,
   TrendingUp, Sparkles, Filter, Megaphone, Activity,
-  Trophy, AlertTriangle, ChevronRight, ChevronLeft, Youtube
+  Trophy, ChevronRight, ChevronLeft, Youtube
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -15,12 +15,9 @@ const getSupabaseClient = () => (window as any)._supabaseClient;
 
 // ─────────────────────────────────────────────────────────────
 // BLOQUEIO — breaks/vinhetas que não devem aparecer na dash
-// Adicione mais entradas conforme necessário: { artista, musica }
-// Use '*' para bloquear qualquer música de um artista,
-// ou deixe artista vazio para bloquear pela música independente do artista.
 // ─────────────────────────────────────────────────────────────
 const BLOCKED_TRACKS: { artista?: string; musica?: string }[] = [
-  { artista: 'SP' },   // break da Metropolitana FM
+  { artista: 'SP' },
 ];
 
 const isBlocked = (artista: string, musica: string): boolean =>
@@ -42,27 +39,14 @@ const ytURL = (artista: string, musica: string) =>
   `https://www.youtube.com/results?search_query=${encodeURIComponent(`"${artista}" "${musica}"`)}` ;
 
 // ─────────────────────────────────────────────────────────────
-// BOTÃO YT — link direto, sem modal
+// BOTÃO YT
 // ─────────────────────────────────────────────────────────────
-const YTButton = ({
-  artista, musica, size = 'sm'
-}: {
-  artista: string; musica: string; size?: 'sm' | 'md' | 'lg'
-}) => {
-  const cls = {
-    sm:  'px-2.5 py-1.5 text-[10px] gap-1',
-    md:  'px-4   py-2   text-xs    gap-1.5',
-    lg:  'px-5   py-3   text-sm    gap-2',
-  };
+const YTButton = ({ artista, musica, size = 'sm' }: { artista: string; musica: string; size?: 'sm' | 'md' | 'lg' }) => {
+  const cls = { sm: 'px-2.5 py-1.5 text-[10px] gap-1', md: 'px-4 py-2 text-xs gap-1.5', lg: 'px-5 py-3 text-sm gap-2' };
   return (
-    <a
-      href={ytURL(artista, musica)}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={(e) => e.stopPropagation()}
+    <a href={ytURL(artista, musica)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
       className={`flex items-center ${cls[size]} bg-red-500 hover:bg-red-600 active:scale-95 rounded-full font-black text-white transition-all shadow-md hover:shadow-lg flex-shrink-0`}
-      title={`Buscar "${artista} - ${musica}" no YouTube`}
-    >
+      title={`Buscar "${artista} - ${musica}" no YouTube`}>
       <Youtube size={size === 'lg' ? 16 : size === 'md' ? 13 : 11} />
       {size === 'lg' ? 'Ver no YouTube' : size === 'md' ? 'YouTube' : 'YT'}
     </a>
@@ -193,7 +177,7 @@ const MusicCard = ({ track, repeatCount }: { track: any; repeatCount?: number })
           )}
           {repeatCount && repeatCount >= 3 && (
             <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-400 rounded-full">
-              <span className="font-black text-[10px] text-white">🔁 Repetida {repeatCount}x</span>
+              <span className="font-black text-[10px] text-white">🔁 {repeatCount}x tocada</span>
             </div>
           )}
         </div>
@@ -252,15 +236,10 @@ const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
                 <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${
                   idx === 0 ? 'bg-yellow-400 text-yellow-900' : idx === 1 ? 'bg-slate-300 text-slate-700' : idx === 2 ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-600'
                 }`}>{idx < 3 ? ['1°','2°','3°'][idx] : `${idx+1}°`}</div>
-                <a
-                  href={ytURL(artist.artista, artist.musica)}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <a href={ytURL(artist.artista, artist.musica)} target="_blank" rel="noopener noreferrer"
                   className={`relative block w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 ${
                     idx === 0 ? 'ring-yellow-400' : idx === 1 ? 'ring-slate-300' : idx === 2 ? 'ring-amber-500' : 'ring-slate-200'
-                  }`}
-                  title={`Ver ${artist.artista} no YouTube`}
-                >
+                  }`} title={`Ver ${artist.artista} no YouTube`}>
                   {photo
                     ? <img src={photo} alt={artist.artista} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
                     : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200"><Music size={24} className="text-blue-400" /></div>
@@ -285,113 +264,6 @@ const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
           );
         })}
       </div>
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────
-// MÚSICAS REPETIDAS
-// ─────────────────────────────────────────────────────────────
-const RepeatedTracksCard = ({ filteredData }: { filteredData: any[] }) => {
-  const [page, setPage] = useState(0);
-  const PAGE_SIZE = 5;
-  const MIN_REPEATS = 3;
-
-  const repeatedTracks = useMemo(() => {
-    const counts: Record<string, { count: number; track: any }> = {};
-    filteredData.forEach(t => {
-      const key = `${t.artista}|||${t.musica}`;
-      if (!counts[key]) counts[key] = { count: 0, track: t };
-      counts[key].count++;
-    });
-    return Object.values(counts).filter(i => i.count >= MIN_REPEATS).sort((a, b) => b.count - a.count);
-  }, [filteredData]);
-
-  useEffect(() => { setPage(0); }, [filteredData]);
-  if (!repeatedTracks.length) return null;
-
-  const totalPages = Math.ceil(repeatedTracks.length / PAGE_SIZE);
-  const currentItems = repeatedTracks.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
-
-  return (
-    <div className="bg-gradient-to-br from-red-50 to-orange-50 p-8 rounded-3xl shadow-xl mb-8 border border-red-100">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="bg-gradient-to-br from-red-500 to-orange-500 p-4 rounded-2xl shadow-lg"><AlertTriangle className="text-white" size={28} /></div>
-          <div>
-            <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Músicas Repetidas</h2>
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Tocadas {MIN_REPEATS}+ vezes • {repeatedTracks.length} música{repeatedTracks.length !== 1 ? 's' : ''}</p>
-          </div>
-        </div>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2">
-            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-              className="p-2 rounded-xl bg-white shadow-sm border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-              <ChevronLeft size={16} className="text-slate-600" /></button>
-            <span className="font-black text-xs text-slate-600 uppercase px-2">{page + 1} / {totalPages}</span>
-            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
-              className="p-2 rounded-xl bg-white shadow-sm border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-              <ChevronRight size={16} className="text-slate-600" /></button>
-          </div>
-        )}
-      </div>
-      <div className="space-y-3">
-        {currentItems.map((item, idx) => {
-          const t = item.track;
-          return (
-            <div key={`${t.artista}-${t.musica}`} className="bg-white rounded-2xl p-4 shadow-sm border border-red-100 hover:shadow-md transition-all">
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                  <span className="font-black text-xs text-red-600">{page * PAGE_SIZE + idx + 1}°</span>
-                </div>
-                <div className="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-slate-100 shadow-md">
-                  {t.capa ? <img src={t.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Music size={18} /></div>}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-black text-slate-800 text-sm truncate leading-tight">{t.musica}</h3>
-                  <p className="font-bold text-blue-600 text-xs truncate mt-0.5">{t.artista}</p>
-                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    {t.genero && t.genero !== 'Desconhecido' && (
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white"
-                        style={{ backgroundColor: GENRE_COLORS[t.genero] || '#3B82F6' }}>{t.genero}</span>
-                    )}
-                    {t.bpm && (
-                      <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-100 rounded-full">
-                        <Activity size={8} className="text-emerald-600" />
-                        <span className="font-black text-[9px] text-emerald-700">{t.bpm} BPM</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <YTButton artista={t.artista} musica={t.musica} size="md" />
-                <div className="flex-shrink-0 flex flex-col items-center bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl px-4 py-3 shadow-lg">
-                  <span className="text-2xl font-black text-white leading-none">{item.count}</span>
-                  <span className="text-[9px] font-black text-white/80 uppercase mt-0.5">vezes</span>
-                  <span className="text-sm mt-1">🔁</span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-6">
-          <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white shadow-sm border border-slate-200 font-black text-xs text-slate-600 uppercase hover:bg-slate-50 disabled:opacity-30 transition-all hover:scale-105 active:scale-95">
-            <ChevronLeft size={14} /> Anteriores</button>
-          <div className="flex gap-1.5">
-            {Array.from({ length: totalPages }).map((_, i) => (
-              <button key={i} onClick={() => setPage(i)}
-                className={`w-8 h-8 rounded-xl font-black text-xs transition-all ${
-                  i === page ? 'bg-red-500 text-white shadow-lg scale-110' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'
-                }`}>{i + 1}</button>
-            ))}
-          </div>
-          <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white shadow-sm border border-slate-200 font-black text-xs text-slate-600 uppercase hover:bg-slate-50 disabled:opacity-30 transition-all hover:scale-105 active:scale-95">
-            Próximas <ChevronRight size={14} /></button>
-        </div>
-      )}
     </div>
   );
 };
@@ -476,7 +348,7 @@ const App = () => {
           const [day, month, year] = datePart.split('/');
           return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio || 'Metropolitana FM', genero: t.genero || 'Desconhecido', data: `${year}-${month}-${day}`, hora: timePart, timestamp: utcDate.getTime(), capa: t.capa, bpm: t.bpm };
         })
-        .filter((t: any) => !isBlocked(t.artista, t.musica)); // ← bloqueia breaks/vinhetas
+        .filter((t: any) => !isBlocked(t.artista, t.musica));
       setData(formatted);
       setFilters(prev => (!prev.date && formatted.length > 0) ? { ...prev, date: formatted[0].data } : prev);
     } catch (err: any) {
@@ -625,7 +497,6 @@ const App = () => {
 
         {filteredData.length > 0 && !filters.search && <NowPlayingCard track={filteredData[0]} />}
         {!loading && <TopArtistsCard filteredData={filteredData} />}
-        {!loading && <RepeatedTracksCard filteredData={filteredData} />}
         <GenreChart data={genreData} chartRef={chartRef} />
 
         <div className="space-y-3">
