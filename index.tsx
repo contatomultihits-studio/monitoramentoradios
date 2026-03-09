@@ -16,17 +16,16 @@ const getSupabaseClient = () => (window as any)._supabaseClient;
 const GENRE_COLORS: Record<string, string> = {
   'Sertanejo': '#3B82F6', 'Pop': '#0EA5E9', 'Rock': '#1E40AF',
   'MPB': '#60A5FA', 'Funk': '#2563EB', 'Pagode': '#0284C7',
-  'Rap/Hip Hop': '#1D4ED8', 'Eletr\u00f4nica': '#06B6D4', 'Gospel': '#7DD3FC',
-  'Samba': '#1E3A8A', 'Forr\u00f3': '#93C5FD', 'Reggae': '#34D399',
+  'Rap/Hip Hop': '#1D4ED8', 'Eletrônica': '#06B6D4', 'Gospel': '#7DD3FC',
+  'Samba': '#1E3A8A', 'Forró': '#93C5FD', 'Reggae': '#34D399',
   'Jazz': '#1e293b', 'Desconhecido': '#D3D3D3', 'Outros': '#B8B8B8'
 };
 
-// Gera URL de busca precisa no YouTube com aspas
 const ytURL = (artista: string, musica: string) =>
   `https://www.youtube.com/results?search_query=${encodeURIComponent(`"${artista}" "${musica}"`)}` ;
 
 // ─────────────────────────────────────────────────────────────
-// BOT\u00c3O YT — link direto, sem modal
+// BOTÃO YT — link direto, sem modal
 // ─────────────────────────────────────────────────────────────
 const YTButton = ({
   artista, musica, size = 'sm'
@@ -71,7 +70,7 @@ const fetchArtistPhoto = async (artistName: string): Promise<string> => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// TOOLTIP G\u00caNEROS
+// TOOLTIP GÊNEROS
 // ─────────────────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
@@ -79,7 +78,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     return (
       <div className="bg-white p-4 rounded-xl shadow-2xl border border-slate-100">
         <p className="font-black text-slate-800 uppercase text-xs mb-1">{d.name}</p>
-        <p className="font-bold text-blue-600 text-xs">{d.value} m\u00fasicas ({d.percentage}%)</p>
+        <p className="font-bold text-blue-600 text-xs">{d.value} músicas ({d.percentage}%)</p>
         {d.subGenres && (
           <div className="mt-2 pt-2 border-t border-slate-100">
             <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Inclui:</p>
@@ -177,7 +176,7 @@ const MusicCard = ({ track, repeatCount }: { track: any; repeatCount?: number })
           )}
           {repeatCount && repeatCount >= 3 && (
             <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-400 rounded-full">
-              <span className="font-black text-[10px] text-white">\uD83D\uDD01 Repetida {repeatCount}x</span>
+              <span className="font-black text-[10px] text-white">🔁 Repetida {repeatCount}x</span>
             </div>
           )}
         </div>
@@ -224,7 +223,7 @@ const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
         <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg"><Trophy className="text-white" size={28} /></div>
         <div>
           <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Top 5 Artistas</h2>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Mais tocados no per\u00edodo filtrado</p>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Mais tocados no período filtrado</p>
         </div>
       </div>
       <div className="grid grid-cols-5 gap-3">
@@ -235,7 +234,7 @@ const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
               <div className="relative mb-3">
                 <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${
                   idx === 0 ? 'bg-yellow-400 text-yellow-900' : idx === 1 ? 'bg-slate-300 text-slate-700' : idx === 2 ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-600'
-                }`}>{idx < 3 ? ['1\u00b0','2\u00b0','3\u00b0'][idx] : `${idx+1}\u00b0`}</div>
+                }`}>{idx < 3 ? ['1°','2°','3°'][idx] : `${idx+1}°`}</div>
                 <a
                   href={ytURL(artist.artista, artist.musica)}
                   target="_blank"
@@ -260,7 +259,7 @@ const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
                 )}
               </div>
               <p className="font-black text-slate-800 text-xs leading-tight truncate w-full">{artist.artista}</p>
-              <p className="font-bold text-blue-600 text-[10px] mt-1">{artist.count} execu\u00e7\u00f5es</p>
+              <p className="font-bold text-blue-600 text-[10px] mt-1">{artist.count} execuções</p>
               {artist.genero && artist.genero !== 'Desconhecido' && (
                 <span className="mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white"
                   style={{ backgroundColor: GENRE_COLORS[artist.genero] || '#3B82F6' }}>{artist.genero}</span>
@@ -274,7 +273,7 @@ const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// M\u00daSICAS REPETIDAS
+// MÚSICAS REPETIDAS
 // ─────────────────────────────────────────────────────────────
 const RepeatedTracksCard = ({ filteredData }: { filteredData: any[] }) => {
   const [page, setPage] = useState(0);
@@ -303,8 +302,8 @@ const RepeatedTracksCard = ({ filteredData }: { filteredData: any[] }) => {
         <div className="flex items-center gap-4">
           <div className="bg-gradient-to-br from-red-500 to-orange-500 p-4 rounded-2xl shadow-lg"><AlertTriangle className="text-white" size={28} /></div>
           <div>
-            <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">M\u00fasicas Repetidas</h2>
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Tocadas {MIN_REPEATS}+ vezes \u2022 {repeatedTracks.length} m\u00fasica{repeatedTracks.length !== 1 ? 's' : ''}</p>
+            <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Músicas Repetidas</h2>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Tocadas {MIN_REPEATS}+ vezes • {repeatedTracks.length} música{repeatedTracks.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
         {totalPages > 1 && (
@@ -326,7 +325,7 @@ const RepeatedTracksCard = ({ filteredData }: { filteredData: any[] }) => {
             <div key={`${t.artista}-${t.musica}`} className="bg-white rounded-2xl p-4 shadow-sm border border-red-100 hover:shadow-md transition-all">
               <div className="flex items-center gap-4">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                  <span className="font-black text-xs text-red-600">{page * PAGE_SIZE + idx + 1}\u00b0</span>
+                  <span className="font-black text-xs text-red-600">{page * PAGE_SIZE + idx + 1}°</span>
                 </div>
                 <div className="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-slate-100 shadow-md">
                   {t.capa ? <img src={t.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Music size={18} /></div>}
@@ -351,7 +350,7 @@ const RepeatedTracksCard = ({ filteredData }: { filteredData: any[] }) => {
                 <div className="flex-shrink-0 flex flex-col items-center bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl px-4 py-3 shadow-lg">
                   <span className="text-2xl font-black text-white leading-none">{item.count}</span>
                   <span className="text-[9px] font-black text-white/80 uppercase mt-0.5">vezes</span>
-                  <span className="text-sm mt-1">\uD83D\uDD01</span>
+                  <span className="text-sm mt-1">🔁</span>
                 </div>
               </div>
             </div>
@@ -373,7 +372,7 @@ const RepeatedTracksCard = ({ filteredData }: { filteredData: any[] }) => {
           </div>
           <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
             className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white shadow-sm border border-slate-200 font-black text-xs text-slate-600 uppercase hover:bg-slate-50 disabled:opacity-30 transition-all hover:scale-105 active:scale-95">
-            Pr\u00f3ximas <ChevronRight size={14} /></button>
+            Próximas <ChevronRight size={14} /></button>
         </div>
       )}
     </div>
@@ -381,7 +380,7 @@ const RepeatedTracksCard = ({ filteredData }: { filteredData: any[] }) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// GR\u00c1FICO DE G\u00caNEROS
+// GRÁFICO DE GÊNEROS
 // ─────────────────────────────────────────────────────────────
 const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObject<HTMLDivElement> }) => {
   if (!data || !data.length) return null;
@@ -401,8 +400,8 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
       <div className="flex items-center gap-4 mb-6">
         <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-lg"><TrendingUp className="text-white" size={28} /></div>
         <div>
-          <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">An\u00e1lise de G\u00eaneros</h2>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribui\u00e7\u00e3o Musical (Sem Desconhecidos)</p>
+          <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Análise de Gêneros</h2>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical (Sem Desconhecidos)</p>
         </div>
       </div>
       <div className="bg-white p-6 rounded-2xl shadow-inner">
@@ -423,7 +422,7 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
             <div className="w-5 h-5 rounded-full shadow-md flex-shrink-0" style={{ backgroundColor: GENRE_COLORS[genre.name] || '#B8B8B8' }} />
             <div className="flex-1 min-w-0">
               <p className="font-black text-sm text-slate-700 uppercase truncate">{genre.name}</p>
-              <p className="text-xs text-slate-500 font-bold">{genre.value} m\u00fasicas \u2022 {genre.percentage}%</p>
+              <p className="text-xs text-slate-500 font-bold">{genre.value} músicas • {genre.percentage}%</p>
             </div>
           </div>
         ))}
@@ -449,7 +448,7 @@ const App = () => {
     setRefreshing(true);
     try {
       const supabase = getSupabaseClient();
-      if (!supabase) throw new Error('Supabase client n\u00e3o dispon\u00edvel');
+      if (!supabase) throw new Error('Supabase client não disponível');
       const { data: tracks, error } = await supabase.from('radio_airplay').select('*').order('tocou_em', { ascending: false }).limit(1000);
       if (error) throw error;
       const formatted = tracks.map((t: any) => {
@@ -457,7 +456,7 @@ const App = () => {
         const str = utcDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
         const [datePart, timePart] = str.split(', ');
         const [day, month, year] = datePart.split('/');
-        return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem T\u00edtulo', radio: t.radio || 'Metropolitana FM', genero: t.genero || 'Desconhecido', data: `${year}-${month}-${day}`, hora: timePart, timestamp: utcDate.getTime(), capa: t.capa, bpm: t.bpm };
+        return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio || 'Metropolitana FM', genero: t.genero || 'Desconhecido', data: `${year}-${month}-${day}`, hora: timePart, timestamp: utcDate.getTime(), capa: t.capa, bpm: t.bpm };
       });
       setData(formatted);
       setFilters(prev => (!prev.date && formatted.length > 0) ? { ...prev, date: formatted[0].data } : prev);
@@ -545,7 +544,7 @@ const App = () => {
           <div className="flex items-center gap-4">
             <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-lg"><Radio size={32} className="text-white" /></div>
             <div>
-              <h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO R\u00c1DIO</h1>
+              <h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1>
               <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Monitoramento Musical</p>
             </div>
           </div>
@@ -576,7 +575,7 @@ const App = () => {
           </div>
           <div className="relative mb-4">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input type="text" placeholder="Buscar artista ou m\u00fasica..."
+            <input type="text" placeholder="Buscar artista ou música..."
               className="w-full pl-14 pr-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 transition-all"
               value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} />
           </div>
@@ -589,19 +588,19 @@ const App = () => {
               {hourOptions.map(h => <option key={h} value={h}>{h}:00</option>)}
             </select>
             <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.genero} onChange={e => setFilters(f => ({ ...f, genero: e.target.value }))}>
-              <option value="">Todos os g\u00eaneros</option>
+              <option value="">Todos os gêneros</option>
               {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
             <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.bpm} onChange={e => setFilters(f => ({ ...f, bpm: e.target.value }))}>
               <option value="all">Todos os BPMs</option>
-              <option value="slow">\uD83D\uDC22 Lento (&lt;100)</option>
-              <option value="moderate">\uD83D\uDEB6 Moderado (100-120)</option>
-              <option value="fast">\uD83C\uDFC3 R\u00e1pido (&gt;120)</option>
+              <option value="slow">🐢 Lento (&lt;100)</option>
+              <option value="moderate">🚶 Moderado (100-120)</option>
+              <option value="fast">🏃 Rápido (&gt;120)</option>
             </select>
           </div>
           <button onClick={exportPDF}
             className="w-full mt-2 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95">
-            <Download size={20} /> Exportar Relat\u00f3rio PDF
+            <Download size={20} /> Exportar Relatório PDF
           </button>
         </div>
 
@@ -620,7 +619,7 @@ const App = () => {
             <>
               <div className="flex items-center gap-3 mb-4">
                 <Music className="text-blue-600" size={24} />
-                <h3 className="font-black text-xl text-slate-900 uppercase">\u00daltimas Execu\u00e7\u00f5es ({filteredData.length} m\u00fasicas)</h3>
+                <h3 className="font-black text-xl text-slate-900 uppercase">Últimas Execuções ({filteredData.length} músicas)</h3>
               </div>
               {filteredData.slice(filters.search ? 0 : 1, visibleCount + 1).map(track => {
                 const rc = repeatCountMap[`${track.artista}|||${track.musica}`];
@@ -629,7 +628,7 @@ const App = () => {
               {filteredData.length > visibleCount + 1 && (
                 <button onClick={() => setVisibleCount(c => c + 9)}
                   className="w-full py-6 rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:scale-105 active:scale-95">
-                  <Plus size={20} /> Carregar Mais M\u00fasicas
+                  <Plus size={20} /> Carregar Mais Músicas
                 </button>
               )}
             </>
@@ -656,5 +655,5 @@ const App = () => {
     await new Promise(r => setTimeout(r, 500));
     attempts++;
   }
-  document.getElementById('root')!.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#EF4444"><div style="text-align:center;color:white;padding:2rem"><h1 style="font-size:2rem;font-weight:900;margin-bottom:1rem">\u274c Erro</h1><button onclick="location.reload()" style="background:white;color:#DC2626;padding:1rem 2rem;border:none;border-radius:.5rem;font-weight:bold;cursor:pointer">Tentar Novamente</button></div></div>`;
+  document.getElementById('root')!.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#EF4444"><div style="text-align:center;color:white;padding:2rem"><h1 style="font-size:2rem;font-weight:900;margin-bottom:1rem">❌ Erro</h1><button onclick="location.reload()" style="background:white;color:#DC2626;padding:1rem 2rem;border:none;border-radius:.5rem;font-weight:bold;cursor:pointer">Tentar Novamente</button></div></div>`;
 })();
