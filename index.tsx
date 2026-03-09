@@ -23,13 +23,19 @@ const GENRE_COLORS: Record<string, string> = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// YOUTUBE UTILS — URL de busca direta (iframe search foi descontinuado pelo YT)
+// YOUTUBE UTILS
+// Busca precisa: "Artista" "Musica" — aspas para match exato no YT
 // ─────────────────────────────────────────────────────────────
-const buildYouTubeSearchURL = (artista: string, musica: string) =>
-  `https://www.youtube.com/results?search_query=${encodeURIComponent(`${artista} ${musica}`)}` ;
+const buildYouTubeSearchURL = (artista: string, musica: string) => {
+  // Usa aspas para forçar match exato de artista + música
+  const query = `"${artista}" "${musica}"`;
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+};
 
-const buildYouTubeMusicURL = (artista: string, musica: string) =>
-  `https://music.youtube.com/search?q=${encodeURIComponent(`${artista} ${musica}`)}` ;
+const buildYouTubeMusicURL = (artista: string, musica: string) => {
+  const query = `${artista} ${musica}`;
+  return `https://music.youtube.com/search?q=${encodeURIComponent(query)}`;
+};
 
 // ─────────────────────────────────────────────────────────────
 // YOUTUBE MODAL — card de pré-visualização + botões de abrir
@@ -83,17 +89,15 @@ const YouTubeModal = ({
           </button>
         </div>
 
-        {/* Capa grande + info */}
+        {/* Capa + info */}
         <div className="p-6">
           <div className="flex items-center gap-5 mb-6">
-            {/* Capa */}
             <div className="flex-shrink-0 w-28 h-28 rounded-2xl overflow-hidden bg-slate-100 shadow-xl ring-4 ring-slate-100">
               {track.capa
                 ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center"><Music size={32} className="text-slate-300" /></div>
               }
             </div>
-            {/* Dados */}
             <div className="flex-1 min-w-0">
               <h2 className="font-black text-slate-900 text-xl leading-tight mb-1">{track.musica}</h2>
               <p className="font-bold text-blue-600 text-base mb-3">{track.artista}</p>
@@ -114,8 +118,9 @@ const YouTubeModal = ({
             </div>
           </div>
 
-          {/* Botões de ação */}
+          {/* Botões */}
           <div className="space-y-3">
+            {/* Botão principal: busca precisa com aspas */}
             <a
               href={ytSearch}
               target="_blank"
@@ -125,6 +130,8 @@ const YouTubeModal = ({
               <Youtube size={18} />
               Buscar no YouTube
             </a>
+
+            {/* YouTube Music — ótimo para músicas brasileiras */}
             <a
               href={ytMusic}
               target="_blank"
@@ -134,6 +141,7 @@ const YouTubeModal = ({
               <Play size={16} />
               YouTube Music
             </a>
+
             <button
               onClick={onClose}
               className="w-full py-3 bg-slate-100 hover:bg-slate-200 rounded-2xl font-black text-xs text-slate-500 uppercase tracking-wide transition-all"
@@ -141,6 +149,11 @@ const YouTubeModal = ({
               Fechar
             </button>
           </div>
+
+          {/* Dica de query */}
+          <p className="mt-4 text-center text-[10px] text-slate-400 font-bold">
+            Buscando por: &ldquo;{track.artista}&rdquo; &ldquo;{track.musica}&rdquo;
+          </p>
         </div>
       </div>
 
