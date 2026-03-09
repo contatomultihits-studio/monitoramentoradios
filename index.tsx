@@ -15,9 +15,12 @@ const getSupabaseClient = () => (window as any)._supabaseClient;
 
 // ─────────────────────────────────────────────────────────────
 // BLOQUEIO — breaks/vinhetas que não devem aparecer na dash
+// Para bloquear pela música (qualquer artista): { musica: 'NOME' }
+// Para bloquear pelo artista (qualquer música): { artista: 'NOME' }
+// Para bloquear combinado: { artista: 'X', musica: 'Y' }
 // ─────────────────────────────────────────────────────────────
 const BLOCKED_TRACKS: { artista?: string; musica?: string }[] = [
-  { artista: 'SP' },
+  { musica: 'SP' },  // break da Metropolitana FM (artista=METROPOLITANA, musica=SP)
 ];
 
 const isBlocked = (artista: string, musica: string): boolean =>
