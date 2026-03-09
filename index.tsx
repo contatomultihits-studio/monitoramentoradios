@@ -5,15 +5,13 @@ import {
   Music, Loader2, Plus, Download,
   TrendingUp, Sparkles, Filter, Megaphone, Activity,
   Trophy, AlertTriangle, ChevronRight, ChevronLeft,
-  Youtube, X, ExternalLink
+  Youtube, X, ExternalLink, Play
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
-// --- CONFIGURAÇÕES ---
 const REFRESH_INTERVAL_MS = 30000;
 const LASTFM_API_KEY = '2a416b64ded1827a7e82e61d9a87b2e0';
-
 const getSupabaseClient = () => (window as any)._supabaseClient;
 
 const GENRE_COLORS: Record<string, string> = {
@@ -25,21 +23,24 @@ const GENRE_COLORS: Record<string, string> = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// YOUTUBE UTILS — sem API, apenas URL de busca / embed search
+// YOUTUBE UTILS — URL de busca direta (iframe search foi descontinuado pelo YT)
 // ─────────────────────────────────────────────────────────────
 const buildYouTubeSearchURL = (artista: string, musica: string) =>
-  `https://www.youtube.com/results?search_query=${encodeURIComponent(`${artista} ${musica} official`)}`;
+  `https://www.youtube.com/results?search_query=${encodeURIComponent(`${artista} ${musica}`)}` ;
 
-// Embed via "nocookie" com search (YouTube não permite embed de search diretamente,
-// então abrimos a busca em nova aba E mostramos o iframe com o primeiro resultado via
-// ytdl-free trick: embed da URL de busca do youtube.com/embed?listType=search)
-const buildYouTubeEmbedURL = (artista: string, musica: string) =>
-  `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent(`${artista} ${musica}`)}&autoplay=1`;
+const buildYouTubeMusicURL = (artista: string, musica: string) =>
+  `https://music.youtube.com/search?q=${encodeURIComponent(`${artista} ${musica}`)}` ;
 
 // ─────────────────────────────────────────────────────────────
-// YOUTUBE MODAL
+// YOUTUBE MODAL — card de pré-visualização + botões de abrir
 // ─────────────────────────────────────────────────────────────
-const YouTubeModal = ({ track, onClose }: { track: { artista: string; musica: string; capa?: string; genero?: string } | null; onClose: () => void }) => {
+const YouTubeModal = ({
+  track,
+  onClose
+}: {
+  track: { artista: string; musica: string; capa?: string; genero?: string; bpm?: number } | null;
+  onClose: () => void;
+}) => {
   useEffect(() => {
     if (!track) return;
     const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -53,17 +54,20 @@ const YouTubeModal = ({ track, onClose }: { track: { artista: string; musica: st
 
   if (!track) return null;
 
-  const embedUrl = buildYouTubeEmbedURL(track.artista, track.musica);
-  const searchUrl = buildYouTubeSearchURL(track.artista, track.musica);
+  const ytSearch = buildYouTubeSearchURL(track.artista, track.musica);
+  const ytMusic  = buildYouTubeMusicURL(track.artista, track.musica);
 
   return (
     <div
       className="fixed inset-0 z-[999] flex items-center justify-center p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
+      style={{ backgroundColor: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(10px)' }}
     >
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in" style={{ animation: 'modalIn 0.2s ease-out' }}>
-        {/* Header do modal */}
+      <div
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+        style={{ animation: 'modalIn 0.22s cubic-bezier(0.34,1.56,0.64,1)' }}
+      >
+        {/* Header vermelho YT */}
         <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className="bg-white/20 p-2 rounded-xl flex-shrink-0">
@@ -74,60 +78,75 @@ const YouTubeModal = ({ track, onClose }: { track: { artista: string; musica: st
               <p className="font-bold text-red-200 text-xs truncate">{track.artista}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+          <button onClick={onClose} className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-all flex-shrink-0 ml-3">
+            <X size={18} className="text-white" />
+          </button>
+        </div>
+
+        {/* Capa grande + info */}
+        <div className="p-6">
+          <div className="flex items-center gap-5 mb-6">
+            {/* Capa */}
+            <div className="flex-shrink-0 w-28 h-28 rounded-2xl overflow-hidden bg-slate-100 shadow-xl ring-4 ring-slate-100">
+              {track.capa
+                ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center"><Music size={32} className="text-slate-300" /></div>
+              }
+            </div>
+            {/* Dados */}
+            <div className="flex-1 min-w-0">
+              <h2 className="font-black text-slate-900 text-xl leading-tight mb-1">{track.musica}</h2>
+              <p className="font-bold text-blue-600 text-base mb-3">{track.artista}</p>
+              <div className="flex flex-wrap gap-2">
+                {track.genero && track.genero !== 'Desconhecido' && (
+                  <span className="px-3 py-1 rounded-full text-xs font-black uppercase text-white"
+                    style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>
+                    {track.genero}
+                  </span>
+                )}
+                {track.bpm && (
+                  <div className="flex items-center gap-1 px-3 py-1 bg-emerald-100 rounded-full">
+                    <Activity size={10} className="text-emerald-600" />
+                    <span className="font-black text-xs text-emerald-700">{track.bpm} BPM</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Botões de ação */}
+          <div className="space-y-3">
             <a
-              href={searchUrl}
+              href={ytSearch}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-white font-black text-xs uppercase transition-all"
+              className="flex items-center justify-center gap-3 w-full py-4 bg-red-500 hover:bg-red-600 active:scale-95 rounded-2xl font-black text-white text-sm uppercase tracking-wide transition-all shadow-lg hover:shadow-xl"
             >
-              <ExternalLink size={12} /> Abrir YT
+              <Youtube size={18} />
+              Buscar no YouTube
+            </a>
+            <a
+              href={ytMusic}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-3 w-full py-4 bg-slate-800 hover:bg-slate-900 active:scale-95 rounded-2xl font-black text-white text-sm uppercase tracking-wide transition-all shadow-md hover:shadow-lg"
+            >
+              <Play size={16} />
+              YouTube Music
             </a>
             <button
               onClick={onClose}
-              className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-all"
+              className="w-full py-3 bg-slate-100 hover:bg-slate-200 rounded-2xl font-black text-xs text-slate-500 uppercase tracking-wide transition-all"
             >
-              <X size={18} className="text-white" />
+              Fechar
             </button>
           </div>
-        </div>
-
-        {/* Player */}
-        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-          <iframe
-            className="absolute inset-0 w-full h-full"
-            src={embedUrl}
-            title={`${track.artista} - ${track.musica}`}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 bg-slate-50 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {track.genero && track.genero !== 'Desconhecido' && (
-              <span
-                className="px-3 py-1 rounded-full text-xs font-black uppercase text-white"
-                style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}
-              >
-                {track.genero}
-              </span>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-xl font-black text-xs text-slate-600 uppercase transition-all"
-          >
-            Fechar
-          </button>
         </div>
       </div>
 
       <style>{`
         @keyframes modalIn {
-          from { opacity: 0; transform: scale(0.95) translateY(10px); }
+          from { opacity: 0; transform: scale(0.88) translateY(16px); }
           to   { opacity: 1; transform: scale(1)   translateY(0px); }
         }
       `}</style>
@@ -135,17 +154,17 @@ const YouTubeModal = ({ track, onClose }: { track: { artista: string; musica: st
   );
 };
 
-// Botão reutilizável de abrir YT
+// Botão reutilizável
 const YTButton = ({ track, onOpen, size = 'sm' }: { track: any; onOpen: (t: any) => void; size?: 'sm' | 'md' | 'lg' }) => {
-  const sizeClasses = {
-    sm:  'px-2.5 py-1.5 text-[10px] gap-1',
-    md:  'px-4 py-2 text-xs gap-1.5',
-    lg:  'px-5 py-3 text-sm gap-2',
+  const cls = {
+    sm: 'px-2.5 py-1.5 text-[10px] gap-1',
+    md: 'px-4 py-2 text-xs gap-1.5',
+    lg: 'px-5 py-3 text-sm gap-2',
   };
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onOpen(track); }}
-      className={`flex items-center ${sizeClasses[size]} bg-red-500 hover:bg-red-600 active:scale-95 rounded-full font-black text-white transition-all shadow-md hover:shadow-lg flex-shrink-0`}
+      className={`flex items-center ${cls[size]} bg-red-500 hover:bg-red-600 active:scale-95 rounded-full font-black text-white transition-all shadow-md hover:shadow-lg flex-shrink-0`}
     >
       <Youtube size={size === 'lg' ? 16 : size === 'md' ? 13 : 11} />
       {size === 'lg' ? 'Ver no YouTube' : size === 'md' ? 'YouTube' : 'YT'}
@@ -154,14 +173,13 @@ const YTButton = ({ track, onOpen, size = 'sm' }: { track: any; onOpen: (t: any)
 };
 
 // ─────────────────────────────────────────────────────────────
-// Cache Last.fm
+// LAST.FM CACHE
 // ─────────────────────────────────────────────────────────────
 const artistPhotoCache: Record<string, string> = {};
 const fetchArtistPhoto = async (artistName: string): Promise<string> => {
   if (artistPhotoCache[artistName] !== undefined) return artistPhotoCache[artistName];
   try {
-    const url = `https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(artistName)}&api_key=${LASTFM_API_KEY}&format=json`;
-    const res = await fetch(url);
+    const res = await fetch(`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(artistName)}&api_key=${LASTFM_API_KEY}&format=json`);
     const json = await res.json();
     const images: any[] = json?.artist?.image || [];
     const img = images.find((i: any) => i.size === 'extralarge') || images.find((i: any) => i.size === 'large');
@@ -176,15 +194,15 @@ const fetchArtistPhoto = async (artistName: string): Promise<string> => {
 // ─────────────────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
-    const data = payload[0].payload;
+    const d = payload[0].payload;
     return (
       <div className="bg-white p-4 rounded-xl shadow-2xl border border-slate-100">
-        <p className="font-black text-slate-800 uppercase text-xs mb-1">{data.name}</p>
-        <p className="font-bold text-blue-600 text-xs">{data.value} músicas ({data.percentage}%)</p>
-        {data.subGenres && (
+        <p className="font-black text-slate-800 uppercase text-xs mb-1">{d.name}</p>
+        <p className="font-bold text-blue-600 text-xs">{d.value} músicas ({d.percentage}%)</p>
+        {d.subGenres && (
           <div className="mt-2 pt-2 border-t border-slate-100">
             <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Inclui:</p>
-            <p className="text-[10px] text-slate-600 leading-tight">{data.subGenres.join(', ')}</p>
+            <p className="text-[10px] text-slate-600 leading-tight">{d.subGenres.join(', ')}</p>
           </div>
         )}
       </div>
@@ -210,7 +228,7 @@ const NowPlayingCard = ({ track, onOpenYT }: { track: any; onOpenYT: (t: any) =>
         </span>
       </div>
       <div className="flex items-center gap-6">
-        <div className="relative flex-shrink-0">
+        <div className="flex-shrink-0">
           <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/20">
             {track.capa
               ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" />
@@ -228,9 +246,7 @@ const NowPlayingCard = ({ track, onOpenYT }: { track: any; onOpenYT: (t: any) =>
             </div>
             {track.genero && track.genero !== 'Desconhecido' && (
               <span className="px-4 py-2 rounded-full text-sm font-black uppercase text-white shadow-lg"
-                style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>
-                {track.genero}
-              </span>
+                style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>{track.genero}</span>
             )}
             {track.bpm && (
               <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500 rounded-full shadow-lg">
@@ -238,7 +254,6 @@ const NowPlayingCard = ({ track, onOpenYT }: { track: any; onOpenYT: (t: any) =>
                 <span className="font-black text-white text-sm">{track.bpm} BPM</span>
               </div>
             )}
-            {/* BOTÃO YOUTUBE — tamanho lg no NowPlaying */}
             <YTButton track={track} onOpen={onOpenYT} size="lg" />
           </div>
         </div>
@@ -248,14 +263,14 @@ const NowPlayingCard = ({ track, onOpenYT }: { track: any; onOpenYT: (t: any) =>
 );
 
 // ─────────────────────────────────────────────────────────────
-// MUSIC CARD (lista)
+// MUSIC CARD
 // ─────────────────────────────────────────────────────────────
 const MusicCard = ({ track, repeatCount, onOpenYT }: { track: any; repeatCount?: number; onOpenYT: (t: any) => void }) => (
   <div className={`bg-white border rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${
     repeatCount && repeatCount >= 3 ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'
   }`}>
     <div className="flex items-center gap-4">
-      <div className="relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shadow-md">
+      <div className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shadow-md">
         {track.capa
           ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center text-slate-300"><Music size={20} /></div>
@@ -271,9 +286,7 @@ const MusicCard = ({ track, repeatCount, onOpenYT }: { track: any; repeatCount?:
           </div>
           {track.genero && track.genero !== 'Desconhecido' && (
             <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white"
-              style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>
-              {track.genero}
-            </span>
+              style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>{track.genero}</span>
           )}
           {track.bpm && (
             <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500 rounded-full">
@@ -288,7 +301,6 @@ const MusicCard = ({ track, repeatCount, onOpenYT }: { track: any; repeatCount?:
           )}
         </div>
       </div>
-      {/* BOTÃO YOUTUBE — tamanho md na lista */}
       <YTButton track={track} onOpen={onOpenYT} size="md" />
     </div>
   </div>
@@ -308,14 +320,11 @@ const TopArtistsCard = ({ filteredData, onOpenYT }: { filteredData: any[]; onOpe
       counts[t.artista].count++;
       if (!counts[t.artista].capa && t.capa) counts[t.artista].capa = t.capa;
     });
-    return Object.entries(counts)
-      .map(([artista, info]) => ({ artista, ...info }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
+    return Object.entries(counts).map(([artista, info]) => ({ artista, ...info })).sort((a, b) => b.count - a.count).slice(0, 5);
   }, [filteredData]);
 
   useEffect(() => {
-    if (topArtists.length === 0) return;
+    if (!topArtists.length) return;
     setLoading(true);
     Promise.all(topArtists.map(async a => ({ artista: a.artista, photo: await fetchArtistPhoto(a.artista) })))
       .then(results => {
@@ -326,14 +335,12 @@ const TopArtistsCard = ({ filteredData, onOpenYT }: { filteredData: any[]; onOpe
       });
   }, [topArtists]);
 
-  if (topArtists.length === 0) return null;
+  if (!topArtists.length) return null;
 
   return (
     <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-8 rounded-3xl shadow-xl mb-8 border border-amber-100">
       <div className="flex items-center gap-4 mb-6">
-        <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg">
-          <Trophy className="text-white" size={28} />
-        </div>
+        <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg"><Trophy className="text-white" size={28} /></div>
         <div>
           <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Top 5 Artistas</h2>
           <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Mais tocados no período filtrado</p>
@@ -346,26 +353,21 @@ const TopArtistsCard = ({ filteredData, onOpenYT }: { filteredData: any[]; onOpe
             <div key={artist.artista} className="flex flex-col items-center text-center group">
               <div className="relative mb-3">
                 <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${
-                  idx === 0 ? 'bg-yellow-400 text-yellow-900' :
-                  idx === 1 ? 'bg-slate-300 text-slate-700' :
-                  idx === 2 ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-600'
-                }`}>
-                  {idx < 3 ? ['1°','2°','3°'][idx] : `${idx+1}°`}
-                </div>
+                  idx === 0 ? 'bg-yellow-400 text-yellow-900' : idx === 1 ? 'bg-slate-300 text-slate-700' : idx === 2 ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-600'
+                }`}>{idx < 3 ? ['1°','2°','3°'][idx] : `${idx+1}°`}</div>
                 <div
-                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 cursor-pointer ${
+                  className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 cursor-pointer ${
                     idx === 0 ? 'ring-yellow-400' : idx === 1 ? 'ring-slate-300' : idx === 2 ? 'ring-amber-500' : 'ring-slate-200'
                   }`}
                   onClick={() => onOpenYT({ artista: artist.artista, musica: artist.musica, capa: photo, genero: artist.genero })}
                   title={`Ver ${artist.artista} no YouTube`}
                 >
                   {photo
-                    ? <img src={photo} alt={artist.artista} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    ? <img src={photo} alt={artist.artista} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
                     : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200"><Music size={24} className="text-blue-400" /></div>
                   }
-                  {/* overlay YT ao hover */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all rounded-2xl flex items-center justify-center">
-                    <Youtube size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
+                    <Youtube size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
                   </div>
                 </div>
                 {loading && !photo && (
@@ -378,9 +380,7 @@ const TopArtistsCard = ({ filteredData, onOpenYT }: { filteredData: any[]; onOpe
               <p className="font-bold text-blue-600 text-[10px] mt-1">{artist.count} execuções</p>
               {artist.genero && artist.genero !== 'Desconhecido' && (
                 <span className="mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white"
-                  style={{ backgroundColor: GENRE_COLORS[artist.genero] || '#3B82F6' }}>
-                  {artist.genero}
-                </span>
+                  style={{ backgroundColor: GENRE_COLORS[artist.genero] || '#3B82F6' }}>{artist.genero}</span>
               )}
             </div>
           );
@@ -409,8 +409,7 @@ const RepeatedTracksCard = ({ filteredData, onOpenYT }: { filteredData: any[]; o
   }, [filteredData]);
 
   useEffect(() => { setPage(0); }, [filteredData]);
-
-  if (repeatedTracks.length === 0) return null;
+  if (!repeatedTracks.length) return null;
 
   const totalPages = Math.ceil(repeatedTracks.length / PAGE_SIZE);
   const currentItems = repeatedTracks.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
@@ -419,46 +418,35 @@ const RepeatedTracksCard = ({ filteredData, onOpenYT }: { filteredData: any[]; o
     <div className="bg-gradient-to-br from-red-50 to-orange-50 p-8 rounded-3xl shadow-xl mb-8 border border-red-100">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <div className="bg-gradient-to-br from-red-500 to-orange-500 p-4 rounded-2xl shadow-lg">
-            <AlertTriangle className="text-white" size={28} />
-          </div>
+          <div className="bg-gradient-to-br from-red-500 to-orange-500 p-4 rounded-2xl shadow-lg"><AlertTriangle className="text-white" size={28} /></div>
           <div>
             <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Músicas Repetidas</h2>
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">
-              Tocadas {MIN_REPEATS}+ vezes • {repeatedTracks.length} música{repeatedTracks.length !== 1 ? 's' : ''}
-            </p>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Tocadas {MIN_REPEATS}+ vezes • {repeatedTracks.length} música{repeatedTracks.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
         {totalPages > 1 && (
           <div className="flex items-center gap-2">
             <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
               className="p-2 rounded-xl bg-white shadow-sm border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-              <ChevronLeft size={16} className="text-slate-600" />
-            </button>
+              <ChevronLeft size={16} className="text-slate-600" /></button>
             <span className="font-black text-xs text-slate-600 uppercase px-2">{page + 1} / {totalPages}</span>
             <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
               className="p-2 rounded-xl bg-white shadow-sm border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-              <ChevronRight size={16} className="text-slate-600" />
-            </button>
+              <ChevronRight size={16} className="text-slate-600" /></button>
           </div>
         )}
       </div>
-
       <div className="space-y-3">
         {currentItems.map((item, idx) => {
-          const globalRank = page * PAGE_SIZE + idx + 1;
           const t = item.track;
           return (
             <div key={`${t.artista}-${t.musica}`} className="bg-white rounded-2xl p-4 shadow-sm border border-red-100 hover:shadow-md transition-all">
               <div className="flex items-center gap-4">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                  <span className="font-black text-xs text-red-600">{globalRank}°</span>
+                  <span className="font-black text-xs text-red-600">{page * PAGE_SIZE + idx + 1}°</span>
                 </div>
                 <div className="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-slate-100 shadow-md">
-                  {t.capa
-                    ? <img src={t.capa} alt="Capa" className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center text-slate-300"><Music size={18} /></div>
-                  }
+                  {t.capa ? <img src={t.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Music size={18} /></div>}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-black text-slate-800 text-sm truncate leading-tight">{t.musica}</h3>
@@ -466,9 +454,7 @@ const RepeatedTracksCard = ({ filteredData, onOpenYT }: { filteredData: any[]; o
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     {t.genero && t.genero !== 'Desconhecido' && (
                       <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white"
-                        style={{ backgroundColor: GENRE_COLORS[t.genero] || '#3B82F6' }}>
-                        {t.genero}
-                      </span>
+                        style={{ backgroundColor: GENRE_COLORS[t.genero] || '#3B82F6' }}>{t.genero}</span>
                     )}
                     {t.bpm && (
                       <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-100 rounded-full">
@@ -478,7 +464,6 @@ const RepeatedTracksCard = ({ filteredData, onOpenYT }: { filteredData: any[]; o
                     )}
                   </div>
                 </div>
-                {/* Botão YT nas músicas repetidas */}
                 <YTButton track={t} onOpen={onOpenYT} size="md" />
                 <div className="flex-shrink-0 flex flex-col items-center bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl px-4 py-3 shadow-lg">
                   <span className="text-2xl font-black text-white leading-none">{item.count}</span>
@@ -490,13 +475,11 @@ const RepeatedTracksCard = ({ filteredData, onOpenYT }: { filteredData: any[]; o
           );
         })}
       </div>
-
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-3 mt-6">
           <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white shadow-sm border border-slate-200 font-black text-xs text-slate-600 uppercase hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95">
-            <ChevronLeft size={14} /> Anteriores
-          </button>
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white shadow-sm border border-slate-200 font-black text-xs text-slate-600 uppercase hover:bg-slate-50 disabled:opacity-30 transition-all hover:scale-105 active:scale-95">
+            <ChevronLeft size={14} /> Anteriores</button>
           <div className="flex gap-1.5">
             {Array.from({ length: totalPages }).map((_, i) => (
               <button key={i} onClick={() => setPage(i)}
@@ -506,9 +489,8 @@ const RepeatedTracksCard = ({ filteredData, onOpenYT }: { filteredData: any[]; o
             ))}
           </div>
           <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white shadow-sm border border-slate-200 font-black text-xs text-slate-600 uppercase hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95">
-            Próximas <ChevronRight size={14} />
-          </button>
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white shadow-sm border border-slate-200 font-black text-xs text-slate-600 uppercase hover:bg-slate-50 disabled:opacity-30 transition-all hover:scale-105 active:scale-95">
+            Próximas <ChevronRight size={14} /></button>
         </div>
       )}
     </div>
@@ -519,12 +501,11 @@ const RepeatedTracksCard = ({ filteredData, onOpenYT }: { filteredData: any[]; o
 // GRÁFICO DE GÊNEROS
 // ─────────────────────────────────────────────────────────────
 const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObject<HTMLDivElement> }) => {
-  if (!data || data.length === 0) return null;
-  const MIN_PERCENTAGE = 3;
+  if (!data || !data.length) return null;
   const knownGenres = data.filter(g => g.name !== 'Desconhecido');
-  if (knownGenres.length === 0) return null;
-  const mainGenres = knownGenres.filter(g => parseFloat(g.percentage) >= MIN_PERCENTAGE);
-  const smallGenres = knownGenres.filter(g => parseFloat(g.percentage) < MIN_PERCENTAGE);
+  if (!knownGenres.length) return null;
+  const mainGenres = knownGenres.filter(g => parseFloat(g.percentage) >= 3);
+  const smallGenres = knownGenres.filter(g => parseFloat(g.percentage) < 3);
   let chartData = [...mainGenres];
   if (smallGenres.length > 0) {
     const othersValue = smallGenres.reduce((sum, g) => sum + g.value, 0);
@@ -547,16 +528,14 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
             <Pie data={chartData} cx="50%" cy="50%" labelLine={false}
               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
               outerRadius={120} innerRadius={60} fill="#3B82F6" dataKey="value" paddingAngle={2}>
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={GENRE_COLORS[entry.name] || '#B8B8B8'} stroke="#fff" strokeWidth={2} />
-              ))}
+              {chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={GENRE_COLORS[entry.name] || '#B8B8B8'} stroke="#fff" strokeWidth={2} />))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </ResponsiveContainer>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
-        {chartData.map((genre) => (
+        {chartData.map(genre => (
           <div key={genre.name} className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
             <div className="w-5 h-5 rounded-full shadow-md flex-shrink-0" style={{ backgroundColor: GENRE_COLORS[genre.name] || '#B8B8B8' }} />
             <div className="flex-1 min-w-0">
@@ -571,7 +550,7 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
 };
 
 // ─────────────────────────────────────────────────────────────
-// APP PRINCIPAL
+// APP
 // ─────────────────────────────────────────────────────────────
 const App = () => {
   const [data, setData] = useState<any[]>([]);
@@ -579,7 +558,7 @@ const App = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', bpm: 'all' });
   const [visibleCount, setVisibleCount] = useState(9);
-  const [ytTrack, setYtTrack] = useState<any>(null); // controla o modal YT
+  const [ytTrack, setYtTrack] = useState<any>(null);
   const chartRef = React.useRef<HTMLDivElement>(null);
   const fetchDataRef = useRef<(isSilent?: boolean) => Promise<void>>();
 
@@ -589,24 +568,20 @@ const App = () => {
     try {
       const supabase = getSupabaseClient();
       if (!supabase) throw new Error('Supabase client não disponível');
-      const { data: tracks, error: queryError } = await supabase
-        .from('radio_airplay').select('*').order('tocou_em', { ascending: false }).limit(1000);
-      if (queryError) throw queryError;
+      const { data: tracks, error } = await supabase.from('radio_airplay').select('*').order('tocou_em', { ascending: false }).limit(1000);
+      if (error) throw error;
       const formatted = tracks.map((t: any) => {
         const utcDate = new Date(t.tocou_em);
-        const brazilDateStr = utcDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
-        const [datePart, timePart] = brazilDateStr.split(', ');
+        const str = utcDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+        const [datePart, timePart] = str.split(', ');
         const [day, month, year] = datePart.split('/');
         return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio || 'Metropolitana FM', genero: t.genero || 'Desconhecido', data: `${year}-${month}-${day}`, hora: timePart, timestamp: utcDate.getTime(), capa: t.capa, bpm: t.bpm };
       });
       setData(formatted);
       setFilters(prev => (!prev.date && formatted.length > 0) ? { ...prev, date: formatted[0].data } : prev);
     } catch (err: any) {
-      console.error('Erro ao buscar dados:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+      console.error('Erro:', err);
+    } finally { setLoading(false); setRefreshing(false); }
   }, []);
 
   useEffect(() => { fetchDataRef.current = fetchData; }, [fetchData]);
@@ -638,16 +613,11 @@ const App = () => {
   }, [filteredData]);
 
   const genreData = useMemo(() => {
-    const filtered = data.filter(t => {
-      const matchRadio = t.radio.trim() === filters.radio.trim();
-      const matchDate = filters.date ? t.data === filters.date : true;
-      const matchHour = filters.hour !== 'all' ? t.hora.startsWith(`${filters.hour}:`) : true;
-      return matchRadio && matchDate && matchHour;
-    });
-    const genreCounts: Record<string, number> = {};
-    filtered.forEach(t => { const g = t.genero || 'Desconhecido'; genreCounts[g] = (genreCounts[g] || 0) + 1; });
+    const filtered = data.filter(t => t.radio.trim() === filters.radio.trim() && (filters.date ? t.data === filters.date : true) && (filters.hour !== 'all' ? t.hora.startsWith(`${filters.hour}:`) : true));
+    const counts: Record<string, number> = {};
+    filtered.forEach(t => { const g = t.genero || 'Desconhecido'; counts[g] = (counts[g] || 0) + 1; });
     const total = filtered.length;
-    return Object.entries(genreCounts).map(([name, value]) => ({ name, value, percentage: ((value / total) * 100).toFixed(1) })).sort((a, b) => b.value - a.value);
+    return Object.entries(counts).map(([name, value]) => ({ name, value, percentage: ((value / total) * 100).toFixed(1) })).sort((a, b) => b.value - a.value);
   }, [data, filters.radio, filters.date, filters.hour]);
 
   const uniqueDates = useMemo(() => [...new Set(data.filter(t => t.radio === filters.radio).map(d => d.data))].sort().reverse(), [data, filters.radio]);
@@ -655,8 +625,7 @@ const App = () => {
   const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')), []);
 
   const exportPDF = async () => {
-    const exportRows = filteredData;
-    if (exportRows.length === 0) { alert('Nenhum registro encontrado para exportar.'); return; }
+    if (!filteredData.length) { alert('Nenhum registro.'); return; }
     const doc = new jsPDF();
     doc.setFontSize(20); doc.setFont('helvetica', 'bold'); doc.text(`IA NO RADIO - ${filters.radio}`, 14, 20);
     doc.setFontSize(10); doc.setFont('helvetica', 'normal');
@@ -669,7 +638,7 @@ const App = () => {
         const html2canvas = (await import('https://esm.sh/html2canvas@1.4.1')).default;
         const canvas = await html2canvas(chartRef.current, { backgroundColor: '#ffffff', scale: 2 });
         doc.addImage(canvas.toDataURL('image/png'), 'PNG', 14, y, 180, 90); y += 100;
-      } catch (err) { console.error('Erro ao adicionar gráfico:', err); }
+      } catch {}
     }
     if (y > 240) { doc.addPage(); y = 20; }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('PLAYLIST', 14, y); y += 8;
@@ -679,7 +648,7 @@ const App = () => {
       doc.line(14, y + 1, 196, y + 1); doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
     };
     renderHeader(); y += 6;
-    exportRows.forEach(t => {
+    filteredData.forEach(t => {
       if (y > 280) { doc.addPage(); y = 20; renderHeader(); y += 6; }
       doc.text(t.hora, 14, y); doc.text(t.artista.substring(0, 30), 32, y); doc.text(t.musica.substring(0, 38), 95, y);
       doc.text((t.genero === 'Desconhecido' ? '' : t.genero).substring(0, 18), 158, y); doc.text(t.bpm ? String(t.bpm) : '', 185, y); y += 6;
@@ -689,7 +658,6 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* MODAL YOUTUBE */}
       <YouTubeModal track={ytTrack} onClose={() => setYtTrack(null)} />
 
       <header className="bg-white border-b border-blue-100 sticky top-0 z-50 shadow-sm">
@@ -713,7 +681,6 @@ const App = () => {
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-10">
-        {/* FILTROS */}
         <div className="bg-white p-8 rounded-3xl shadow-xl mb-8 border border-slate-200">
           <div className="flex items-center gap-3 mb-6">
             <Filter className="text-blue-600" size={24} />
@@ -801,16 +768,13 @@ const App = () => {
 (async () => {
   const maxAttempts = 10;
   let attempts = 0;
-  console.log('[REACT] Aguardando Supabase client...');
   while (attempts < maxAttempts) {
     if ((window as any)._supabaseReady && (window as any)._supabaseClient) {
-      console.log('[REACT] ✅ Client pronto, renderizando App!');
       createRoot(document.getElementById('root')!).render(<App />);
       return;
     }
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(r => setTimeout(r, 500));
     attempts++;
   }
-  console.error('[REACT] ❌ Timeout: Supabase client não inicializou');
-  document.getElementById('root')!.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#EF4444,#DC2626);"><div style="text-align:center;color:white;padding:2rem;"><h1 style="font-size:2rem;font-weight:900;margin-bottom:1rem;">❌ Erro de Inicialização</h1><p style="margin-bottom:2rem;">Não foi possível conectar ao banco de dados.</p><button onclick="location.reload()" style="background:white;color:#DC2626;padding:1rem 2rem;border:none;border-radius:0.5rem;font-weight:bold;cursor:pointer;">Tentar Novamente</button></div></div>`;
+  document.getElementById('root')!.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#EF4444"><div style="text-align:center;color:white;padding:2rem"><h1 style="font-size:2rem;font-weight:900;margin-bottom:1rem">❌ Erro</h1><button onclick="location.reload()" style="background:white;color:#DC2626;padding:1rem 2rem;border:none;border-radius:.5rem;font-weight:bold;cursor:pointer">Tentar Novamente</button></div></div>`;
 })();
