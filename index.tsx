@@ -3,13 +3,15 @@ import { createRoot } from 'react-dom/client';
 import { 
   Search, Calendar, Clock, RefreshCw, Radio, 
   Music, Loader2, Plus, Download, PieChart as PieChartIcon,
-  TrendingUp, Sparkles, Filter, Megaphone, Activity
+  TrendingUp, Sparkles, Filter, Megaphone, Activity,
+  Trophy, AlertTriangle, ChevronRight, ChevronLeft, Star
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 // --- CONFIGURAÇÕES ---
 const REFRESH_INTERVAL_MS = 30000;
+const LASTFM_API_KEY = '2a416b64ded1827a7e82e61d9a87b2e0'; // Last.fm API pública gratuita
 
 // Pega Supabase client do window (já criado no musical.html)
 const getSupabaseClient = () => (window as any)._supabaseClient;
@@ -31,6 +33,27 @@ const GENRE_COLORS: Record<string, string> = {
   'Jazz': '#1e293b',
   'Desconhecido': '#D3D3D3',
   'Outros': '#B8B8B8'
+};
+
+// Cache de fotos de artistas (Last.fm)
+const artistPhotoCache: Record<string, string> = {};
+
+const fetchArtistPhoto = async (artistName: string): Promise<string> => {
+  if (artistPhotoCache[artistName] !== undefined) return artistPhotoCache[artistName];
+  try {
+    const url = `https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(artistName)}&api_key=${LASTFM_API_KEY}&format=json`;
+    const res = await fetch(url);
+    const json = await res.json();
+    const images: any[] = json?.artist?.image || [];
+    // Pega "extralarge" ou "large"
+    const img = images.find((i: any) => i.size === 'extralarge') || images.find((i: any) => i.size === 'large');
+    const photoUrl = img?.['#text'] || '';
+    // Last.fm retorna placeholder vazio se não tem foto
+    artistPhotoCache[artistName] = photoUrl.includes('2a96cbd8b46e442fc41c2b86b821562f') ? '' : photoUrl;
+  } catch {
+    artistPhotoCache[artistName] = '';
+  }
+  return artistPhotoCache[artistName];
 };
 
 // Tooltip para mostrar gêneros dentro de "Outros"
@@ -118,9 +141,9 @@ const NowPlayingCard = ({ track }: { track: any }) => {
 };
 
 // Card de música normal (lista)
-const MusicCard = ({ track }: { track: any }) => {
+const MusicCard = ({ track, repeatCount }: { track: any; repeatCount?: number }) => {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+    <div className={`bg-white border rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${repeatCount && repeatCount >= 3 ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'}`}>
       <div className="flex items-center gap-4">
         <div className="relative flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shadow-md">
           {track.capa ? (
@@ -158,9 +181,286 @@ const MusicCard = ({ track }: { track: any }) => {
                 <span className="font-black text-[10px] text-white">{track.bpm} BPM</span>
               </div>
             )}
+            {repeatCount && repeatCount >= 3 && (
+              <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-400 rounded-full">
+                <span className="font-black text-[10px] text-white">🔁 Repetida {repeatCount}x</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════
+// NOVO: TOP 5 ARTISTAS COM FOTO (Last.fm)
+// ═══════════════════════════════════════════════
+const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
+  const [photos, setPhotos] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+
+  const topArtists = useMemo(() => {
+    const counts: Record<string, { count: number; genero: string; capa: string }> = {};
+    filteredData.forEach(t => {
+      if (!counts[t.artista]) counts[t.artista] = { count: 0, genero: t.genero, capa: t.capa || '' };
+      counts[t.artista].count++;
+      if (!counts[t.artista].capa && t.capa) counts[t.artista].capa = t.capa;
+    });
+    return Object.entries(counts)
+      .map(([artista, info]) => ({ artista, ...info }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [filteredData]);
+
+  useEffect(() => {
+    if (topArtists.length === 0) return;
+    setLoading(true);
+    Promise.all(
+      topArtists.map(async (a) => {
+        const photo = await fetchArtistPhoto(a.artista);
+        return { artista: a.artista, photo };
+      })
+    ).then(results => {
+      const map: Record<string, string> = {};
+      results.forEach(r => { map[r.artista] = r.photo; });
+      setPhotos(map);
+      setLoading(false);
+    });
+  }, [topArtists]);
+
+  if (topArtists.length === 0) return null;
+
+  const medals = ['🥇', '🥈', '🥉', '4º', '5º'];
+
+  return (
+    <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-8 rounded-3xl shadow-xl mb-8 border border-amber-100">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg">
+          <Trophy className="text-white" size={28} />
+        </div>
+        <div>
+          <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Top 5 Artistas</h2>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Mais tocados no período filtrado</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-5 gap-3">
+        {topArtists.map((artist, idx) => {
+          const photo = photos[artist.artista] || artist.capa || '';
+          return (
+            <div key={artist.artista} className="flex flex-col items-center text-center group">
+              <div className="relative mb-3">
+                {/* Posição */}
+                <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${
+                  idx === 0 ? 'bg-yellow-400 text-yellow-900' :
+                  idx === 1 ? 'bg-slate-300 text-slate-700' :
+                  idx === 2 ? 'bg-amber-600 text-white' :
+                  'bg-slate-200 text-slate-600'
+                }`}>
+                  {idx < 3 ? ['1°','2°','3°'][idx] : `${idx+1}°`}
+                </div>
+                {/* Foto */}
+                <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 ${
+                  idx === 0 ? 'ring-yellow-400' :
+                  idx === 1 ? 'ring-slate-300' :
+                  idx === 2 ? 'ring-amber-500' :
+                  'ring-slate-200'
+                }`}>
+                  {photo ? (
+                    <img
+                      src={photo}
+                      alt={artist.artista}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200">
+                      <Music size={24} className="text-blue-400" />
+                    </div>
+                  )}
+                </div>
+                {loading && !photo && (
+                  <div className="absolute inset-0 rounded-2xl bg-white/60 flex items-center justify-center">
+                    <Loader2 size={16} className="animate-spin text-blue-500" />
+                  </div>
+                )}
+              </div>
+              <p className="font-black text-slate-800 text-xs leading-tight truncate w-full">{artist.artista}</p>
+              <p className="font-bold text-blue-600 text-[10px] mt-1">{artist.count} execuções</p>
+              {artist.genero && artist.genero !== 'Desconhecido' && (
+                <span
+                  className="mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white"
+                  style={{ backgroundColor: GENRE_COLORS[artist.genero] || '#3B82F6' }}
+                >
+                  {artist.genero}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════
+// NOVO: MÚSICAS REPETIDAS (+3x) COM PAGINAÇÃO
+// ═══════════════════════════════════════════════
+const RepeatedTracksCard = ({ filteredData }: { filteredData: any[] }) => {
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 5;
+  const MIN_REPEATS = 3;
+
+  const repeatedTracks = useMemo(() => {
+    const counts: Record<string, { count: number; track: any }> = {};
+    filteredData.forEach(t => {
+      const key = `${t.artista}|||${t.musica}`;
+      if (!counts[key]) counts[key] = { count: 0, track: t };
+      counts[key].count++;
+    });
+    return Object.values(counts)
+      .filter(item => item.count >= MIN_REPEATS)
+      .sort((a, b) => b.count - a.count);
+  }, [filteredData]);
+
+  // Reset page quando filtros mudam (filteredData muda)
+  useEffect(() => { setPage(0); }, [filteredData]);
+
+  if (repeatedTracks.length === 0) return null;
+
+  const totalPages = Math.ceil(repeatedTracks.length / PAGE_SIZE);
+  const currentItems = repeatedTracks.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+
+  return (
+    <div className="bg-gradient-to-br from-red-50 to-orange-50 p-8 rounded-3xl shadow-xl mb-8 border border-red-100">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <div className="bg-gradient-to-br from-red-500 to-orange-500 p-4 rounded-2xl shadow-lg">
+            <AlertTriangle className="text-white" size={28} />
+          </div>
+          <div>
+            <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Músicas Repetidas</h2>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">
+              Tocadas {MIN_REPEATS}+ vezes no período • {repeatedTracks.length} música{repeatedTracks.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+        </div>
+        {/* Paginação topo */}
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="p-2 rounded-xl bg-white shadow-sm border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft size={16} className="text-slate-600" />
+            </button>
+            <span className="font-black text-xs text-slate-600 uppercase px-2">
+              {page + 1} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page === totalPages - 1}
+              className="p-2 rounded-xl bg-white shadow-sm border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronRight size={16} className="text-slate-600" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        {currentItems.map((item, idx) => {
+          const globalRank = page * PAGE_SIZE + idx + 1;
+          const t = item.track;
+          return (
+            <div key={`${t.artista}-${t.musica}`} className="bg-white rounded-2xl p-4 shadow-sm border border-red-100 hover:shadow-md transition-all">
+              <div className="flex items-center gap-4">
+                {/* Rank */}
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                  <span className="font-black text-xs text-red-600">{globalRank}°</span>
+                </div>
+
+                {/* Capa */}
+                <div className="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-slate-100 shadow-md">
+                  {t.capa ? (
+                    <img src={t.capa} alt="Capa" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-300">
+                      <Music size={18} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-black text-slate-800 text-sm truncate leading-tight">{t.musica}</h3>
+                  <p className="font-bold text-blue-600 text-xs truncate mt-0.5">{t.artista}</p>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    {t.genero && t.genero !== 'Desconhecido' && (
+                      <span
+                        className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white"
+                        style={{ backgroundColor: GENRE_COLORS[t.genero] || '#3B82F6' }}
+                      >
+                        {t.genero}
+                      </span>
+                    )}
+                    {t.bpm && (
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-100 rounded-full">
+                        <Activity size={8} className="text-emerald-600" />
+                        <span className="font-black text-[9px] text-emerald-700">{t.bpm} BPM</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Badge de repetição — destaque */}
+                <div className="flex-shrink-0 flex flex-col items-center bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl px-4 py-3 shadow-lg">
+                  <span className="text-2xl font-black text-white leading-none">{item.count}</span>
+                  <span className="text-[9px] font-black text-white/80 uppercase mt-0.5">vezes</span>
+                  <span className="text-sm mt-1">🔁</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Navegação inferior */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 mt-6">
+          <button
+            onClick={() => setPage(p => Math.max(0, p - 1))}
+            disabled={page === 0}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white shadow-sm border border-slate-200 font-black text-xs text-slate-600 uppercase hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
+          >
+            <ChevronLeft size={14} /> Anteriores
+          </button>
+          <div className="flex gap-1.5">
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setPage(i)}
+                className={`w-8 h-8 rounded-xl font-black text-xs transition-all ${
+                  i === page
+                    ? 'bg-red-500 text-white shadow-lg scale-110'
+                    : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+            disabled={page === totalPages - 1}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white shadow-sm border border-slate-200 font-black text-xs text-slate-600 uppercase hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:scale-105 active:scale-95"
+          >
+            Próximas <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -342,6 +642,7 @@ const App = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // filteredData respeita TODOS os filtros (usado por todas as seções)
   const filteredData = useMemo(() => {
     return data.filter(t => {
       const matchRadio = t.radio.trim() === filters.radio.trim();
@@ -361,6 +662,16 @@ const App = () => {
       return matchRadio && matchDate && matchSearch && matchGenero && matchHour && matchBpm;
     });
   }, [data, filters]);
+
+  // repeatCountMap — mapa de chave artista+musica → contagem, baseado em filteredData
+  const repeatCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    filteredData.forEach(t => {
+      const key = `${t.artista}|||${t.musica}`;
+      map[key] = (map[key] || 0) + 1;
+    });
+    return map;
+  }, [filteredData]);
 
   const genreData = useMemo(() => {
     const filtered = data.filter(t => {
@@ -577,6 +888,10 @@ const App = () => {
 
         {filteredData.length > 0 && !filters.search && <NowPlayingCard track={filteredData[0]} />}
 
+        {/* ── NOVOS BLOCOS ── */}
+        {!loading && <TopArtistsCard filteredData={filteredData} />}
+        {!loading && <RepeatedTracksCard filteredData={filteredData} />}
+
         <GenreChart data={genreData} chartRef={chartRef} />
 
         <div className="space-y-3">
@@ -591,9 +906,11 @@ const App = () => {
                 <Music className="text-blue-600" size={24} />
                 <h3 className="font-black text-xl text-slate-900 uppercase">Últimas Execuções ({filteredData.length} músicas)</h3>
               </div>
-              {filteredData.slice(filters.search ? 0 : 1, visibleCount + 1).map((track) => (
-                <MusicCard key={track.id} track={track} />
-              ))}
+              {filteredData.slice(filters.search ? 0 : 1, visibleCount + 1).map((track) => {
+                const key = `${track.artista}|||${track.musica}`;
+                const rc = repeatCountMap[key];
+                return <MusicCard key={track.id} track={track} repeatCount={rc} />;
+              })}
               {filteredData.length > visibleCount + 1 && (
                 <button onClick={() => setVisibleCount(c => c + 9)} className="w-full py-6 rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:scale-105 active:scale-95">
                   <Plus size={20} /> Carregar Mais Músicas
