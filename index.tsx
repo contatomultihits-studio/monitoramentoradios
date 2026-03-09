@@ -4,7 +4,7 @@ import {
   Search, Clock, RefreshCw, Radio, 
   Music, Loader2, Plus, Download,
   TrendingUp, Sparkles, Filter, Megaphone, Activity,
-  Trophy, ChevronRight, ChevronLeft, Youtube
+  Trophy, X, Youtube
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -15,14 +15,10 @@ const getSupabaseClient = () => (window as any)._supabaseClient;
 
 // ─────────────────────────────────────────────────────────────
 // BLOQUEIO — breaks/vinhetas que não devem aparecer na dash
-// Para bloquear pela música (qualquer artista): { musica: 'NOME' }
-// Para bloquear pelo artista (qualquer música): { artista: 'NOME' }
-// Para bloquear combinado: { artista: 'X', musica: 'Y' }
 // ─────────────────────────────────────────────────────────────
 const BLOCKED_TRACKS: { artista?: string; musica?: string }[] = [
-  { musica: 'SP' },  // break da Metropolitana FM (artista=METROPOLITANA, musica=SP)
+  { musica: 'SP' },
 ];
-
 const isBlocked = (artista: string, musica: string): boolean =>
   BLOCKED_TRACKS.some(b => {
     const matchArtista = !b.artista || b.artista === '*' || b.artista.trim().toLowerCase() === artista.trim().toLowerCase();
@@ -93,6 +89,108 @@ const CustomTooltip = ({ active, payload }: any) => {
     );
   }
   return null;
+};
+
+// ─────────────────────────────────────────────────────────────
+// MODAL — playlist do artista
+// ─────────────────────────────────────────────────────────────
+const ArtistModal = ({
+  artist, tracks, photo, onClose
+}: {
+  artist: string;
+  tracks: any[];
+  photo: string;
+  onClose: () => void;
+}) => {
+  // agrupa por música contando execuções
+  const grouped = useMemo(() => {
+    const map: Record<string, { track: any; count: number; horarios: string[] }> = {};
+    tracks.forEach(t => {
+      const key = t.musica;
+      if (!map[key]) map[key] = { track: t, count: 0, horarios: [] };
+      map[key].count++;
+      map[key].horarios.push(t.hora);
+    });
+    return Object.values(map).sort((a, b) => b.count - a.count);
+  }, [tracks]);
+
+  // fecha ao clicar fora
+  const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  // fecha com ESC
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={handleBackdrop}
+    >
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-in">
+        {/* header */}
+        <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-t-3xl">
+          <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 ring-2 ring-white/30 shadow-lg">
+            {photo
+              ? <img src={photo} alt={artist} className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center bg-white/20"><Music size={24} className="text-white" /></div>
+            }
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-black text-xl text-white uppercase leading-tight truncate">{artist}</h2>
+            <p className="text-blue-200 text-xs font-bold mt-0.5">{tracks.length} execuções • {grouped.length} música{grouped.length !== 1 ? 's' : ''} diferente{grouped.length !== 1 ? 's' : ''}</p>
+          </div>
+          <button onClick={onClose}
+            className="flex-shrink-0 p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-all">
+            <X size={20} className="text-white" />
+          </button>
+        </div>
+
+        {/* lista */}
+        <div className="overflow-y-auto flex-1 p-4 space-y-2">
+          {grouped.map(({ track: t, count, horarios }) => (
+            <div key={t.musica} className="flex items-center gap-3 bg-slate-50 hover:bg-blue-50 rounded-2xl p-3 transition-all group">
+              <div className="flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-slate-200 shadow">
+                {t.capa
+                  ? <img src={t.capa} alt="Capa" className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center text-slate-400"><Music size={16} /></div>
+                }
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-black text-slate-800 text-sm truncate leading-tight">{t.musica}</p>
+                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                  {t.genero && t.genero !== 'Desconhecido' && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white"
+                      style={{ backgroundColor: GENRE_COLORS[t.genero] || '#3B82F6' }}>{t.genero}</span>
+                  )}
+                  <span className="text-[10px] font-bold text-slate-400">
+                    {horarios.slice(0, 3).join(' • ')}{horarios.length > 3 ? ` +${horarios.length - 3}` : ''}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {count > 1 && (
+                  <span className="px-2.5 py-1 bg-amber-100 text-amber-700 rounded-full text-[10px] font-black">
+                    {count}x
+                  </span>
+                )}
+                <a href={ytURL(artist, t.musica)} target="_blank" rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="p-2 bg-red-500 hover:bg-red-600 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                  title="Ver no YouTube">
+                  <Youtube size={12} className="text-white" />
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -196,6 +294,7 @@ const MusicCard = ({ track, repeatCount }: { track: any; repeatCount?: number })
 const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [modalArtist, setModalArtist] = useState<string | null>(null);
 
   const topArtists = useMemo(() => {
     const counts: Record<string, { count: number; genero: string; capa: string; musica: string }> = {};
@@ -221,53 +320,75 @@ const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
 
   if (!topArtists.length) return null;
 
+  const modalArtistData = modalArtist
+    ? { tracks: filteredData.filter(t => t.artista === modalArtist), photo: photos[modalArtist] || topArtists.find(a => a.artista === modalArtist)?.capa || '' }
+    : null;
+
   return (
-    <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-8 rounded-3xl shadow-xl mb-8 border border-amber-100">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg"><Trophy className="text-white" size={28} /></div>
-        <div>
-          <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Top 5 Artistas</h2>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Mais tocados no período filtrado</p>
+    <>
+      {modalArtist && modalArtistData && (
+        <ArtistModal
+          artist={modalArtist}
+          tracks={modalArtistData.tracks}
+          photo={modalArtistData.photo}
+          onClose={() => setModalArtist(null)}
+        />
+      )}
+      <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-8 rounded-3xl shadow-xl mb-8 border border-amber-100">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg"><Trophy className="text-white" size={28} /></div>
+          <div>
+            <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Top 5 Artistas</h2>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Toque na foto para ver as músicas</p>
+          </div>
         </div>
-      </div>
-      <div className="grid grid-cols-5 gap-3">
-        {topArtists.map((artist, idx) => {
-          const photo = photos[artist.artista] || artist.capa || '';
-          return (
-            <div key={artist.artista} className="flex flex-col items-center text-center group">
-              <div className="relative mb-3">
-                <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${
-                  idx === 0 ? 'bg-yellow-400 text-yellow-900' : idx === 1 ? 'bg-slate-300 text-slate-700' : idx === 2 ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-600'
-                }`}>{idx < 3 ? ['1°','2°','3°'][idx] : `${idx+1}°`}</div>
-                <a href={ytURL(artist.artista, artist.musica)} target="_blank" rel="noopener noreferrer"
-                  className={`relative block w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 ${
-                    idx === 0 ? 'ring-yellow-400' : idx === 1 ? 'ring-slate-300' : idx === 2 ? 'ring-amber-500' : 'ring-slate-200'
-                  }`} title={`Ver ${artist.artista} no YouTube`}>
-                  {photo
-                    ? <img src={photo} alt={artist.artista} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
-                    : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200"><Music size={24} className="text-blue-400" /></div>
-                  }
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
-                    <Youtube size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
-                  </div>
-                </a>
-                {loading && !photo && (
-                  <div className="absolute inset-0 rounded-2xl bg-white/60 flex items-center justify-center">
-                    <Loader2 size={16} className="animate-spin text-blue-500" />
-                  </div>
+        <div className="grid grid-cols-5 gap-3">
+          {topArtists.map((artist, idx) => {
+            const photo = photos[artist.artista] || artist.capa || '';
+            return (
+              <div key={artist.artista} className="flex flex-col items-center text-center group">
+                <div className="relative mb-3">
+                  <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${
+                    idx === 0 ? 'bg-yellow-400 text-yellow-900' : idx === 1 ? 'bg-slate-300 text-slate-700' : idx === 2 ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-600'
+                  }`}>{idx < 3 ? ['1°','2°','3°'][idx] : `${idx+1}°`}</div>
+                  {/* botão que abre o modal */}
+                  <button
+                    onClick={() => setModalArtist(artist.artista)}
+                    className={`relative block w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 cursor-pointer ${
+                      idx === 0 ? 'ring-yellow-400' : idx === 1 ? 'ring-slate-300' : idx === 2 ? 'ring-amber-500' : 'ring-slate-200'
+                    }`}
+                    title={`Ver playlist de ${artist.artista}`}
+                  >
+                    {photo
+                      ? <img src={photo} alt={artist.artista} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+                      : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200"><Music size={24} className="text-blue-400" /></div>
+                    }
+                    {/* overlay hint */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1">
+                        <Music size={16} className="text-white drop-shadow-lg" />
+                        <span className="text-white text-[9px] font-black drop-shadow-lg">PLAYLIST</span>
+                      </div>
+                    </div>
+                  </button>
+                  {loading && !photo && (
+                    <div className="absolute inset-0 rounded-2xl bg-white/60 flex items-center justify-center">
+                      <Loader2 size={16} className="animate-spin text-blue-500" />
+                    </div>
+                  )}
+                </div>
+                <p className="font-black text-slate-800 text-xs leading-tight truncate w-full">{artist.artista}</p>
+                <p className="font-bold text-blue-600 text-[10px] mt-1">{artist.count} execuções</p>
+                {artist.genero && artist.genero !== 'Desconhecido' && (
+                  <span className="mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white"
+                    style={{ backgroundColor: GENRE_COLORS[artist.genero] || '#3B82F6' }}>{artist.genero}</span>
                 )}
               </div>
-              <p className="font-black text-slate-800 text-xs leading-tight truncate w-full">{artist.artista}</p>
-              <p className="font-bold text-blue-600 text-[10px] mt-1">{artist.count} execuções</p>
-              {artist.genero && artist.genero !== 'Desconhecido' && (
-                <span className="mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white"
-                  style={{ backgroundColor: GENRE_COLORS[artist.genero] || '#3B82F6' }}>{artist.genero}</span>
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
