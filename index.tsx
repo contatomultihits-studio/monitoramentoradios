@@ -296,21 +296,42 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
 // ─────────────────────────────────────────────────────────────
 // DATE PICKER
 // ─────────────────────────────────────────────────────────────
-const DatePicker = ({ value, availableDates, onChange }: { value: string; availableDates: string[]; onChange: (d: string) => void }) => {
+const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
+  value: string;
+  availableDates: string[];
+  loadingDates: boolean;
+  onChange: (d: string) => void;
+  onOpen: () => void;
+}) => {
   const dateSet  = useMemo(() => new Set(availableDates), [availableDates]);
   const minDate  = availableDates.length ? availableDates[availableDates.length - 1] : undefined;
   const maxDate  = availableDates.length ? availableDates[0] : undefined;
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => { if (dateSet.has(e.target.value)) onChange(e.target.value); };
   return (
     <div className="relative">
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10"><CalendarDays size={16} className="text-blue-500" /></div>
-      <input type="date" value={value} min={minDate} max={maxDate} onChange={handleChange}
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+        {loadingDates
+          ? <Loader2 size={16} className="text-blue-400 animate-spin" />
+          : <CalendarDays size={16} className="text-blue-500" />}
+      </div>
+      <input
+        type="date"
+        value={value}
+        min={minDate}
+        max={maxDate}
+        onChange={handleChange}
+        onFocus={onOpen}
+        onClick={onOpen}
         className="w-full pl-10 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none border-2 border-transparent focus:border-blue-300 transition-all cursor-pointer"
-        title="Selecione uma data com dados" />
+        title="Selecione uma data com dados"
+      />
       {value && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${dateSet.has(value)?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-500'}`}>
-            {dateSet.has(value) ? '✓' : 'sem dados'}
+          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
+            loadingDates ? 'bg-blue-100 text-blue-500' :
+            dateSet.has(value) ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-500'
+          }`}>
+            {loadingDates ? '...' : dateSet.has(value) ? '✓' : 'sem dados'}
           </span>
         </div>
       )}
@@ -338,6 +359,21 @@ async function loadDayData(radio: string, date: string): Promise<any[]> {
     .filter((t: any) => !isBlocked(t.artista, t.musica));
 }
 
+// Busca só a data mais recente disponível para a rádio (1 request rápido)
+async function loadLatestDate(radio: string): Promise<string> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return '';
+  const { data: rows } = await supabase
+    .from('radio_airplay')
+    .select('tocou_em')
+    .eq('radio', radio)
+    .order('tocou_em', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!rows?.tocou_em) return '';
+  return parseTocouEm(rows.tocou_em).data;
+}
+
 async function loadAvailableDates(radio: string): Promise<string[]> {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
@@ -358,12 +394,16 @@ async function loadAvailableDates(radio: string): Promise<string[]> {
   return [...allDates].sort().reverse();
 }
 
+// Cache de datas por rádio para não rebuscar se já carregou
+const datesCache: Record<string, string[]> = {};
+
 // ─────────────────────────────────────────────────────────────
 // APP
 // ─────────────────────────────────────────────────────────────
 const App = () => {
   const [data, setData] = useState<any[]>([]);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [loadingDates, setLoadingDates] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', bpm: 'all' });
@@ -385,14 +425,37 @@ const App = () => {
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
-  // Inicialização: carrega datas + dados da rádio padrão
+  // Carrega datas históricas sob demanda (quando usuário abre o datepicker)
+  // Usa cache por rádio para não rebuscar
+  const handleOpenDatePicker = useCallback(async () => {
+    const radio = filtersRef.current.radio;
+    if (datesCache[radio]) {
+      setAvailableDates(datesCache[radio]);
+      return;
+    }
+    if (loadingDates) return;
+    setLoadingDates(true);
+    try {
+      const dates = await loadAvailableDates(radio);
+      datesCache[radio] = dates;
+      setAvailableDates(dates);
+    } catch (err) { console.error('Erro loadAvailableDates:', err); }
+    finally { setLoadingDates(false); }
+  }, [loadingDates]);
+
+  // Inicialização: busca só a data mais recente (1 request) + dados do dia
+  // NÃO carrega o histórico completo de datas aqui
   useEffect(() => {
     (async () => {
-      const dates = await loadAvailableDates('Metropolitana FM');
-      setAvailableDates(dates);
-      const firstDate = dates[0] || '';
+      const radio = 'Metropolitana FM';
+      const firstDate = await loadLatestDate(radio);
       setFilters(f => ({ ...f, date: firstDate }));
-      if (firstDate) await doFetch('Metropolitana FM', firstDate);
+      if (firstDate) {
+        setAvailableDates([firstDate]); // já mostra a data atual no picker
+        await doFetch(radio, firstDate);
+      } else {
+        setLoading(false);
+      }
     })();
   }, []);
 
@@ -413,20 +476,22 @@ const App = () => {
     return () => clearInterval(interval);
   }, [doFetch]);
 
-  // Troca de rádio: busca datas E dados da nova rádio atomicamente
+  // Troca de rádio: busca só a data mais recente (1 request) + dados do dia
+  // NÃO espera carregar histórico de datas para mostrar a tela
   const handleRadioChange = useCallback(async (r: string) => {
     setData([]);
     setAvailableDates([]);
     setVisibleCount(9);
     setFilters(f => ({ ...f, radio: r, date: '', search: '', genero: '', hour: 'all', bpm: 'all' }));
     setLoading(true);
-    const dates = await loadAvailableDates(r);
-    setAvailableDates(dates);
-    const firstDate = dates[0] || '';
-    // Atualiza date no state e já busca — não depende do useEffect
-    setFilters(f => ({ ...f, radio: r, date: firstDate }));
-    if (firstDate) await doFetch(r, firstDate);
-    else setLoading(false);
+    const firstDate = await loadLatestDate(r);
+    if (firstDate) {
+      setAvailableDates(datesCache[r] ? datesCache[r] : [firstDate]);
+      setFilters(f => ({ ...f, radio: r, date: firstDate }));
+      await doFetch(r, firstDate);
+    } else {
+      setLoading(false);
+    }
   }, [doFetch]);
 
   const filteredData = useMemo(() => data.filter(t => {
@@ -513,7 +578,9 @@ const App = () => {
             <DatePicker
               value={filters.date}
               availableDates={availableDates}
+              loadingDates={loadingDates}
               onChange={d => { setFilters(f => ({ ...f, date: d, genero: '', hour: 'all' })); setVisibleCount(9); }}
+              onOpen={handleOpenDatePicker}
             />
             <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.hour} onChange={e => setFilters(f => ({ ...f, hour: e.target.value }))}>
               <option value="all">Todas as horas</option>
