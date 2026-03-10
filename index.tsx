@@ -319,6 +319,46 @@ const DatePicker = ({ value, availableDates, onChange }: { value: string; availa
 };
 
 // ─────────────────────────────────────────────────────────────
+// FETCH DATA — função pura, recebe data+radio como parâmetros
+// sem depender de closure de filters
+// ─────────────────────────────────────────────────────────────
+async function loadDayData(radio: string, date: string): Promise<any[]> {
+  const supabase = getSupabaseClient();
+  if (!supabase || !date) return [];
+  const dayStart = new Date(`${date}T00:00:00-03:00`).toISOString();
+  const dayEnd   = new Date(`${date}T23:59:59-03:00`).toISOString();
+  const { data: tracks, error } = await supabase
+    .from('radio_airplay').select('*')
+    .eq('radio', radio)
+    .gte('tocou_em', dayStart).lte('tocou_em', dayEnd)
+    .order('tocou_em', { ascending: false });
+  if (error) throw error;
+  return (tracks || [])
+    .map((t: any) => { const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em); return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, capa: t.capa, bpm: t.bpm }; })
+    .filter((t: any) => !isBlocked(t.artista, t.musica));
+}
+
+async function loadAvailableDates(radio: string): Promise<string[]> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return [];
+  const allDates = new Set<string>();
+  let from = 0;
+  while (true) {
+    const { data: rows, error } = await supabase
+      .from('radio_airplay')
+      .select('tocou_em')
+      .eq('radio', radio)
+      .order('tocou_em', { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+    if (error || !rows || rows.length === 0) break;
+    rows.forEach((r: any) => allDates.add(parseTocouEm(r.tocou_em).data));
+    if (rows.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+  return [...allDates].sort().reverse();
+}
+
+// ─────────────────────────────────────────────────────────────
 // APP
 // ─────────────────────────────────────────────────────────────
 const App = () => {
@@ -329,70 +369,65 @@ const App = () => {
   const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', bpm: 'all' });
   const [visibleCount, setVisibleCount] = useState(9);
   const chartRef = React.useRef<HTMLDivElement>(null);
-  const fetchDataRef = useRef<(isSilent?: boolean) => Promise<void>>();
 
-  // Busca TODAS as datas paginando (contorna o limite do PostgREST)
-  const fetchAvailableDates = useCallback(async (radio: string): Promise<string> => {
-    try {
-      const supabase = getSupabaseClient();
-      if (!supabase) return '';
-      const allDates = new Set<string>();
-      let from = 0;
-      while (true) {
-        const { data: rows, error } = await supabase
-          .from('radio_airplay')
-          .select('tocou_em')
-          .eq('radio', radio)
-          .order('tocou_em', { ascending: false })
-          .range(from, from + PAGE_SIZE - 1);
-        if (error || !rows || rows.length === 0) break;
-        rows.forEach((r: any) => allDates.add(parseTocouEm(r.tocou_em).data));
-        if (rows.length < PAGE_SIZE) break; // última página
-        from += PAGE_SIZE;
-      }
-      const dates = [...allDates].sort().reverse();
-      setAvailableDates(dates);
-      return dates[0] || '';
-    } catch { return ''; }
-  }, []);
+  // Ref sempre atualizado — usado no auto-refresh sem closure stale
+  const filtersRef = useRef(filters);
+  useEffect(() => { filtersRef.current = filters; }, [filters]);
 
-  const fetchData = useCallback(async (isSilent = false, dateOverride?: string, radioOverride?: string) => {
-    if (!isSilent) setLoading(true);
+  const doFetch = useCallback(async (radio: string, date: string, silent = false) => {
+    if (!date) return;
+    if (!silent) setLoading(true);
     setRefreshing(true);
     try {
-      const supabase = getSupabaseClient();
-      if (!supabase) throw new Error('Supabase não disponível');
-      const currentDate  = dateOverride  ?? filters.date;
-      const currentRadio = radioOverride ?? filters.radio;
-      if (!currentDate) { setLoading(false); setRefreshing(false); return; }
-      const dayStart = new Date(`${currentDate}T00:00:00-03:00`).toISOString();
-      const dayEnd   = new Date(`${currentDate}T23:59:59-03:00`).toISOString();
-      const { data: tracks, error } = await supabase
-        .from('radio_airplay').select('*')
-        .eq('radio', currentRadio)
-        .gte('tocou_em', dayStart).lte('tocou_em', dayEnd)
-        .order('tocou_em', { ascending: false });
-      if (error) throw error;
-      const formatted = (tracks || [])
-        .map((t: any) => { const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em); return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio || 'Metropolitana FM', genero: t.genero || 'Desconhecido', data: d, hora, timestamp, capa: t.capa, bpm: t.bpm }; })
-        .filter((t: any) => !isBlocked(t.artista, t.musica));
-      setData(formatted);
-    } catch (err: any) { console.error('Erro:', err); }
+      const rows = await loadDayData(radio, date);
+      setData(rows);
+    } catch (err) { console.error('Erro fetchData:', err); }
     finally { setLoading(false); setRefreshing(false); }
+  }, []);
+
+  // Inicialização: carrega datas + dados da rádio padrão
+  useEffect(() => {
+    (async () => {
+      const dates = await loadAvailableDates('Metropolitana FM');
+      setAvailableDates(dates);
+      const firstDate = dates[0] || '';
+      setFilters(f => ({ ...f, date: firstDate }));
+      if (firstDate) await doFetch('Metropolitana FM', firstDate);
+    })();
+  }, []);
+
+  // Dispara fetch quando data ou rádio mudam (via setFilters)
+  // Usa um flag para não disparar na inicialização (já feita acima)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (filters.date) doFetch(filters.radio, filters.date);
   }, [filters.date, filters.radio]);
 
+  // Auto-refresh: usa filtersRef para sempre ter valores atuais
   useEffect(() => {
-    fetchAvailableDates(filters.radio).then(firstDate => {
-      if (firstDate) setFilters(prev => ({ ...prev, date: firstDate }));
-    });
-  }, []);
-
-  useEffect(() => { if (filters.date) fetchData(false, filters.date, filters.radio); }, [filters.date, filters.radio]);
-  useEffect(() => { fetchDataRef.current = fetchData; }, [fetchData]);
-  useEffect(() => {
-    const interval = setInterval(() => { fetchDataRef.current?.(true); }, REFRESH_INTERVAL_MS);
+    const interval = setInterval(() => {
+      const { radio, date } = filtersRef.current;
+      if (date) doFetch(radio, date, true);
+    }, REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, []);
+  }, [doFetch]);
+
+  // Troca de rádio: busca datas E dados da nova rádio atomicamente
+  const handleRadioChange = useCallback(async (r: string) => {
+    setData([]);
+    setAvailableDates([]);
+    setVisibleCount(9);
+    setFilters(f => ({ ...f, radio: r, date: '', search: '', genero: '', hour: 'all', bpm: 'all' }));
+    setLoading(true);
+    const dates = await loadAvailableDates(r);
+    setAvailableDates(dates);
+    const firstDate = dates[0] || '';
+    // Atualiza date no state e já busca — não depende do useEffect
+    setFilters(f => ({ ...f, radio: r, date: firstDate }));
+    if (firstDate) await doFetch(r, firstDate);
+    else setLoading(false);
+  }, [doFetch]);
 
   const filteredData = useMemo(() => data.filter(t => {
     const matchSearch = filters.search ? (t.artista + t.musica).toLowerCase().includes(filters.search.toLowerCase()) : true;
@@ -424,14 +459,6 @@ const App = () => {
   const uniqueGenres = useMemo(() => [...new Set(data.map(d => d.genero).filter(g => g && g !== 'Desconhecido'))].sort(), [data]);
   const hourOptions  = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')), []);
 
-  const handleRadioChange = (r: string) => {
-    setFilters(f => ({ ...f, radio: r, date: '', genero: '', hour: 'all', bpm: 'all' }));
-    setVisibleCount(9); setData([]); setAvailableDates([]);
-    fetchAvailableDates(r).then(firstDate => {
-      if (firstDate) setFilters(prev => ({ ...prev, radio: r, date: firstDate }));
-    });
-  };
-
   const exportPDF = async () => {
     if (!filteredData.length) { alert('Nenhum registro.'); return; }
     const doc = new jsPDF();
@@ -462,7 +489,7 @@ const App = () => {
           </div>
           <div className="flex items-center gap-3">
             <a href="/comercial" className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 rounded-xl font-bold text-emerald-700 text-xs uppercase tracking-wider transition-all flex items-center gap-2"><Megaphone size={14} /> Ver Comercial</a>
-            <button onClick={() => fetchData()} className="p-4 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-all hover:scale-105 active:scale-95"><RefreshCw className={refreshing ? 'animate-spin text-blue-600' : 'text-blue-600'} size={24} /></button>
+            <button onClick={() => doFetch(filters.radio, filters.date)} className="p-4 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-all hover:scale-105 active:scale-95"><RefreshCw className={refreshing ? 'animate-spin text-blue-600' : 'text-blue-600'} size={24} /></button>
           </div>
         </div>
       </header>
@@ -483,7 +510,11 @@ const App = () => {
               value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <DatePicker value={filters.date} availableDates={availableDates} onChange={d => { setFilters(f => ({ ...f, date: d, genero: '', hour: 'all' })); setVisibleCount(9); }} />
+            <DatePicker
+              value={filters.date}
+              availableDates={availableDates}
+              onChange={d => { setFilters(f => ({ ...f, date: d, genero: '', hour: 'all' })); setVisibleCount(9); }}
+            />
             <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.hour} onChange={e => setFilters(f => ({ ...f, hour: e.target.value }))}>
               <option value="all">Todas as horas</option>
               {hourOptions.map(h => <option key={h} value={h}>{h}:00</option>)}
