@@ -4,13 +4,14 @@ import {
   Search, Clock, RefreshCw, Radio, 
   Music, Loader2, Plus, Download,
   TrendingUp, Sparkles, Filter, Megaphone, Activity,
-  Trophy, X, Youtube
+  Trophy, X, Youtube, CalendarDays
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 const REFRESH_INTERVAL_MS = 30000;
 const LASTFM_API_KEY = '2a416b64ded1827a7e82e61d9a87b2e0';
+const REPEAT_THRESHOLD = 2; // badge aparece a partir de Xtx
 const getSupabaseClient = () => (window as any)._supabaseClient;
 
 // ─────────────────────────────────────────────────────────────
@@ -37,7 +38,6 @@ const GENRE_COLORS: Record<string, string> = {
 const ytURL = (artista: string, musica: string) =>
   `https://www.youtube.com/results?search_query=${encodeURIComponent(`"${artista}" "${musica}"`)}` ;
 
-// helper: converte timestamp UTC → { data: 'YYYY-MM-DD', hora: 'HH:MM' } em SP
 const parseTocouEm = (tocouEm: string) => {
   const utcDate = new Date(tocouEm);
   const str = utcDate.toLocaleString('pt-BR', {
@@ -204,7 +204,7 @@ const NowPlayingCard = ({ track }: { track: any }) => (
 // MUSIC CARD
 // ─────────────────────────────────────────────────────────────
 const MusicCard = ({ track, repeatCount }: { track: any; repeatCount?: number }) => (
-  <div className={`bg-white border rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${repeatCount && repeatCount >= 3 ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'}`}>
+  <div className={`bg-white border rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${repeatCount && repeatCount >= REPEAT_THRESHOLD ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'}`}>
     <div className="flex items-center gap-4">
       <div className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shadow-md">
         {track.capa ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Music size={20} /></div>}
@@ -216,7 +216,11 @@ const MusicCard = ({ track, repeatCount }: { track: any; repeatCount?: number })
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-full"><Clock size={10} className="text-slate-500" /><span className="font-bold text-[10px] text-slate-600">{track.hora}</span></div>
           {track.genero && track.genero !== 'Desconhecido' && <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>{track.genero}</span>}
           {track.bpm && <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500 rounded-full"><Activity size={10} className="text-white" /><span className="font-black text-[10px] text-white">{track.bpm} BPM</span></div>}
-          {repeatCount && repeatCount >= 3 && <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-400 rounded-full"><span className="font-black text-[10px] text-white">🔁 {repeatCount}x tocada</span></div>}
+          {repeatCount && repeatCount >= REPEAT_THRESHOLD && (
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-400 rounded-full">
+              <span className="font-black text-[10px] text-white">🔁 {repeatCount}x tocada</span>
+            </div>
+          )}
         </div>
       </div>
       <YTButton artista={track.artista} musica={track.musica} size="md" />
@@ -346,6 +350,49 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
 };
 
 // ─────────────────────────────────────────────────────────────
+// DATE PICKER — input nativo com datas válidas
+// ─────────────────────────────────────────────────────────────
+const DatePicker = ({ value, availableDates, onChange }: { value: string; availableDates: string[]; onChange: (d: string) => void }) => {
+  const dateSet = useMemo(() => new Set(availableDates), [availableDates]);
+
+  // limites: data mais antiga e mais recente disponível
+  const minDate = availableDates.length ? availableDates[availableDates.length - 1] : undefined;
+  const maxDate = availableDates.length ? availableDates[0] : undefined;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = e.target.value;
+    if (dateSet.has(picked)) onChange(picked);
+    // se escolher um dia sem dados, não faz nada (fica no atual)
+  };
+
+  return (
+    <div className="relative">
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+        <CalendarDays size={16} className="text-blue-500" />
+      </div>
+      <input
+        type="date"
+        value={value}
+        min={minDate}
+        max={maxDate}
+        onChange={handleChange}
+        className="w-full pl-10 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none border-2 border-transparent focus:border-blue-300 transition-all cursor-pointer"
+        title="Selecione uma data com dados"
+      />
+      {value && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
+            dateSet.has(value) ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-500'
+          }`}>
+            {dateSet.has(value) ? '✓' : 'sem dados'}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
 // APP
 // ─────────────────────────────────────────────────────────────
 const App = () => {
@@ -358,80 +405,56 @@ const App = () => {
   const chartRef = React.useRef<HTMLDivElement>(null);
   const fetchDataRef = useRef<(isSilent?: boolean) => Promise<void>>();
 
-  // Passo 1: busca todas as datas disponíveis (query leve, só a coluna tocou_em)
-  const fetchAvailableDates = useCallback(async (radio: string) => {
+  const fetchAvailableDates = useCallback(async (radio: string): Promise<string> => {
     try {
       const supabase = getSupabaseClient();
-      if (!supabase) return;
-      // busca os registros com range amplo só para extrair datas únicas
+      if (!supabase) return '';
       const { data: rows, error } = await supabase
         .from('radio_airplay')
-        .select('tocou_em, radio')
+        .select('tocou_em')
         .eq('radio', radio)
         .order('tocou_em', { ascending: false });
-      if (error || !rows) return;
+      if (error || !rows) return '';
       const dates = [...new Set(
         rows.map((r: any) => parseTocouEm(r.tocou_em).data)
       )].sort().reverse() as string[];
       setAvailableDates(dates);
-      // define data inicial = mais recente
-      setFilters(prev => prev.date ? prev : { ...prev, date: dates[0] || '' });
-    } catch {}
+      return dates[0] || '';
+    } catch { return ''; }
   }, []);
 
-  // Passo 2: busca os registros do dia selecionado
   const fetchData = useCallback(async (isSilent = false, dateOverride?: string, radioOverride?: string) => {
     if (!isSilent) setLoading(true);
     setRefreshing(true);
     try {
       const supabase = getSupabaseClient();
       if (!supabase) throw new Error('Supabase client não disponível');
-
-      // usa os valores atuais de filtro ou os overrides passados
-      const currentDate = dateOverride ?? filters.date;
+      const currentDate  = dateOverride  ?? filters.date;
       const currentRadio = radioOverride ?? filters.radio;
       if (!currentDate) { setLoading(false); setRefreshing(false); return; }
-
-      // intervalo do dia em UTC (cobre fuso SP -03)
       const dayStart = new Date(`${currentDate}T00:00:00-03:00`).toISOString();
       const dayEnd   = new Date(`${currentDate}T23:59:59-03:00`).toISOString();
-
       const { data: tracks, error } = await supabase
-        .from('radio_airplay')
-        .select('*')
+        .from('radio_airplay').select('*')
         .eq('radio', currentRadio)
-        .gte('tocou_em', dayStart)
-        .lte('tocou_em', dayEnd)
+        .gte('tocou_em', dayStart).lte('tocou_em', dayEnd)
         .order('tocou_em', { ascending: false });
-
       if (error) throw error;
-
       const formatted = (tracks || [])
-        .map((t: any) => {
-          const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
-          return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio || 'Metropolitana FM', genero: t.genero || 'Desconhecido', data: d, hora, timestamp, capa: t.capa, bpm: t.bpm };
-        })
+        .map((t: any) => { const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em); return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio || 'Metropolitana FM', genero: t.genero || 'Desconhecido', data: d, hora, timestamp, capa: t.capa, bpm: t.bpm }; })
         .filter((t: any) => !isBlocked(t.artista, t.musica));
-
       setData(formatted);
-    } catch (err: any) {
-      console.error('Erro:', err);
-    } finally { setLoading(false); setRefreshing(false); }
+    } catch (err: any) { console.error('Erro:', err); }
+    finally { setLoading(false); setRefreshing(false); }
   }, [filters.date, filters.radio]);
 
-  // inicializa: primeiro busca datas, depois carrega o dia
   useEffect(() => {
-    const init = async () => {
-      await fetchAvailableDates(filters.radio);
-    };
-    init();
+    fetchAvailableDates(filters.radio).then(firstDate => {
+      if (firstDate) setFilters(prev => ({ ...prev, date: firstDate }));
+    });
   }, []);
 
-  // quando a data mudar (incluindo após fetchAvailableDates setar a inicial), carrega os dados
-  useEffect(() => {
-    if (filters.date) fetchData(false, filters.date, filters.radio);
-  }, [filters.date, filters.radio]);
-
+  useEffect(() => { if (filters.date) fetchData(false, filters.date, filters.radio); }, [filters.date, filters.radio]);
   useEffect(() => { fetchDataRef.current = fetchData; }, [fetchData]);
   useEffect(() => {
     const interval = setInterval(() => { fetchDataRef.current?.(true); }, REFRESH_INTERVAL_MS);
@@ -468,13 +491,12 @@ const App = () => {
   const uniqueGenres = useMemo(() => [...new Set(data.map(d => d.genero).filter(g => g && g !== 'Desconhecido'))].sort(), [data]);
   const hourOptions  = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')), []);
 
-  // ao trocar rádio: busca datas daquela rádio e reseta
   const handleRadioChange = (r: string) => {
     setFilters(f => ({ ...f, radio: r, date: '', genero: '', hour: 'all', bpm: 'all' }));
-    setVisibleCount(9);
-    setData([]);
-    setAvailableDates([]);
-    fetchAvailableDates(r).then(() => {});
+    setVisibleCount(9); setData([]); setAvailableDates([]);
+    fetchAvailableDates(r).then(firstDate => {
+      if (firstDate) setFilters(prev => ({ ...prev, radio: r, date: firstDate }));
+    });
   };
 
   const exportPDF = async () => {
@@ -550,13 +572,12 @@ const App = () => {
               value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            {/* SELETOR DE DATAS — agora mostra toda a base */}
-            <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300"
+            {/* DATE PICKER nativo — abre calendário do browser */}
+            <DatePicker
               value={filters.date}
-              onChange={e => { setFilters(f => ({ ...f, date: e.target.value, genero: '', hour: 'all' })); setVisibleCount(9); }}>
-              {availableDates.length === 0 && <option value="">Carregando datas...</option>}
-              {availableDates.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
+              availableDates={availableDates}
+              onChange={d => { setFilters(f => ({ ...f, date: d, genero: '', hour: 'all' })); setVisibleCount(9); }}
+            />
             <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.hour} onChange={e => setFilters(f => ({ ...f, hour: e.target.value }))}>
               <option value="all">Todas as horas</option>
               {hourOptions.map(h => <option key={h} value={h}>{h}:00</option>)}
