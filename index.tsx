@@ -11,7 +11,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 const REFRESH_INTERVAL_MS = 30000;
 const LASTFM_API_KEY = '2a416b64ded1827a7e82e61d9a87b2e0';
-const REPEAT_THRESHOLD = 2; // badge aparece a partir de Xtx
+const REPEAT_THRESHOLD = 2;
+const PAGE_SIZE = 1000;
 const getSupabaseClient = () => (window as any)._supabaseClient;
 
 // ─────────────────────────────────────────────────────────────
@@ -116,14 +117,12 @@ const ArtistModal = ({ artist, tracks, photo, onClose }: { artist: string; track
     });
     return Object.values(map).sort((a, b) => b.count - a.count);
   }, [tracks]);
-
   const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => { if (e.target === e.currentTarget) onClose(); };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={handleBackdrop}>
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
@@ -152,7 +151,7 @@ const ArtistModal = ({ artist, tracks, photo, onClose }: { artist: string; track
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 {count > 1 && <span className="px-2.5 py-1 bg-amber-100 text-amber-700 rounded-full text-[10px] font-black">{count}x</span>}
-                <a href={ytURL(artist, t.musica)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="p-2 bg-red-500 hover:bg-red-600 rounded-full transition-all opacity-0 group-hover:opacity-100" title="Ver no YouTube"><Youtube size={12} className="text-white" /></a>
+                <a href={ytURL(artist, t.musica)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="p-2 bg-red-500 hover:bg-red-600 rounded-full transition-all opacity-0 group-hover:opacity-100"><Youtube size={12} className="text-white" /></a>
               </div>
             </div>
           ))}
@@ -170,26 +169,16 @@ const NowPlayingCard = ({ track }: { track: any }) => (
     <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent animate-pulse" />
     <div className="relative z-10">
       <div className="flex items-center gap-3 mb-4">
-        <span className="flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-sky-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-300" />
-        </span>
+        <span className="flex h-3 w-3"><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-sky-400 opacity-75" /><span className="relative inline-flex rounded-full h-3 w-3 bg-sky-300" /></span>
         <span className="text-white/90 font-black text-sm uppercase tracking-wider flex items-center gap-2"><Sparkles size={16} /> Tocando Agora</span>
       </div>
       <div className="flex items-center gap-6">
-        <div className="flex-shrink-0">
-          <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/20">
-            {track.capa ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-white/10"><Music size={48} className="text-white/40" /></div>}
-          </div>
-        </div>
+        <div className="flex-shrink-0"><div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/20">{track.capa ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-white/10"><Music size={48} className="text-white/40" /></div>}</div></div>
         <div className="flex-1 min-w-0">
           <h2 className="font-black text-3xl sm:text-4xl text-white mb-2 leading-tight drop-shadow-lg">{track.musica}</h2>
           <p className="font-bold text-xl sm:text-2xl text-sky-200 mb-4 drop-shadow-md">{track.artista}</p>
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full">
-              <Clock size={16} className="text-white/80" />
-              <span className="font-bold text-white text-sm">{track.hora}</span>
-            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full"><Clock size={16} className="text-white/80" /><span className="font-bold text-white text-sm">{track.hora}</span></div>
             {track.genero && track.genero !== 'Desconhecido' && <span className="px-4 py-2 rounded-full text-sm font-black uppercase text-white shadow-lg" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>{track.genero}</span>}
             {track.bpm && <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500 rounded-full shadow-lg"><Activity size={16} className="text-white" /><span className="font-black text-white text-sm">{track.bpm} BPM</span></div>}
             <YTButton artista={track.artista} musica={track.musica} size="lg" />
@@ -206,9 +195,7 @@ const NowPlayingCard = ({ track }: { track: any }) => (
 const MusicCard = ({ track, repeatCount }: { track: any; repeatCount?: number }) => (
   <div className={`bg-white border rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${repeatCount && repeatCount >= REPEAT_THRESHOLD ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'}`}>
     <div className="flex items-center gap-4">
-      <div className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shadow-md">
-        {track.capa ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Music size={20} /></div>}
-      </div>
+      <div className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shadow-md">{track.capa ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Music size={20} /></div>}</div>
       <div className="flex-1 min-w-0">
         <h3 className="font-black text-slate-800 text-base truncate leading-tight mb-1">{track.musica}</h3>
         <p className="font-bold text-blue-600 text-sm truncate mb-2">{track.artista}</p>
@@ -216,11 +203,7 @@ const MusicCard = ({ track, repeatCount }: { track: any; repeatCount?: number })
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-full"><Clock size={10} className="text-slate-500" /><span className="font-bold text-[10px] text-slate-600">{track.hora}</span></div>
           {track.genero && track.genero !== 'Desconhecido' && <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>{track.genero}</span>}
           {track.bpm && <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500 rounded-full"><Activity size={10} className="text-white" /><span className="font-black text-[10px] text-white">{track.bpm} BPM</span></div>}
-          {repeatCount && repeatCount >= REPEAT_THRESHOLD && (
-            <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-400 rounded-full">
-              <span className="font-black text-[10px] text-white">🔁 {repeatCount}x tocada</span>
-            </div>
-          )}
+          {repeatCount && repeatCount >= REPEAT_THRESHOLD && <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-400 rounded-full"><span className="font-black text-[10px] text-white">🔁 {repeatCount}x tocada</span></div>}
         </div>
       </div>
       <YTButton artista={track.artista} musica={track.musica} size="md" />
@@ -229,13 +212,12 @@ const MusicCard = ({ track, repeatCount }: { track: any; repeatCount?: number })
 );
 
 // ─────────────────────────────────────────────────────────────
-// TOP 5 ARTISTAS
+// TOP 5
 // ─────────────────────────────────────────────────────────────
 const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [modalArtist, setModalArtist] = useState<string | null>(null);
-
   const topArtists = useMemo(() => {
     const counts: Record<string, { count: number; genero: string; capa: string; musica: string }> = {};
     filteredData.forEach(t => {
@@ -245,27 +227,21 @@ const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
     });
     return Object.entries(counts).map(([artista, info]) => ({ artista, ...info })).sort((a, b) => b.count - a.count).slice(0, 5);
   }, [filteredData]);
-
   useEffect(() => {
     if (!topArtists.length) return;
     setLoading(true);
     Promise.all(topArtists.map(async a => ({ artista: a.artista, photo: await fetchArtistPhoto(a.artista) })))
       .then(results => { const map: Record<string, string> = {}; results.forEach(r => { map[r.artista] = r.photo; }); setPhotos(map); setLoading(false); });
   }, [topArtists]);
-
   if (!topArtists.length) return null;
   const modalArtistData = modalArtist ? { tracks: filteredData.filter(t => t.artista === modalArtist), photo: photos[modalArtist] || topArtists.find(a => a.artista === modalArtist)?.capa || '' } : null;
-
   return (
     <>
       {modalArtist && modalArtistData && <ArtistModal artist={modalArtist} tracks={modalArtistData.tracks} photo={modalArtistData.photo} onClose={() => setModalArtist(null)} />}
       <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-8 rounded-3xl shadow-xl mb-8 border border-amber-100">
         <div className="flex items-center gap-4 mb-6">
           <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg"><Trophy className="text-white" size={28} /></div>
-          <div>
-            <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Top 5 Artistas</h2>
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Toque na foto para ver as músicas</p>
-          </div>
+          <div><h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Top 5 Artistas</h2><p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Toque na foto para ver as músicas</p></div>
         </div>
         <div className="grid grid-cols-5 gap-3">
           {topArtists.map((artist, idx) => {
@@ -273,17 +249,10 @@ const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
             return (
               <div key={artist.artista} className="flex flex-col items-center text-center group">
                 <div className="relative mb-3">
-                  <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${idx === 0 ? 'bg-yellow-400 text-yellow-900' : idx === 1 ? 'bg-slate-300 text-slate-700' : idx === 2 ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-600'}`}>{idx < 3 ? ['1°','2°','3°'][idx] : `${idx+1}°`}</div>
-                  <button onClick={() => setModalArtist(artist.artista)}
-                    className={`relative block w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 cursor-pointer ${idx === 0 ? 'ring-yellow-400' : idx === 1 ? 'ring-slate-300' : idx === 2 ? 'ring-amber-500' : 'ring-slate-200'}`}
-                    title={`Ver playlist de ${artist.artista}`}>
-                    {photo ? <img src={photo} alt={artist.artista} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} /> : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200"><Music size={24} className="text-blue-400" /></div>}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1">
-                        <Music size={16} className="text-white drop-shadow-lg" />
-                        <span className="text-white text-[9px] font-black drop-shadow-lg">PLAYLIST</span>
-                      </div>
-                    </div>
+                  <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${idx===0?'bg-yellow-400 text-yellow-900':idx===1?'bg-slate-300 text-slate-700':idx===2?'bg-amber-600 text-white':'bg-slate-200 text-slate-600'}`}>{idx<3?['1°','2°','3°'][idx]:`${idx+1}°`}</div>
+                  <button onClick={() => setModalArtist(artist.artista)} className={`relative block w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 cursor-pointer ${idx===0?'ring-yellow-400':idx===1?'ring-slate-300':idx===2?'ring-amber-500':'ring-slate-200'}`} title={`Ver playlist de ${artist.artista}`}>
+                    {photo?<img src={photo} alt={artist.artista} className="w-full h-full object-cover" onError={(e)=>{(e.target as HTMLImageElement).style.display='none';}}/>:<div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200"><Music size={24} className="text-blue-400" /></div>}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center"><div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1"><Music size={16} className="text-white drop-shadow-lg" /><span className="text-white text-[9px] font-black drop-shadow-lg">PLAYLIST</span></div></div>
                   </button>
                   {loading && !photo && <div className="absolute inset-0 rounded-2xl bg-white/60 flex items-center justify-center"><Loader2 size={16} className="animate-spin text-blue-500" /></div>}
                 </div>
@@ -309,81 +278,38 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
   const mainGenres = knownGenres.filter(g => parseFloat(g.percentage) >= 3);
   const smallGenres = knownGenres.filter(g => parseFloat(g.percentage) < 3);
   let chartData = [...mainGenres];
-  if (smallGenres.length > 0) {
-    const othersValue = smallGenres.reduce((sum, g) => sum + g.value, 0);
-    const totalKnown = knownGenres.reduce((sum, g) => sum + g.value, 0);
-    chartData.push({ name: 'Outros', value: othersValue, percentage: ((othersValue / totalKnown) * 100).toFixed(1), subGenres: smallGenres.map(g => g.name) });
-  }
-  chartData = chartData.sort((a, b) => b.value - a.value);
+  if (smallGenres.length > 0) { const ov = smallGenres.reduce((s,g)=>s+g.value,0); const tk = knownGenres.reduce((s,g)=>s+g.value,0); chartData.push({name:'Outros',value:ov,percentage:((ov/tk)*100).toFixed(1),subGenres:smallGenres.map(g=>g.name)}); }
+  chartData = chartData.sort((a,b)=>b.value-a.value);
   return (
     <div ref={chartRef} className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-3xl shadow-xl mb-8 border border-blue-100">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-lg"><TrendingUp className="text-white" size={28} /></div>
-        <div>
-          <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Análise de Gêneros</h2>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical (Sem Desconhecidos)</p>
-        </div>
-      </div>
+      <div className="flex items-center gap-4 mb-6"><div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-lg"><TrendingUp className="text-white" size={28} /></div><div><h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Análise de Gêneros</h2><p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical (Sem Desconhecidos)</p></div></div>
       <div className="bg-white p-6 rounded-2xl shadow-inner">
         <ResponsiveContainer width="100%" height={350}>
-          <PieChart>
-            <Pie data={chartData} cx="50%" cy="50%" labelLine={false} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} outerRadius={120} innerRadius={60} fill="#3B82F6" dataKey="value" paddingAngle={2}>
-              {chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={GENRE_COLORS[entry.name] || '#B8B8B8'} stroke="#fff" strokeWidth={2} />))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-          </PieChart>
+          <PieChart><Pie data={chartData} cx="50%" cy="50%" labelLine={false} label={({name,percent})=>`${name} ${(percent*100).toFixed(0)}%`} outerRadius={120} innerRadius={60} fill="#3B82F6" dataKey="value" paddingAngle={2}>{chartData.map((_,i)=>(<Cell key={i} fill={GENRE_COLORS[chartData[i].name]||'#B8B8B8'} stroke="#fff" strokeWidth={2}/>))}</Pie><Tooltip content={<CustomTooltip/>}/></PieChart>
         </ResponsiveContainer>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
-        {chartData.map(genre => (
-          <div key={genre.name} className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-5 h-5 rounded-full shadow-md flex-shrink-0" style={{ backgroundColor: GENRE_COLORS[genre.name] || '#B8B8B8' }} />
-            <div className="flex-1 min-w-0">
-              <p className="font-black text-sm text-slate-700 uppercase truncate">{genre.name}</p>
-              <p className="text-xs text-slate-500 font-bold">{genre.value} músicas • {genre.percentage}%</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">{chartData.map(genre=>(<div key={genre.name} className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow"><div className="w-5 h-5 rounded-full shadow-md flex-shrink-0" style={{backgroundColor:GENRE_COLORS[genre.name]||'#B8B8B8'}}/><div className="flex-1 min-w-0"><p className="font-black text-sm text-slate-700 uppercase truncate">{genre.name}</p><p className="text-xs text-slate-500 font-bold">{genre.value} músicas • {genre.percentage}%</p></div></div>))}</div>
     </div>
   );
 };
 
 // ─────────────────────────────────────────────────────────────
-// DATE PICKER — input nativo com datas válidas
+// DATE PICKER
 // ─────────────────────────────────────────────────────────────
 const DatePicker = ({ value, availableDates, onChange }: { value: string; availableDates: string[]; onChange: (d: string) => void }) => {
-  const dateSet = useMemo(() => new Set(availableDates), [availableDates]);
-
-  // limites: data mais antiga e mais recente disponível
-  const minDate = availableDates.length ? availableDates[availableDates.length - 1] : undefined;
-  const maxDate = availableDates.length ? availableDates[0] : undefined;
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const picked = e.target.value;
-    if (dateSet.has(picked)) onChange(picked);
-    // se escolher um dia sem dados, não faz nada (fica no atual)
-  };
-
+  const dateSet  = useMemo(() => new Set(availableDates), [availableDates]);
+  const minDate  = availableDates.length ? availableDates[availableDates.length - 1] : undefined;
+  const maxDate  = availableDates.length ? availableDates[0] : undefined;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => { if (dateSet.has(e.target.value)) onChange(e.target.value); };
   return (
     <div className="relative">
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
-        <CalendarDays size={16} className="text-blue-500" />
-      </div>
-      <input
-        type="date"
-        value={value}
-        min={minDate}
-        max={maxDate}
-        onChange={handleChange}
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10"><CalendarDays size={16} className="text-blue-500" /></div>
+      <input type="date" value={value} min={minDate} max={maxDate} onChange={handleChange}
         className="w-full pl-10 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none border-2 border-transparent focus:border-blue-300 transition-all cursor-pointer"
-        title="Selecione uma data com dados"
-      />
+        title="Selecione uma data com dados" />
       {value && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
-            dateSet.has(value) ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-500'
-          }`}>
+          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${dateSet.has(value)?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-500'}`}>
             {dateSet.has(value) ? '✓' : 'sem dados'}
           </span>
         </div>
@@ -405,19 +331,26 @@ const App = () => {
   const chartRef = React.useRef<HTMLDivElement>(null);
   const fetchDataRef = useRef<(isSilent?: boolean) => Promise<void>>();
 
+  // Busca TODAS as datas paginando (contorna o limite do PostgREST)
   const fetchAvailableDates = useCallback(async (radio: string): Promise<string> => {
     try {
       const supabase = getSupabaseClient();
       if (!supabase) return '';
-      const { data: rows, error } = await supabase
-        .from('radio_airplay')
-        .select('tocou_em')
-        .eq('radio', radio)
-        .order('tocou_em', { ascending: false });
-      if (error || !rows) return '';
-      const dates = [...new Set(
-        rows.map((r: any) => parseTocouEm(r.tocou_em).data)
-      )].sort().reverse() as string[];
+      const allDates = new Set<string>();
+      let from = 0;
+      while (true) {
+        const { data: rows, error } = await supabase
+          .from('radio_airplay')
+          .select('tocou_em')
+          .eq('radio', radio)
+          .order('tocou_em', { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error || !rows || rows.length === 0) break;
+        rows.forEach((r: any) => allDates.add(parseTocouEm(r.tocou_em).data));
+        if (rows.length < PAGE_SIZE) break; // última página
+        from += PAGE_SIZE;
+      }
+      const dates = [...allDates].sort().reverse();
       setAvailableDates(dates);
       return dates[0] || '';
     } catch { return ''; }
@@ -428,7 +361,7 @@ const App = () => {
     setRefreshing(true);
     try {
       const supabase = getSupabaseClient();
-      if (!supabase) throw new Error('Supabase client não disponível');
+      if (!supabase) throw new Error('Supabase não disponível');
       const currentDate  = dateOverride  ?? filters.date;
       const currentRadio = radioOverride ?? filters.radio;
       if (!currentDate) { setLoading(false); setRefreshing(false); return; }
@@ -509,25 +442,13 @@ const App = () => {
     doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 34);
     let y = 45;
     if (chartRef.current && genreData.length > 0) {
-      try {
-        const html2canvas = (await import('https://esm.sh/html2canvas@1.4.1')).default;
-        const canvas = await html2canvas(chartRef.current, { backgroundColor: '#ffffff', scale: 2 });
-        doc.addImage(canvas.toDataURL('image/png'), 'PNG', 14, y, 180, 90); y += 100;
-      } catch {}
+      try { const html2canvas = (await import('https://esm.sh/html2canvas@1.4.1')).default; const canvas = await html2canvas(chartRef.current, { backgroundColor: '#ffffff', scale: 2 }); doc.addImage(canvas.toDataURL('image/png'), 'PNG', 14, y, 180, 90); y += 100; } catch {}
     }
     if (y > 240) { doc.addPage(); y = 20; }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('PLAYLIST', 14, y); y += 8;
-    const renderHeader = () => {
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
-      doc.text('HORA', 14, y); doc.text('ARTISTA', 32, y); doc.text('MUSICA', 95, y); doc.text('GENERO', 158, y); doc.text('BPM', 185, y);
-      doc.line(14, y + 1, 196, y + 1); doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
-    };
+    const renderHeader = () => { doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.text('HORA',14,y); doc.text('ARTISTA',32,y); doc.text('MUSICA',95,y); doc.text('GENERO',158,y); doc.text('BPM',185,y); doc.line(14,y+1,196,y+1); doc.setFont('helvetica','normal'); doc.setFontSize(7); };
     renderHeader(); y += 6;
-    filteredData.forEach(t => {
-      if (y > 280) { doc.addPage(); y = 20; renderHeader(); y += 6; }
-      doc.text(t.hora, 14, y); doc.text(t.artista.substring(0, 30), 32, y); doc.text(t.musica.substring(0, 38), 95, y);
-      doc.text((t.genero === 'Desconhecido' ? '' : t.genero).substring(0, 18), 158, y); doc.text(t.bpm ? String(t.bpm) : '', 185, y); y += 6;
-    });
+    filteredData.forEach(t => { if(y>280){doc.addPage();y=20;renderHeader();y+=6;} doc.text(t.hora,14,y); doc.text(t.artista.substring(0,30),32,y); doc.text(t.musica.substring(0,38),95,y); doc.text((t.genero==='Desconhecido'?'':t.genero).substring(0,18),158,y); doc.text(t.bpm?String(t.bpm):'',185,y); y+=6; });
     doc.save(`IAnoRadio_${filters.radio}_${filters.date}_${hourLabel}.pdf`);
   };
 
@@ -537,32 +458,22 @@ const App = () => {
         <div className="max-w-5xl mx-auto px-6 h-24 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-lg"><Radio size={32} className="text-white" /></div>
-            <div>
-              <h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1>
-              <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Monitoramento Musical</p>
-            </div>
+            <div><h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1><p className="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Monitoramento Musical</p></div>
           </div>
           <div className="flex items-center gap-3">
-            <a href="/comercial" className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 rounded-xl font-bold text-emerald-700 text-xs uppercase tracking-wider transition-all flex items-center gap-2">
-              <Megaphone size={14} /> Ver Comercial
-            </a>
-            <button onClick={() => fetchData()} className="p-4 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-all hover:scale-105 active:scale-95">
-              <RefreshCw className={refreshing ? 'animate-spin text-blue-600' : 'text-blue-600'} size={24} />
-            </button>
+            <a href="/comercial" className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 rounded-xl font-bold text-emerald-700 text-xs uppercase tracking-wider transition-all flex items-center gap-2"><Megaphone size={14} /> Ver Comercial</a>
+            <button onClick={() => fetchData()} className="p-4 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-all hover:scale-105 active:scale-95"><RefreshCw className={refreshing ? 'animate-spin text-blue-600' : 'text-blue-600'} size={24} /></button>
           </div>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-10">
         <div className="bg-white p-8 rounded-3xl shadow-xl mb-8 border border-slate-200">
-          <div className="flex items-center gap-3 mb-6">
-            <Filter className="text-blue-600" size={24} />
-            <h3 className="font-black text-xl text-slate-900 uppercase tracking-tight">Filtros</h3>
-          </div>
+          <div className="flex items-center gap-3 mb-6"><Filter className="text-blue-600" size={24} /><h3 className="font-black text-xl text-slate-900 uppercase tracking-tight">Filtros</h3></div>
           <div className="grid grid-cols-3 gap-3 mb-6">
             {['Metropolitana FM', 'Antena 1', 'Forbes Radio'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
-                className={`py-5 rounded-2xl font-black text-sm uppercase transition-all transform hover:scale-105 active:scale-95 ${filters.radio === r ? 'bg-blue-600 text-white shadow-xl' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{r}</button>
+                className={`py-5 rounded-2xl font-black text-sm uppercase transition-all transform hover:scale-105 active:scale-95 ${filters.radio===r?'bg-blue-600 text-white shadow-xl':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{r}</button>
             ))}
           </div>
           <div className="relative mb-4">
@@ -572,12 +483,7 @@ const App = () => {
               value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            {/* DATE PICKER nativo — abre calendário do browser */}
-            <DatePicker
-              value={filters.date}
-              availableDates={availableDates}
-              onChange={d => { setFilters(f => ({ ...f, date: d, genero: '', hour: 'all' })); setVisibleCount(9); }}
-            />
+            <DatePicker value={filters.date} availableDates={availableDates} onChange={d => { setFilters(f => ({ ...f, date: d, genero: '', hour: 'all' })); setVisibleCount(9); }} />
             <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.hour} onChange={e => setFilters(f => ({ ...f, hour: e.target.value }))}>
               <option value="all">Todas as horas</option>
               {hourOptions.map(h => <option key={h} value={h}>{h}:00</option>)}
@@ -593,8 +499,7 @@ const App = () => {
               <option value="fast">🏃 Rápido (&gt;120)</option>
             </select>
           </div>
-          <button onClick={exportPDF}
-            className="w-full mt-2 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95">
+          <button onClick={exportPDF} className="w-full mt-2 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95">
             <Download size={20} /> Exportar Relatório PDF
           </button>
         </div>
@@ -605,32 +510,22 @@ const App = () => {
 
         <div className="space-y-3">
           {loading ? (
-            <div className="py-32 text-center">
-              <Loader2 className="animate-spin mx-auto text-blue-600 mb-6" size={48} />
-              <p className="font-bold text-slate-500 text-sm uppercase tracking-wider">Carregando dados...</p>
-            </div>
+            <div className="py-32 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-6" size={48} /><p className="font-bold text-slate-500 text-sm uppercase tracking-wider">Carregando dados...</p></div>
           ) : filteredData.length > 0 ? (
             <>
-              <div className="flex items-center gap-3 mb-4">
-                <Music className="text-blue-600" size={24} />
-                <h3 className="font-black text-xl text-slate-900 uppercase">Últimas Execuções ({filteredData.length} músicas)</h3>
-              </div>
+              <div className="flex items-center gap-3 mb-4"><Music className="text-blue-600" size={24} /><h3 className="font-black text-xl text-slate-900 uppercase">Últimas Execuções ({filteredData.length} músicas)</h3></div>
               {filteredData.slice(filters.search ? 0 : 1, visibleCount + 1).map(track => {
                 const rc = repeatCountMap[`${track.artista}|||${track.musica}`];
                 return <MusicCard key={track.id} track={track} repeatCount={rc} />;
               })}
               {filteredData.length > visibleCount + 1 && (
-                <button onClick={() => setVisibleCount(c => c + 9)}
-                  className="w-full py-6 rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:scale-105 active:scale-95">
+                <button onClick={() => setVisibleCount(c => c + 9)} className="w-full py-6 rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:scale-105 active:scale-95">
                   <Plus size={20} /> Carregar Mais Músicas
                 </button>
               )}
             </>
           ) : (
-            <div className="bg-white p-24 rounded-3xl text-center border-4 border-dashed border-slate-200">
-              <Music className="mx-auto text-slate-300 mb-4" size={64} />
-              <p className="font-black text-slate-400 uppercase text-lg tracking-wider">Nenhum registro encontrado</p>
-            </div>
+            <div className="bg-white p-24 rounded-3xl text-center border-4 border-dashed border-slate-200"><Music className="mx-auto text-slate-300 mb-4" size={64} /><p className="font-black text-slate-400 uppercase text-lg tracking-wider">Nenhum registro encontrado</p></div>
           )}
         </div>
       </main>
@@ -639,15 +534,10 @@ const App = () => {
 };
 
 (async () => {
-  const maxAttempts = 10;
-  let attempts = 0;
+  const maxAttempts = 10; let attempts = 0;
   while (attempts < maxAttempts) {
-    if ((window as any)._supabaseReady && (window as any)._supabaseClient) {
-      createRoot(document.getElementById('root')!).render(<App />);
-      return;
-    }
-    await new Promise(r => setTimeout(r, 500));
-    attempts++;
+    if ((window as any)._supabaseReady && (window as any)._supabaseClient) { createRoot(document.getElementById('root')!).render(<App />); return; }
+    await new Promise(r => setTimeout(r, 500)); attempts++;
   }
   document.getElementById('root')!.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#EF4444"><div style="text-align:center;color:white;padding:2rem"><h1 style="font-size:2rem;font-weight:900;margin-bottom:1rem">❌ Erro</h1><button onclick="location.reload()" style="background:white;color:#DC2626;padding:1rem 2rem;border:none;border-radius:.5rem;font-weight:bold;cursor:pointer">Tentar Novamente</button></div></div>`;
 })();
