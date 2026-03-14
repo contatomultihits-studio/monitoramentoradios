@@ -284,6 +284,9 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
+    <div id="loadingAudio" class="hidden text-center py-4">
+      <div class="text-slate-400 text-sm font-bold animate-pulse">⏳ Carregando áudio...</div>
+    </div>
     <audio id="audioPlayer" controls class="w-full mb-3" style="border-radius:10px"></audio>
     <button id="btnDownload" class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-black uppercase tracking-wider text-sm transition-all">⬇ Download</button>
     <div id="erroAudio" class="hidden text-center text-xs font-bold text-red-500 mt-3"></div>
@@ -295,24 +298,37 @@ const SB_URL='https://ojtdpnrjulrlhxvbmsnr.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
 let sb, deteccoes=[], visivel=10, chartR=null, chartH=null;
 
-// ─── NORMALIZA URL do Supabase Storage ───────────────────────────────────────
-// Banco salva: .../storage/v1/object/provas/ARQUIVO.wav  (sem /public/)
-// URL pública: .../storage/v1/object/public/provas/ARQUIVO.wav
-function normalizarUrl(raw) {
+// ─── EXTRAI PATH DO ARQUIVO DENTRO DO BUCKET 'provas' ───────────────────────
+// A URL salva no banco pode ser:
+//   https://xxx.supabase.co/storage/v1/object/provas/ARQUIVO.wav
+//   https://xxx.supabase.co/storage/v1/object/public/provas/ARQUIVO.wav
+//   https://xxx.supabase.co/storage/v1/object/sign/provas/ARQUIVO.wav?token=...
+// Todas viram apenas: ARQUIVO.wav  (o path dentro do bucket)
+function extrairPath(raw) {
   if (!raw) return null;
-  // 1. decodifica qualquer encode (resolve https%3A%2F%2F e similares)
-  let url = raw;
-  try { while (url !== decodeURIComponent(url)) url = decodeURIComponent(url); } catch(e) {}
-  // 2. remove query string (tokens expirados de signed URL)
-  url = url.split('?')[0];
-  // 3. garante que /object/ seja seguido de /public/
-  //    cobre: /object/provas/  →  /object/public/provas/
-  //    cobre: /object/sign/provas/  →  /object/public/provas/
-  url = url.replace(/\/storage\/v1\/object\/(sign\/)?(?!public\/)/, '/storage/v1/object/public/');
-  // 4. valida
-  if (!url.startsWith('https://')) return null;
-  return url;
+  try {
+    // decodifica qualquer encode
+    let url = raw;
+    while (url !== decodeURIComponent(url)) url = decodeURIComponent(url);
+    // remove query string
+    url = url.split('?')[0];
+    // extrai tudo depois de /provas/
+    const match = url.match(/\/provas\/(.+)$/);
+    return match ? match[1] : null;
+  } catch(e) { return null; }
 }
+
+// Gera signed URL fresca (60 min) para o bucket privado 'provas'
+async function gerarSignedUrl(raw) {
+  const path = extrairPath(raw);
+  if (!path) return null;
+  const { data, error } = await sb.storage.from('provas').createSignedUrl(path, 3600);
+  if (error || !data?.signedUrl) { console.error('signedUrl error', error); return null; }
+  return data.signedUrl;
+}
+
+// Retorna true se a deteccao tem prova_url valida (para exibir o botao)
+function temProva(d) { return !!d.prova_url; }
 
 function brt(s){
   if(!s)return'—';
@@ -447,10 +463,9 @@ function renderLastDet(){
   document.getElementById('lastRadio').textContent=d.radio||'—';
   document.getElementById('lastScore').textContent='Score '+(d.score||0).toFixed(2);
   const btn=document.getElementById('lastProvaBtn');
-  const url=normalizarUrl(d.prova_url);
-  if(url){
+  if(temProva(d)){
     btn.classList.remove('hidden');
-    btn.onclick=()=>abrirProva(url, d.comercial_nome||'', d.radio||'', brt(d.detectado_em));
+    btn.onclick=()=>abrirProva(d.prova_url, d.comercial_nome||'', d.radio||'', brt(d.detectado_em));
   } else btn.classList.add('hidden');
 }
 
@@ -463,7 +478,6 @@ function renderLista(){
   deteccoes.slice(1,visivel+1).forEach(d=>{
     const sc=parseFloat(d.score)||0;
     const scClr=sc>=0.8?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700';
-    const url=normalizarUrl(d.prova_url);
     const item=document.createElement('div');
     item.className='card-det flex items-center gap-3 px-4 py-3 bg-white border border-slate-100 rounded-2xl group';
     item.innerHTML=`
@@ -478,11 +492,11 @@ function renderLista(){
       </div>
       <div class="flex items-center gap-1.5 flex-shrink-0">
         <span class="px-2 py-1 ${scClr} rounded-full text-[10px] font-black">${sc.toFixed(2)}</span>
-        ${url?`<button class="btn-prova p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all opacity-0 group-hover:opacity-100">
+        ${temProva(d)?`<button class="btn-prova p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all opacity-0 group-hover:opacity-100">
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </button>`:`<div class="w-7"></div>`}
       </div>`;
-    if(url)item.querySelector('.btn-prova').addEventListener('click',()=>abrirProva(url,d.comercial_nome||'',d.radio||'',brt(d.detectado_em)));
+    if(temProva(d))item.querySelector('.btn-prova').addEventListener('click',()=>abrirProva(d.prova_url,d.comercial_nome||'',d.radio||'',brt(d.detectado_em)));
     lista.appendChild(item);
   });
   document.getElementById('btnMais').classList.toggle('hidden',visivel>=deteccoes.length-1);
@@ -490,16 +504,33 @@ function renderLista(){
 
 function carregarMais(){visivel+=10;renderLista();}
 
-function abrirProva(url,nome,radio,horario){
+// ─── PLAYER: gera signed URL na hora, aí carrega o audio ─────────────────────
+async function abrirProva(rawUrl, nome, radio, horario){
   document.getElementById('modalNome').textContent=nome;
   document.getElementById('modalInfo').textContent=radio+' · '+horario;
   document.getElementById('erroAudio').classList.add('hidden');
+  document.getElementById('loadingAudio').classList.remove('hidden');
   document.getElementById('modalAudio').classList.remove('hidden');
   const audio=document.getElementById('audioPlayer');
+  audio.src='';
+
+  const url = await gerarSignedUrl(rawUrl);
+  document.getElementById('loadingAudio').classList.add('hidden');
+
+  if(!url){
+    document.getElementById('erroAudio').textContent='❌ Não foi possível gerar o link do áudio.';
+    document.getElementById('erroAudio').classList.remove('hidden');
+    return;
+  }
+
   audio.src=url;
   audio.load();
+  audio.play().catch(()=>{});
   document.getElementById('btnDownload').onclick=()=>{const a=document.createElement('a');a.href=url;a.download=nome+'_prova.wav';a.click();};
-  audio.onerror=()=>{document.getElementById('erroAudio').textContent='❌ Não foi possível carregar o áudio.';document.getElementById('erroAudio').classList.remove('hidden');};
+  audio.onerror=()=>{
+    document.getElementById('erroAudio').textContent='❌ Não foi possível carregar o áudio.';
+    document.getElementById('erroAudio').classList.remove('hidden');
+  };
 }
 
 function fecharModal(){const a=document.getElementById('audioPlayer');a.pause();a.src='';document.getElementById('modalAudio').classList.add('hidden');}
