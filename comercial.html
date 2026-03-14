@@ -8,143 +8,620 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-    .fade-up { animation: fadeUp 0.3s ease forwards; }
-    .card-radio { transition: all 0.25s ease; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+    .fade-up { animation: fadeUp 0.35s ease forwards; }
+    .tab-btn { transition: all 0.2s; border: 2px solid transparent; }
+    .tab-btn.active { background: #1d4ed8 !important; color: #fff !important; border-color: #1d4ed8; }
+    .row-det:hover { background: #f1f5f9; }
+    .card-comercial { transition: all 0.25s; }
+    .card-comercial:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.1); }
+    select, input[type=date] { cursor: pointer; }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #f1f5f9; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
   </style>
 </head>
-<body class="min-h-screen bg-slate-50">
+<body class="min-h-screen">
 
+<!-- AUTH GUARD -->
 <script>
 (async () => {
-  const SUPABASE_URL = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
-  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
-  const sbGuard = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-  const { data: { session } } = await sbGuard.auth.getSession();
-  if (!session) {
-    window.location.href = '/login?redirect=/comercial';
-  } else {
-    window._supabaseSession = session;
-    window._supabaseClient = sbGuard;
-  }
+  const SB_URL  = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
+  const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
+  const sb = window.supabase.createClient(SB_URL, SB_ANON);
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = '/login?redirect=/comercial'; return; }
+  window._supabaseSession = session;
+  window._supabaseClient  = sb;
+  window._supabaseReady   = true;
 })();
 </script>
 
-<header class="bg-white border-b border-blue-100 sticky top-0 z-50 shadow-sm">
-  <div class="max-w-5xl mx-auto px-6 h-24 flex items-center justify-between">
+<!-- HEADER -->
+<header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+  <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
     <div class="flex items-center gap-4">
-      <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-lg">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
+      <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-2.5 rounded-2xl shadow">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
       </div>
       <div>
-        <h1 class="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1>
-        <p class="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Monitoramento Comercial</p>
+        <h1 class="font-black text-xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1>
+        <p class="text-[11px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Monitoramento Comercial</p>
       </div>
     </div>
-    <div class="flex items-center gap-3">
-      <a href="/musical" class="px-4 py-2 bg-purple-100 hover:bg-purple-200 rounded-xl font-bold text-purple-700 text-xs uppercase tracking-wider transition-all">🎵 Ver Musical</a>
-      <button onclick="fazerLogout()" title="Sair" class="p-4 bg-red-50 rounded-2xl hover:bg-red-100 transition-all hover:scale-105 active:scale-95">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+    <div class="flex items-center gap-2">
+      <span id="relogio" class="text-xs font-bold text-slate-400 mr-2 hidden sm:block"></span>
+      <a href="/musical" class="px-4 py-2 bg-violet-100 hover:bg-violet-200 rounded-xl font-bold text-violet-700 text-xs uppercase tracking-wider transition-all">🎵 Musical</a>
+      <button onclick="fazerLogout()" class="p-2.5 bg-red-50 rounded-xl hover:bg-red-100 transition-all" title="Sair">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
       </button>
     </div>
   </div>
 </header>
 
-<main class="max-w-5xl mx-auto px-6 py-16">
+<main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
-  <div class="text-center mb-14 fade-up">
-    <div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 rounded-full mb-4">
-      <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-      <span class="text-xs font-black text-blue-700 uppercase tracking-wider">Monitoramento Comercial</span>
-    </div>
-    <h2 class="font-black text-4xl text-slate-900 uppercase tracking-tight mb-3">Selecione a Rádio</h2>
-    <p class="text-slate-500 font-bold text-lg">Escolha qual estação deseja monitorar</p>
+  <!-- TABS -->
+  <div class="flex gap-2 mb-8 flex-wrap">
+    <button class="tab-btn active px-5 py-2.5 rounded-2xl font-black uppercase text-sm bg-slate-100 text-slate-600" onclick="trocarAba('deteccoes',this)">📋 Detecções</button>
+    <button class="tab-btn px-5 py-2.5 rounded-2xl font-black uppercase text-sm bg-slate-100 text-slate-600" onclick="trocarAba('comerciais',this)">🎙️ Comerciais</button>
+    <button class="tab-btn px-5 py-2.5 rounded-2xl font-black uppercase text-sm bg-slate-100 text-slate-600" onclick="trocarAba('cadastrar',this)">➕ Cadastrar</button>
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  <!-- ============================================================ -->
+  <!-- ABA DETECÇÕES -->
+  <!-- ============================================================ -->
+  <div id="aba-deteccoes">
 
-    <!-- MARINGÁ FM — EM BREVE -->
-    <div onclick="window.location.href='/'" class="card-radio block bg-white rounded-3xl shadow border border-slate-100 overflow-hidden opacity-60 fade-up cursor-pointer hover:opacity-70 transition-all" style="animation-delay:0ms">
-      <div class="bg-gradient-to-br from-slate-300 to-slate-400 p-8 flex items-center justify-center">
-        <div class="text-center">
-          <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
-          </div>
-          <span class="text-white/80 text-xs font-black uppercase tracking-wider">🔒 Em Breve</span>
+    <!-- FILTROS -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 mb-6 fade-up">
+      <div class="flex flex-wrap gap-3 items-end">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">📅 Data</label>
+          <input type="date" id="filtroData"
+            class="border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-slate-50"
+            onchange="carregarDeteccoes()" />
         </div>
-      </div>
-      <div class="p-6">
-        <h3 class="font-black text-2xl text-slate-400 uppercase tracking-tight mb-1">Maringá FM</h3>
-        <p class="text-sm font-bold text-slate-400 mb-4">Maringá, Paraná</p>
-        <div class="flex items-center gap-2 flex-wrap mb-5">
-          <span class="px-3 py-1 bg-slate-100 text-slate-400 rounded-full text-xs font-black uppercase">Em breve</span>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">📻 Rádio</label>
+          <select id="filtroRadio"
+            class="border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-slate-50"
+            onchange="carregarDeteccoes()">
+            <option value="">Todas as rádios</option>
+          </select>
         </div>
-        <div class="w-full py-4 bg-slate-200 text-slate-400 rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-2 cursor-not-allowed">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Indisponível
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">🏷️ Cliente</label>
+          <select id="filtroCliente"
+            class="border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-slate-50"
+            onchange="carregarDeteccoes()">
+            <option value="">Todos os clientes</option>
+          </select>
+        </div>
+        <div class="ml-auto flex items-end gap-2">
+          <button onclick="carregarDeteccoes()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase text-xs tracking-wider transition-all shadow">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="inline -mt-0.5 mr-1"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Atualizar
+          </button>
+          <button onclick="exportarTxt()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black uppercase text-xs tracking-wider transition-all">📄 Exportar</button>
         </div>
       </div>
     </div>
 
-    <!-- METROPOLITANA FM — EM BREVE -->
-    <div onclick="window.location.href='/'" class="card-radio block bg-white rounded-3xl shadow border border-slate-100 overflow-hidden opacity-60 fade-up cursor-pointer hover:opacity-70 transition-all" style="animation-delay:80ms">
-      <div class="bg-gradient-to-br from-slate-300 to-slate-400 p-8 flex items-center justify-center">
-        <div class="text-center">
-          <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
-          </div>
-          <span class="text-white/80 text-xs font-black uppercase tracking-wider">🔒 Em Breve</span>
-        </div>
+    <!-- MÉTRICAS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-up text-center">
+        <div id="metDet" class="text-4xl font-black text-blue-600">—</div>
+        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Detecções no Dia</div>
       </div>
-      <div class="p-6">
-        <h3 class="font-black text-2xl text-slate-400 uppercase tracking-tight mb-1">Metropolitana FM</h3>
-        <p class="text-sm font-bold text-slate-400 mb-4">São Paulo, SP</p>
-        <div class="flex items-center gap-2 flex-wrap mb-5">
-          <span class="px-3 py-1 bg-slate-100 text-slate-400 rounded-full text-xs font-black uppercase">Em breve</span>
-        </div>
-        <div class="w-full py-4 bg-slate-200 text-slate-400 rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-2 cursor-not-allowed">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Indisponível
-        </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-up text-center">
+        <div id="metCli" class="text-4xl font-black text-indigo-600">—</div>
+        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Clientes</div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-up text-center">
+        <div id="metRad" class="text-4xl font-black text-purple-600">—</div>
+        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Rádios Ativas</div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-up text-center">
+        <div id="metUlt" class="text-sm font-black text-slate-700 leading-snug">—</div>
+        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Última Detecção</div>
       </div>
     </div>
 
-    <!-- TERCEIRA RÁDIO — EM BREVE -->
-    <div onclick="window.location.href='/'" class="card-radio block bg-white rounded-3xl shadow border border-slate-100 overflow-hidden opacity-60 fade-up cursor-pointer hover:opacity-70 transition-all" style="animation-delay:160ms">
-      <div class="bg-gradient-to-br from-slate-300 to-slate-400 p-8 flex items-center justify-center">
-        <div class="text-center">
-          <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
+    <!-- COMERCIAIS MONITORADOS + GRÁFICO RADIOS -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+      <!-- CARDS COMERCIAIS RECENTES -->
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 fade-up">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <div class="text-xs font-black text-slate-700 uppercase tracking-widest">Comerciais Monitorados</div>
+            <div class="text-[10px] font-bold text-slate-400 mt-0.5">6 últimos cadastrados</div>
           </div>
-          <span class="text-white/80 text-xs font-black uppercase tracking-wider">🔒 Em Breve</span>
+          <button onclick="trocarAba('cadastrar',document.querySelectorAll('.tab-btn')[2])" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-black uppercase transition-all">➕ Novo</button>
+        </div>
+        <div id="cardsComerciais" class="grid grid-cols-2 gap-3">
+          <div class="col-span-2 text-center py-6 text-slate-400 text-sm font-bold">Carregando...</div>
         </div>
       </div>
-      <div class="p-6">
-        <h3 class="font-black text-2xl text-slate-400 uppercase tracking-tight mb-1">Nova Rádio</h3>
-        <p class="text-sm font-bold text-slate-400 mb-4">Em configuração</p>
-        <div class="flex items-center gap-2 flex-wrap mb-5">
-          <span class="px-3 py-1 bg-slate-100 text-slate-400 rounded-full text-xs font-black uppercase">Em breve</span>
-        </div>
-        <div class="w-full py-4 bg-slate-200 text-slate-400 rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-2 cursor-not-allowed">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Indisponível
-        </div>
+
+      <!-- GRÁFICO POR RÁDIO -->
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 fade-up">
+        <div class="text-xs font-black text-slate-700 uppercase tracking-widest mb-5">📻 Detecções por Rádio</div>
+        <canvas id="graficoRadio" height="240"></canvas>
+        <div id="semGrafico" class="hidden text-center py-8 text-slate-400 text-sm font-bold">Sem dados para o período</div>
       </div>
     </div>
 
+    <!-- TABELA DETECÇÕES -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 fade-up">
+      <div class="flex items-center justify-between mb-5">
+        <div class="text-xs font-black text-slate-700 uppercase tracking-widest">📋 Detecções Recentes</div>
+        <div id="contadorDet" class="text-xs font-bold text-slate-400"></div>
+      </div>
+      <div id="skeletonDet" class="space-y-2">
+        <div class="h-10 bg-slate-100 rounded-xl animate-pulse"></div>
+        <div class="h-10 bg-slate-100 rounded-xl animate-pulse"></div>
+        <div class="h-10 bg-slate-100 rounded-xl animate-pulse"></div>
+      </div>
+      <div id="tabelaDet" class="hidden">
+        <div class="grid grid-cols-12 gap-2 px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 mb-1">
+          <div class="col-span-3">Horário BRT</div>
+          <div class="col-span-3">Comercial</div>
+          <div class="col-span-2">Cliente</div>
+          <div class="col-span-2">Rádio</div>
+          <div class="col-span-1">Score</div>
+          <div class="col-span-1">Prova</div>
+        </div>
+        <div id="listaDet"></div>
+      </div>
+      <div id="semDet" class="hidden text-center py-16">
+        <div class="text-5xl mb-3">📭</div>
+        <div class="font-black text-slate-300 uppercase text-sm tracking-wider">Nenhuma detecção no período</div>
+      </div>
+    </div>
   </div>
 
-  <p class="text-center text-xs font-bold text-slate-300 uppercase tracking-widest mt-16">IA NO RÁDIO · Monitoramento em Tempo Real</p>
+  <!-- ============================================================ -->
+  <!-- ABA COMERCIAIS -->
+  <!-- ============================================================ -->
+  <div id="aba-comerciais" class="hidden">
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 fade-up">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <div class="text-sm font-black text-slate-800 uppercase tracking-wider">🎙️ Áudios de Referência</div>
+          <div class="text-xs font-bold text-slate-400 mt-1">Todos os comerciais cadastrados no sistema</div>
+        </div>
+        <button onclick="carregarReferencias()" class="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-black text-xs uppercase transition-all">🔄 Atualizar</button>
+      </div>
+      <div id="loadingRef" class="text-center text-slate-400 font-bold py-12">Carregando...</div>
+      <div id="gridRef" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      <div id="semRef" class="hidden text-center py-16">
+        <div class="text-5xl mb-3">🎙️</div>
+        <div class="font-black text-slate-300 uppercase text-sm tracking-wider">Nenhum áudio cadastrado</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ABA CADASTRAR -->
+  <!-- ============================================================ -->
+  <div id="aba-cadastrar" class="hidden">
+    <div class="max-w-xl mx-auto">
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 fade-up">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+          <div>
+            <div class="font-black text-slate-800 text-base uppercase tracking-wide">Cadastrar Novo Áudio</div>
+            <div class="text-xs font-bold text-slate-400">MP3 ou WAV — máx. 50MB</div>
+          </div>
+        </div>
+
+        <div class="space-y-5">
+          <div>
+            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Nome do Comercial *</label>
+            <input type="text" id="cadNome" placeholder="Ex: FISK INSTITUCIONAL 2026"
+              class="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:border-blue-400 transition-all" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Cliente *</label>
+            <input type="text" id="cadCliente" placeholder="Ex: FISK INGLÊS"
+              class="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:border-blue-400 transition-all" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Arquivo de Áudio *</label>
+            <div id="dropZone" onclick="document.getElementById('cadArquivo').click()"
+              class="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all group">
+              <div class="text-4xl mb-2 group-hover:scale-110 transition-transform">🎵</div>
+              <div class="font-black text-slate-500 uppercase text-sm">Clique para selecionar</div>
+              <div class="text-xs text-slate-400 mt-1">MP3 ou WAV</div>
+              <div id="nomeArquivo" class="mt-3 text-sm font-bold text-blue-600 hidden"></div>
+            </div>
+            <input type="file" id="cadArquivo" accept=".mp3,.wav,audio/*" class="hidden" onchange="mostrarArquivo(this)" />
+          </div>
+
+          <!-- PROGRESSO -->
+          <div id="progressoUpload" class="hidden">
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="text-xs font-black text-slate-500 uppercase">Enviando...</span>
+              <span id="pctUpload" class="text-xs font-black text-blue-600">0%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2.5">
+              <div id="barraUpload" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div id="msgCadastro" class="hidden rounded-2xl px-4 py-3 text-sm font-bold"></div>
+
+          <button onclick="cadastrarAudio()"
+            class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95">
+            🚀 Cadastrar e Enviar para Monitoramento
+          </button>
+        </div>
+
+        <div class="mt-7 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
+          <div class="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2">ℹ️ Como funciona</div>
+          <ul class="text-xs text-blue-600 font-bold space-y-1 leading-relaxed">
+            <li>• O arquivo vai para o storage seguro (bucket <code>comerciais</code>)</li>
+            <li>• O RadioDNA gera o fingerprint automaticamente</li>
+            <li>• O monitoramento nas rádios começa na próxima varredura</li>
+            <li>• Detecções aparecem na aba “Detecções” em tempo real</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
+<p class="text-center text-[10px] font-bold text-slate-300 uppercase tracking-widest py-8">IA NO RÁDIO · Monitoramento em Tempo Real</p>
+
+<!-- MODAL PLAYER -->
+<div id="modalAudio" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-3xl shadow-2xl p-7 max-w-sm w-full fade-up">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <div class="font-black text-slate-800 text-base" id="modalNome"></div>
+        <div class="text-xs font-bold text-slate-400 mt-0.5" id="modalInfo"></div>
+      </div>
+      <button onclick="fecharModal()" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all ml-3 flex-shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="loadingAudio" class="text-center py-4 text-sm font-bold text-slate-400">
+      <svg class="animate-spin mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+      Gerando link seguro...
+    </div>
+    <audio id="audioPlayer" controls class="w-full hidden mb-3" style="border-radius:10px"></audio>
+    <button id="btnDownload" class="hidden w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-black uppercase tracking-wider text-sm transition-all">
+      ⬇ Download WAV
+    </button>
+    <div id="erroAudio" class="hidden text-center text-xs font-bold text-red-500 mt-2"></div>
+  </div>
+</div>
+
 <script>
+const SB_URL  = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
+let sb, deteccoes = [], chartRadio = null;
+
+// ── UTILS ────────────────────────────────────────────────────
+function brt(str) {
+  if (!str) return '—';
+  try { return new Date(str).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+  catch { return str.slice(0,16); }
+}
+function hojeStr() {
+  return new Date().toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'}).split('/').reverse().join('-');
+}
+const CORES = ['#1d4ed8','#6366f1','#0ea5e9','#8b5cf6','#0284c7','#4338ca','#06b6d4','#3b82f6','#2563eb','#60a5fa'];
+
+// ── RELÓGIO ──────────────────────────────────────────────────
+function tickRelogio() {
+  const el = document.getElementById('relogio');
+  if (el) el.textContent = new Date().toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit'}) + ' BRT';
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+function trocarAba(aba, btn) {
+  ['deteccoes','comerciais','cadastrar'].forEach(a => document.getElementById('aba-'+a).classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('aba-'+aba).classList.remove('hidden');
+  btn.classList.add('active');
+  if (aba === 'comerciais') carregarReferencias();
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+async function init() {
+  sb = window._supabaseClient;
+  if (!sb) { setTimeout(init, 300); return; }
+  document.getElementById('filtroData').value = hojeStr();
+  tickRelogio();
+  setInterval(tickRelogio, 10000);
+  await Promise.all([popularFiltros(), carregarDeteccoes(), carregarCardsComerciais()]);
+  setInterval(() => carregarDeteccoes(true), 30000);
+}
+
+// ── POPULAR FILTROS ──────────────────────────────────────────
+async function popularFiltros() {
+  const { data } = await sb.from('deteccoes').select('radio,cliente').limit(500);
+  if (!data) return;
+  const radios   = [...new Set(data.map(d=>d.radio).filter(Boolean))].sort();
+  const clientes = [...new Set(data.map(d=>d.cliente).filter(Boolean))].sort();
+  const rSel = document.getElementById('filtroRadio');
+  const cSel = document.getElementById('filtroCliente');
+  radios.forEach(r => { const o=document.createElement('option'); o.value=r; o.textContent=r; rSel.appendChild(o); });
+  clientes.forEach(c => { const o=document.createElement('option'); o.value=c; o.textContent=c; cSel.appendChild(o); });
+}
+
+// ── DETECÇÕES ─────────────────────────────────────────────
+async function carregarDeteccoes(silencioso=false) {
+  if (!sb) return;
+  if (!silencioso) {
+    document.getElementById('skeletonDet').classList.remove('hidden');
+    document.getElementById('tabelaDet').classList.add('hidden');
+    document.getElementById('semDet').classList.add('hidden');
+  }
+  const dia    = document.getElementById('filtroData').value || hojeStr();
+  const radio  = document.getElementById('filtroRadio').value;
+  const cliente= document.getElementById('filtroCliente').value;
+  const ini = new Date(dia+'T00:00:00-03:00').toISOString();
+  const fim = new Date(dia+'T23:59:59-03:00').toISOString();
+  let q = sb.from('deteccoes').select('*').gte('detectado_em',ini).lte('detectado_em',fim).order('detectado_em',{ascending:false}).limit(500);
+  if (radio)   q = q.eq('radio',radio);
+  if (cliente) q = q.eq('cliente',cliente);
+  const { data, error } = await q;
+  if (error) { console.error(error); return; }
+  deteccoes = data || [];
+  renderMetricas();
+  renderGraficoRadio();
+  renderTabela();
+}
+
+function renderMetricas() {
+  document.getElementById('metDet').textContent = deteccoes.length;
+  document.getElementById('metCli').textContent = new Set(deteccoes.map(d=>d.cliente).filter(Boolean)).size;
+  document.getElementById('metRad').textContent = new Set(deteccoes.map(d=>d.radio).filter(Boolean)).size;
+  document.getElementById('metUlt').textContent = deteccoes.length ? brt(deteccoes[0].detectado_em) : '—';
+}
+
+function renderGraficoRadio() {
+  const byR = {};
+  deteccoes.forEach(d => { const k=d.radio||'?'; byR[k]=(byR[k]||0)+1; });
+  const labels = Object.keys(byR);
+  const sem = document.getElementById('semGrafico');
+  const cnv = document.getElementById('graficoRadio');
+  if (!labels.length) { sem.classList.remove('hidden'); cnv.classList.add('hidden'); return; }
+  sem.classList.add('hidden'); cnv.classList.remove('hidden');
+  if (chartRadio) chartRadio.destroy();
+  chartRadio = new Chart(cnv.getContext('2d'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: labels.map(k=>byR[k]), backgroundColor: CORES, borderWidth: 3, borderColor: '#fff' }] },
+    options: { cutout:'62%', plugins: { legend: { position:'bottom', labels: { font:{weight:'bold',size:11}, padding:12 } } } }
+  });
+}
+
+function renderTabela() {
+  document.getElementById('skeletonDet').classList.add('hidden');
+  if (!deteccoes.length) {
+    document.getElementById('semDet').classList.remove('hidden');
+    document.getElementById('tabelaDet').classList.add('hidden');
+    return;
+  }
+  document.getElementById('semDet').classList.add('hidden');
+  document.getElementById('tabelaDet').classList.remove('hidden');
+  document.getElementById('contadorDet').textContent = deteccoes.length + ' registro(s)';
+  const lista = document.getElementById('listaDet');
+  lista.innerHTML = '';
+  deteccoes.slice(0,100).forEach(d => {
+    const row = document.createElement('div');
+    row.className = 'row-det grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-50 items-center rounded-xl cursor-default';
+    row.innerHTML = `
+      <div class="col-span-3 text-xs font-bold text-slate-500">${brt(d.detectado_em)}</div>
+      <div class="col-span-3 text-sm font-black text-slate-800 truncate" title="${d.comercial_nome||''}">  ${d.comercial_nome||'—'}</div>
+      <div class="col-span-2 text-xs font-bold text-slate-600 truncate">${d.cliente||'—'}</div>
+      <div class="col-span-2"><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black truncate block text-center">${d.radio||'—'}</span></div>
+      <div class="col-span-1 text-center"><span class="px-2 py-1 ${parseFloat(d.score)>=0.8?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'} rounded-full text-[10px] font-black">${(d.score||0).toFixed(2)}</span></div>
+      <div class="col-span-1 text-center">
+        ${d.prova_url
+          ? `<button onclick="abrirProva('${encodeURIComponent(d.prova_url)}','${(d.comercial_nome||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${d.radio||''}','${brt(d.detectado_em)}')"
+               class="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all" title="Ouvir prova">
+               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+             </button>`
+          : `<span class="text-slate-300 text-lg">—</span>`}
+      </div>`;
+    lista.appendChild(row);
+  });
+}
+
+// ── CARDS COMERCIAIS RECENTES ─────────────────────────────
+async function carregarCardsComerciais() {
+  if (!sb) return;
+  const { data } = await sb.from('referencias').select('*').order('criado_em',{ascending:false}).limit(6);
+  const container = document.getElementById('cardsComerciais');
+  if (!data || !data.length) {
+    container.innerHTML = '<div class="col-span-2 text-center py-6 text-slate-400 text-sm font-bold">Nenhum comercial cadastrado</div>';
+    return;
+  }
+  container.innerHTML = '';
+  data.forEach(r => {
+    const dur  = r.duration ? r.duration.toFixed(1)+'s' : '—';
+    const hasDna = !!r.fingerprint;
+    const card = document.createElement('div');
+    card.className = 'card-comercial bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl p-4 border border-slate-200 cursor-default';
+    card.innerHTML = `
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 flex-shrink-0 rounded-xl flex items-center justify-center text-lg ${hasDna?'bg-green-100':'bg-amber-100'}">
+          ${hasDna?'✅':'⏳'}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-black text-slate-800 text-xs truncate leading-tight">${r.nome||'—'}</div>
+          <div class="text-[10px] font-bold text-slate-500 mt-0.5 truncate">${r.cliente||'—'}</div>
+          <div class="flex items-center gap-1.5 mt-2">
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${hasDna?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}">
+              ${hasDna?'DNA OK':'Aguardando'}
+            </span>
+            <span class="text-[9px] font-bold text-slate-400">${dur}</span>
+          </div>
+        </div>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+// ── MODAL PROVA DE ÁUDIO ─────────────────────────────────
+async function abrirProva(provaUrlEnc, nome, radio, horario) {
+  const provaUrl = decodeURIComponent(provaUrlEnc);
+  document.getElementById('modalNome').textContent  = nome;
+  document.getElementById('modalInfo').textContent  = radio + ' · ' + horario;
+  document.getElementById('loadingAudio').classList.remove('hidden');
+  document.getElementById('audioPlayer').classList.add('hidden');
+  document.getElementById('btnDownload').classList.add('hidden');
+  document.getElementById('erroAudio').classList.add('hidden');
+  document.getElementById('modalAudio').classList.remove('hidden');
+  document.getElementById('audioPlayer').src = '';
+
+  try {
+    // Extrai bucket e path a partir da URL do Supabase Storage
+    // Formato: .../storage/v1/object/[public|sign]/BUCKET/PATH
+    const match = provaUrl.match(/\/storage\/v1\/object\/(?:public\/|sign\/)?([^\/]+)\/(.+)/);
+    if (!match) throw new Error('URL de prova inválida: ' + provaUrl);
+    const bucket = match[1]; // ex: "provas"
+    const path   = match[2].split('?')[0]; // ex: "20260313_225825_METRO_FISK.wav"
+
+    const { data, error } = await sb.storage.from(bucket).createSignedUrl(path, 3600);
+    if (error) throw error;
+
+    const signed = data.signedUrl;
+    const audio  = document.getElementById('audioPlayer');
+    audio.src    = signed;
+    audio.classList.remove('hidden');
+    document.getElementById('loadingAudio').classList.add('hidden');
+    const btn = document.getElementById('btnDownload');
+    btn.classList.remove('hidden');
+    btn.onclick = () => { const a=document.createElement('a'); a.href=signed; a.download=nome+'_prova.wav'; a.click(); };
+
+  } catch(e) {
+    console.error('Erro signed URL:', e);
+    document.getElementById('loadingAudio').classList.add('hidden');
+    document.getElementById('erroAudio').textContent = '❌ Não foi possível carregar a prova: ' + (e.message||e);
+    document.getElementById('erroAudio').classList.remove('hidden');
+  }
+}
+
+function fecharModal() {
+  const a = document.getElementById('audioPlayer');
+  a.pause(); a.src = '';
+  document.getElementById('modalAudio').classList.add('hidden');
+}
+
+// ── REFERÊNCIAS COMPLETAS ─────────────────────────────────
+async function carregarReferencias() {
+  if (!sb) return;
+  document.getElementById('loadingRef').classList.remove('hidden');
+  document.getElementById('gridRef').classList.add('hidden');
+  document.getElementById('semRef').classList.add('hidden');
+  const { data, error } = await sb.from('referencias').select('*').order('criado_em',{ascending:false});
+  document.getElementById('loadingRef').classList.add('hidden');
+  if (error || !data || !data.length) { document.getElementById('semRef').classList.remove('hidden'); return; }
+  const grid = document.getElementById('gridRef');
+  grid.innerHTML = '';
+  data.forEach(r => {
+    const hasDna = !!r.fingerprint;
+    const dur    = r.duration ? r.duration.toFixed(1)+'s' : '—';
+    const dt     = r.criado_em ? brt(r.criado_em) : '—';
+    const card   = document.createElement('div');
+    card.className = 'card-comercial bg-white rounded-2xl border border-slate-200 p-5 shadow-sm';
+    card.innerHTML = `
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 ${hasDna?'bg-green-50':'bg-amber-50'}">
+          ${hasDna?'✅':'⏳'}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-black text-slate-800 text-sm truncate">${r.nome||'—'}</div>
+          <div class="text-xs font-bold text-slate-500">${r.cliente||'—'}</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${hasDna?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}">${hasDna?'✅ DNA Gerado':'⏳ Aguardando DNA'}</span>
+        <span class="text-[10px] font-bold text-slate-400">${dur}</span>
+      </div>
+      <div class="text-[10px] font-bold text-slate-300 mt-2">${dt}</div>
+      ${r.arquivo_url?`<a href="${r.arquivo_url}" target="_blank" class="mt-3 block w-full py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-center text-xs font-black text-slate-600 uppercase tracking-wider transition-all">⬇ Baixar Áudio</a>`:''}`;
+    grid.appendChild(card);
+  });
+  grid.classList.remove('hidden');
+}
+
+// ── CADASTRAR ÁUDIO ──────────────────────────────────────
+async function cadastrarAudio() {
+  const nome    = document.getElementById('cadNome').value.trim();
+  const cliente = document.getElementById('cadCliente').value.trim();
+  const arquivo = document.getElementById('cadArquivo').files[0];
+  const msg     = document.getElementById('msgCadastro');
+  msg.classList.add('hidden');
+  if (!nome||!cliente||!arquivo) {
+    msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-red-50 text-red-600 border border-red-200';
+    msg.textContent='❌ Preencha todos os campos e selecione um arquivo.';
+    msg.classList.remove('hidden'); return;
+  }
+  document.getElementById('progressoUpload').classList.remove('hidden');
+  const barra = document.getElementById('barraUpload');
+  const pct   = document.getElementById('pctUpload');
+  function setPct(p) { barra.style.width=p+'%'; pct.textContent=p+'%'; }
+  try {
+    setPct(20);
+    const ext  = arquivo.name.split('.').pop();
+    const slug = nome.toUpperCase().replace(/\s+/g,'_').replace(/[^A-Z0-9_]/g,'')+'_'+Date.now()+'.'+ext;
+    setPct(40);
+    const { error: upErr } = await sb.storage.from('comerciais').upload(slug, arquivo, { contentType: arquivo.type||'audio/mpeg', upsert:false });
+    if (upErr) throw upErr;
+    setPct(70);
+    const { data: urlData } = sb.storage.from('comerciais').getPublicUrl(slug);
+    setPct(85);
+    const { error: insErr } = await sb.from('referencias').insert({ nome, cliente, arquivo_url: urlData.publicUrl, duration: null, fingerprint: null });
+    if (insErr) throw insErr;
+    setPct(100);
+    msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-green-50 text-green-700 border border-green-200';
+    msg.textContent='✅ Áudio cadastrado com sucesso! O RadioDNA irá gerar o fingerprint e iniciar o monitoramento.';
+    msg.classList.remove('hidden');
+    document.getElementById('cadNome').value='';
+    document.getElementById('cadCliente').value='';
+    document.getElementById('cadArquivo').value='';
+    document.getElementById('nomeArquivo').classList.add('hidden');
+    carregarCardsComerciais();
+  } catch(e) {
+    msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-red-50 text-red-600 border border-red-200';
+    msg.textContent='❌ Erro: '+(e.message||JSON.stringify(e));
+    msg.classList.remove('hidden');
+  } finally {
+    setTimeout(()=>document.getElementById('progressoUpload').classList.add('hidden'),2000);
+  }
+}
+
+function mostrarArquivo(input) {
+  const el = document.getElementById('nomeArquivo');
+  if (input.files[0]) { el.textContent='📎 '+input.files[0].name; el.classList.remove('hidden'); }
+}
+
+async function exportarTxt() {
+  if (!deteccoes.length) { alert('Nenhum dado para exportar!'); return; }
+  const dia   = document.getElementById('filtroData').value;
+  const radio = document.getElementById('filtroRadio').value||'Todas';
+  const linhas = deteccoes.map(d=>`${brt(d.detectado_em)} | ${d.comercial_nome||'—'} | ${d.cliente||'—'} | ${d.radio||'—'} | Score: ${(d.score||0).toFixed(2)}`).join('\n');
+  const blob = new Blob([`RADIODNA - RELATÓRIO COMERCIAL\nData: ${dia} | Rádio: ${radio} | Total: ${deteccoes.length}\n\n`+linhas],{type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`comercial_${dia}_${radio}.txt`; a.click();
+}
+
 async function fazerLogout() {
-  const sb = window._supabaseClient;
-  if (sb) await sb.auth.signOut();
+  if (window._supabaseClient) await window._supabaseClient.auth.signOut();
   window.location.href = '/login';
 }
+
+window.addEventListener('load', init);
 </script>
 </body>
 </html>
