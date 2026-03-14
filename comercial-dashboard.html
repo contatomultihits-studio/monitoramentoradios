@@ -13,25 +13,23 @@
     body { font-family: 'Inter', sans-serif; }
     @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
     .fade-up { animation: fadeUp 0.4s ease forwards; }
-    @keyframes ping { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .ping { animation: ping 1.2s infinite; }
     .row-item:hover { background: #f8fafc; }
+    .tab-btn { transition: all 0.2s; }
+    .tab-btn.active { background: #1d4ed8; color: #fff; }
   </style>
 </head>
 <body class="min-h-screen bg-slate-50">
 
 <script>
 (async () => {
-  const SUPABASE_URL = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
+  const SUPABASE_URL  = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
-  const sbGuard = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-  const { data: { session } } = await sbGuard.auth.getSession();
-  if (!session) {
-    window.location.href = '/login?redirect=/comercial-dashboard';
-  } else {
-    window._supabaseSession = session;
-    window._supabaseClient = sbGuard;
-  }
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = '/login?redirect=/comercial-dashboard'; return; }
+  window._supabaseSession = session;
+  window._supabaseClient  = sb;
+  window._supabaseReady   = true;
 })();
 </script>
 
@@ -50,97 +48,188 @@
     <div class="flex items-center gap-3">
       <a href="/musical" class="px-4 py-2 bg-purple-100 hover:bg-purple-200 rounded-xl font-bold text-purple-700 text-xs uppercase tracking-wider transition-all">🎵 Musical</a>
       <a href="/" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-600 text-xs uppercase tracking-wider transition-all">← Início</a>
-      <button onclick="fazerLogout()" title="Sair" class="p-4 bg-red-50 rounded-2xl hover:bg-red-100 transition-all hover:scale-105 active:scale-95">
+      <button onclick="fazerLogout()" class="p-4 bg-red-50 rounded-2xl hover:bg-red-100 transition-all">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
       </button>
     </div>
   </div>
 </header>
 
-<main class="max-w-7xl mx-auto px-6 py-10">
+<main class="max-w-7xl mx-auto px-6 py-8">
 
-  <!-- FILTROS -->
-  <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 mb-8 fade-up flex flex-wrap gap-4 items-end">
-    <div class="flex flex-col gap-1">
-      <label class="text-xs font-black text-slate-500 uppercase tracking-wider">📅 Data</label>
-      <input type="date" id="filtroData" class="border border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-    </div>
-    <div class="flex flex-col gap-1">
-      <label class="text-xs font-black text-slate-500 uppercase tracking-wider">📻 Rádio</label>
-      <select id="filtroRadio" class="border border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
-        <option value="">Todas as rádios</option>
-      </select>
-    </div>
-    <button onclick="carregarDados()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-wider text-sm transition-all hover:scale-105 active:scale-95 shadow">
-      🔍 Buscar
-    </button>
-    <button onclick="exportarPDF()" class="px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black uppercase tracking-wider text-sm transition-all hover:scale-105 active:scale-95 shadow">
-      📄 Exportar
-    </button>
-    <div class="ml-auto text-xs font-bold text-slate-400 self-center" id="relogio">--</div>
+  <!-- TABS -->
+  <div class="flex gap-2 mb-8">
+    <button class="tab-btn active px-6 py-3 rounded-2xl font-black uppercase text-sm tracking-wider bg-slate-100 text-slate-600" onclick="trocarAba('deteccoes', this)">📋 Detecções</button>
+    <button class="tab-btn px-6 py-3 rounded-2xl font-black uppercase text-sm tracking-wider bg-slate-100 text-slate-600" onclick="trocarAba('referencias', this)">🎙️ Áudios Cadastrados</button>
+    <button class="tab-btn px-6 py-3 rounded-2xl font-black uppercase text-sm tracking-wider bg-slate-100 text-slate-600" onclick="trocarAba('cadastrar', this)">➕ Cadastrar Novo Áudio</button>
   </div>
 
-  <!-- MÉTRICAS -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 text-center fade-up">
-      <div id="metDeteccoes" class="text-4xl font-black text-blue-600">—</div>
-      <div class="text-xs font-black text-slate-400 uppercase tracking-wider mt-2">Detecções no Dia</div>
-    </div>
-    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 text-center fade-up">
-      <div id="metComerciais" class="text-4xl font-black text-indigo-600">—</div>
-      <div class="text-xs font-black text-slate-400 uppercase tracking-wider mt-2">Comerciais Cadastrados</div>
-    </div>
-    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 text-center fade-up">
-      <div id="metRadios" class="text-4xl font-black text-purple-600">—</div>
-      <div class="text-xs font-black text-slate-400 uppercase tracking-wider mt-2">Rádios Ativas</div>
-    </div>
-    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 text-center fade-up">
-      <div id="metUltima" class="text-lg font-black text-slate-700">—</div>
-      <div class="text-xs font-black text-slate-400 uppercase tracking-wider mt-2">Última Detecção</div>
-    </div>
-  </div>
-
-  <!-- GRÁFICOS -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 fade-up">
-      <div class="text-sm font-black text-slate-700 uppercase tracking-wider mb-4">📊 Detecções por Comercial</div>
-      <canvas id="graficoCom" height="220"></canvas>
-    </div>
-    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 fade-up">
-      <div class="text-sm font-black text-slate-700 uppercase tracking-wider mb-4">📻 Detecções por Rádio</div>
-      <canvas id="graficoRadio" height="220"></canvas>
-    </div>
-  </div>
-
-  <!-- TABELA -->
-  <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 fade-up">
-    <div class="text-sm font-black text-slate-700 uppercase tracking-wider mb-4">📋 Detecções Recentes</div>
-    <div id="loadingMsg" class="text-center text-slate-400 font-bold py-10">Carregando...</div>
-    <div id="tabelaWrap" class="hidden">
-      <div class="grid grid-cols-12 gap-2 px-4 py-2 text-xs font-black text-slate-400 uppercase tracking-wider border-b border-slate-100">
-        <div class="col-span-2">Horário (BRT)</div>
-        <div class="col-span-4">Comercial</div>
-        <div class="col-span-2">Rádio</div>
-        <div class="col-span-1">Score</div>
-        <div class="col-span-3">Prova</div>
+  <!-- ABA DETECÇÕES -->
+  <div id="aba-deteccoes">
+    <!-- FILTROS -->
+    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 mb-6 fade-up flex flex-wrap gap-4 items-end">
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-black text-slate-500 uppercase tracking-wider">📅 Data</label>
+        <input type="date" id="filtroData" class="border border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
       </div>
-      <div id="listaDeteccoes"></div>
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-black text-slate-500 uppercase tracking-wider">📻 Rádio</label>
+        <select id="filtroRadio" class="border border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+          <option value="">Todas as rádios</option>
+        </select>
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-black text-slate-500 uppercase tracking-wider">🏷️ Cliente</label>
+        <select id="filtroCliente" class="border border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+          <option value="">Todos os clientes</option>
+        </select>
+      </div>
+      <button onclick="carregarDeteccoes()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-wider text-sm transition-all shadow">🔍 Buscar</button>
+      <button onclick="exportarRelatorio()" class="px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black uppercase tracking-wider text-sm transition-all shadow">📄 Exportar</button>
+      <div class="ml-auto text-xs font-bold text-slate-400 self-center" id="relogio">--</div>
     </div>
-    <div id="semDados" class="hidden text-center py-12">
-      <div class="text-5xl mb-4">📭</div>
-      <div class="font-black text-slate-400 uppercase">Nenhuma detecção encontrada</div>
+
+    <!-- MÉTRICAS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 text-center fade-up">
+        <div id="metDeteccoes" class="text-4xl font-black text-blue-600">—</div>
+        <div class="text-xs font-black text-slate-400 uppercase tracking-wider mt-2">Detecções no Dia</div>
+      </div>
+      <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 text-center fade-up">
+        <div id="metClientes" class="text-4xl font-black text-indigo-600">—</div>
+        <div class="text-xs font-black text-slate-400 uppercase tracking-wider mt-2">Clientes Detectados</div>
+      </div>
+      <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 text-center fade-up">
+        <div id="metRadios" class="text-4xl font-black text-purple-600">—</div>
+        <div class="text-xs font-black text-slate-400 uppercase tracking-wider mt-2">Rádios Ativas</div>
+      </div>
+      <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 text-center fade-up">
+        <div id="metUltima" class="text-base font-black text-slate-700">—</div>
+        <div class="text-xs font-black text-slate-400 uppercase tracking-wider mt-2">Última Detecção</div>
+      </div>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 fade-up">
+        <div class="text-sm font-black text-slate-700 uppercase tracking-wider mb-4">📊 Top Comerciais</div>
+        <canvas id="graficoCom" height="220"></canvas>
+      </div>
+      <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 fade-up">
+        <div class="text-sm font-black text-slate-700 uppercase tracking-wider mb-4">📻 Por Rádio</div>
+        <canvas id="graficoRadio" height="220"></canvas>
+      </div>
+    </div>
+
+    <!-- TABELA -->
+    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 fade-up">
+      <div class="text-sm font-black text-slate-700 uppercase tracking-wider mb-4">📋 Detecções Recentes</div>
+      <div id="loadingDet" class="text-center text-slate-400 font-bold py-10">Carregando...</div>
+      <div id="tabelaDet" class="hidden">
+        <div class="grid grid-cols-12 gap-2 px-4 py-2 text-xs font-black text-slate-400 uppercase tracking-wider border-b border-slate-100">
+          <div class="col-span-2">Horário (BRT)</div>
+          <div class="col-span-3">Comercial</div>
+          <div class="col-span-2">Cliente</div>
+          <div class="col-span-2">Rádio</div>
+          <div class="col-span-1">Score</div>
+          <div class="col-span-2">Prova</div>
+        </div>
+        <div id="listaDet"></div>
+      </div>
+      <div id="semDet" class="hidden text-center py-12">
+        <div class="text-5xl mb-4">📭</div>
+        <div class="font-black text-slate-400 uppercase">Nenhuma detecção encontrada</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABA ÁUDIOS CADASTRADOS -->
+  <div id="aba-referencias" class="hidden">
+    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 fade-up">
+      <div class="flex items-center justify-between mb-6">
+        <div class="text-sm font-black text-slate-700 uppercase tracking-wider">🎙️ Áudios de Referência Cadastrados</div>
+        <button onclick="carregarReferencias()" class="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-black text-xs uppercase transition-all">🔄 Atualizar</button>
+      </div>
+      <div id="loadingRef" class="text-center text-slate-400 font-bold py-10">Carregando...</div>
+      <div id="listaRef" class="hidden space-y-3"></div>
+      <div id="semRef" class="hidden text-center py-12">
+        <div class="text-5xl mb-4">🎙️</div>
+        <div class="font-black text-slate-400 uppercase">Nenhum áudio cadastrado</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABA CADASTRAR -->
+  <div id="aba-cadastrar" class="hidden">
+    <div class="max-w-2xl mx-auto">
+      <div class="bg-white rounded-3xl shadow border border-slate-100 p-8 fade-up">
+        <div class="text-lg font-black text-slate-800 uppercase tracking-wider mb-6">➕ Cadastrar Novo Áudio Comercial</div>
+
+        <div class="space-y-5">
+          <div>
+            <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Nome do Comercial *</label>
+            <input type="text" id="cadNome" placeholder="Ex: FISK INSTITUCIONAL 2026"
+              class="w-full border border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Cliente *</label>
+            <input type="text" id="cadCliente" placeholder="Ex: FISK INGLÊS"
+              class="w-full border border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Arquivo de Áudio * (MP3 ou WAV)</label>
+            <div id="dropZone" onclick="document.getElementById('cadArquivo').click()"
+              class="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all">
+              <div class="text-4xl mb-3">🎵</div>
+              <div class="font-black text-slate-500 uppercase text-sm">Clique para selecionar o arquivo</div>
+              <div class="text-xs text-slate-400 mt-1">MP3 ou WAV — máx. 50MB</div>
+              <div id="nomeArquivo" class="mt-3 text-sm font-bold text-blue-600 hidden"></div>
+            </div>
+            <input type="file" id="cadArquivo" accept=".mp3,.wav,audio/*" class="hidden" onchange="mostrarNomeArquivo(this)" />
+          </div>
+
+          <div id="progressoUpload" class="hidden">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="text-xs font-black text-slate-500 uppercase">Enviando...</div>
+              <div id="pctUpload" class="text-xs font-black text-blue-600">0%</div>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-3">
+              <div id="barraUpload" class="bg-blue-600 h-3 rounded-full transition-all" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div id="msgCadastro" class="hidden rounded-2xl px-4 py-3 text-sm font-bold"></div>
+
+          <button onclick="cadastrarAudio()"
+            class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm transition-all shadow-lg hover:scale-105 active:scale-95">
+            🚀 Cadastrar e Enviar para Monitoramento
+          </button>
+        </div>
+
+        <div class="mt-8 p-5 bg-blue-50 rounded-2xl border border-blue-100">
+          <div class="text-xs font-black text-blue-700 uppercase tracking-wider mb-2">ℹ️ Como funciona</div>
+          <ul class="text-xs text-blue-600 font-bold space-y-1">
+            <li>• O áudio é enviado para o storage seguro do Supabase</li>
+            <li>• O sistema RadioDNA gera o fingerprint automaticamente</li>
+            <li>• Em seguida, o monitoramento nas rádios começa</li>
+            <li>• As detecções aparecem na aba "Detecções" em tempo real</li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
 
 </main>
 
-<!-- MODAL ÁUDIO -->
+<!-- MODAL ÁUDIO PROVA -->
 <div id="modalAudio" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
   <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
     <div class="flex items-center justify-between mb-6">
-      <div class="font-black text-slate-800 uppercase text-lg" id="modalTitulo">Prova de Execução</div>
-      <button onclick="fecharModal()" class="p-2 bg-slate-100 rounded-xl hover:bg-slate-200 transition-all">✕</button>
+      <div class="font-black text-slate-800 uppercase text-base" id="modalTitulo">Prova de Execução</div>
+      <button onclick="fecharModal()" class="p-2 bg-slate-100 rounded-xl hover:bg-slate-200">✕</button>
     </div>
+    <div class="text-xs font-bold text-slate-400 uppercase mb-1" id="modalRadio"></div>
+    <div class="text-xs font-bold text-slate-400 mb-4" id="modalHorario"></div>
     <audio id="audioPlayer" controls class="w-full mb-4" style="border-radius:12px"></audio>
     <button id="btnDownload" class="w-full py-3 bg-slate-800 text-white rounded-2xl font-black uppercase tracking-wider text-sm hover:bg-slate-900 transition-all">⬇ Download WAV</button>
   </div>
@@ -151,169 +240,284 @@
 <script>
 const SUPABASE_URL  = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
-const SERVICE_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODA1NzI5MSwiZXhwIjoyMDgzNjMzMjkxfQ.3j6yfLpn39PugYcEr2D0eSUXJvRUbsFf-CuM-tsl3wI';
 
-let sb, deteccoesFiltradas = [], chartCom = null, chartRadio = null;
+let sb, deteccoes = [], chartCom = null, chartRadio = null;
 
-function utcParaBrt(str) {
+function brt(str) {
   if (!str) return '—';
   try {
     const d = new Date(str);
-    d.setHours(d.getHours() - 3);
-    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+    return d.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
   } catch { return str.slice(0,16); }
 }
 
 function hojeStr() {
-  const d = new Date();
-  d.setHours(d.getHours() - 3);
-  return d.toISOString().slice(0,10);
+  return new Date().toLocaleDateString('pt-BR', { timeZone:'America/Sao_Paulo' }).split('/').reverse().join('-');
 }
 
 function atualizaRelogio() {
-  const d = new Date();
-  d.setHours(d.getHours() - 3);
-  document.getElementById('relogio').textContent = '🕐 ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) + ' BRT';
+  document.getElementById('relogio').textContent = '🕐 ' + new Date().toLocaleTimeString('pt-BR', { timeZone:'America/Sao_Paulo', hour:'2-digit', minute:'2-digit' }) + ' BRT';
+}
+
+function trocarAba(aba, btn) {
+  ['deteccoes','referencias','cadastrar'].forEach(a => {
+    document.getElementById('aba-' + a).classList.add('hidden');
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('aba-' + aba).classList.remove('hidden');
+  btn.classList.add('active');
+  if (aba === 'referencias') carregarReferencias();
 }
 
 async function init() {
   sb = window._supabaseClient;
-  if (!sb) { setTimeout(init, 200); return; }
+  if (!sb) { setTimeout(init, 300); return; }
+
   document.getElementById('filtroData').value = hojeStr();
   atualizaRelogio();
   setInterval(atualizaRelogio, 30000);
-  await carregarRadios();
-  await carregarDados();
-  setInterval(carregarDados, 30000);
+
+  await Promise.all([carregarFiltros(), carregarDeteccoes()]);
+  setInterval(() => carregarDeteccoes(true), 30000);
 }
 
-async function carregarRadios() {
-  const r = await fetch(SUPABASE_URL + '/rest/v1/deteccoes?select=radio&limit=500', {
-    headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON }
-  });
-  const rows = await r.json();
-  const radios = [...new Set((rows||[]).map(x=>x.radio).filter(Boolean))].sort();
-  const sel = document.getElementById('filtroRadio');
-  radios.forEach(radio => {
-    const opt = document.createElement('option');
-    opt.value = radio; opt.textContent = radio;
-    sel.appendChild(opt);
-  });
+async function carregarFiltros() {
+  const { data } = await sb.from('deteccoes').select('radio, cliente').limit(500);
+  if (!data) return;
+  const radios   = [...new Set(data.map(d => d.radio).filter(Boolean))].sort();
+  const clientes = [...new Set(data.map(d => d.cliente).filter(Boolean))].sort();
+  const selR = document.getElementById('filtroRadio');
+  const selC = document.getElementById('filtroCliente');
+  radios.forEach(r   => { const o = document.createElement('option'); o.value = r; o.textContent = r; selR.appendChild(o); });
+  clientes.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; selC.appendChild(o); });
 }
 
-async function carregarDados() {
-  const dia = document.getElementById('filtroData').value || hojeStr();
+async function carregarDeteccoes(silencioso = false) {
+  if (!sb) return;
+  const dia      = document.getElementById('filtroData').value || hojeStr();
   const radioSel = document.getElementById('filtroRadio').value;
-  const dtIni = new Date(dia + 'T03:00:00Z').toISOString();
-  const dtFim = new Date(dia + 'T03:00:00Z');
-  dtFim.setDate(dtFim.getDate() + 1);
+  const clienteSel = document.getElementById('filtroCliente').value;
 
-  let url = SUPABASE_URL + '/rest/v1/deteccoes?select=*' +
-    '&detectado_em=gte.' + dtIni +
-    '&detectado_em=lt.' + dtFim.toISOString() +
-    '&order=detectado_em.desc&limit=500';
-  if (radioSel) url += '&radio=eq.' + encodeURIComponent(radioSel);
+  const dtIni = new Date(dia + 'T00:00:00-03:00').toISOString();
+  const dtFim = new Date(dia + 'T23:59:59-03:00').toISOString();
 
-  const r = await fetch(url, {
-    headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON, 'Accept-Profile': 'public' }
-  });
-  deteccoesFiltradas = await r.json() || [];
+  let query = sb.from('deteccoes').select('*')
+    .gte('detectado_em', dtIni)
+    .lte('detectado_em', dtFim)
+    .order('detectado_em', { ascending: false })
+    .limit(500);
 
-  const r2 = await fetch(SUPABASE_URL + '/rest/v1/referencias?select=id,nome,cliente', {
-    headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON }
-  });
-  const refs = await r2.json() || [];
+  if (radioSel)   query = query.eq('radio', radioSel);
+  if (clienteSel) query = query.eq('cliente', clienteSel);
 
-  renderMetricas(refs);
+  const { data, error } = await query;
+  if (error) { console.error(error); return; }
+  deteccoes = data || [];
+
+  renderMetricas();
   renderGraficos();
-  renderTabela();
+  renderTabelaDet(silencioso);
 }
 
-function renderMetricas(refs) {
-  const det = deteccoesFiltradas;
-  document.getElementById('metDeteccoes').textContent = det.length;
-  document.getElementById('metComerciais').textContent = refs.length;
-  document.getElementById('metRadios').textContent = new Set(det.map(d=>d.radio).filter(Boolean)).size;
-  document.getElementById('metUltima').textContent = det.length ? utcParaBrt(det[0].detectado_em) : '—';
+function renderMetricas() {
+  document.getElementById('metDeteccoes').textContent = deteccoes.length;
+  document.getElementById('metClientes').textContent  = new Set(deteccoes.map(d => d.cliente).filter(Boolean)).size;
+  document.getElementById('metRadios').textContent    = new Set(deteccoes.map(d => d.radio).filter(Boolean)).size;
+  document.getElementById('metUltima').textContent    = deteccoes.length ? brt(deteccoes[0].detectado_em) : '—';
 }
 
 function renderGraficos() {
-  const det = deteccoesFiltradas;
   const CORES = ['#1d4ed8','#2563eb','#3b82f6','#60a5fa','#0ea5e9','#4338ca','#6366f1','#818cf8','#0284c7','#1e40af'];
 
   const byCom = {};
-  det.forEach(d => { const k = d.comercial_nome||'?'; byCom[k]=(byCom[k]||0)+1; });
-  const comLabels = Object.keys(byCom).sort((a,b)=>byCom[b]-byCom[a]).slice(0,10);
+  deteccoes.forEach(d => { const k = d.comercial_nome || '?'; byCom[k] = (byCom[k]||0)+1; });
+  const comL = Object.keys(byCom).sort((a,b)=>byCom[b]-byCom[a]).slice(0,10);
 
   if (chartCom) chartCom.destroy();
   chartCom = new Chart(document.getElementById('graficoCom').getContext('2d'), {
     type: 'bar',
-    data: { labels: comLabels, datasets: [{ data: comLabels.map(k=>byCom[k]), backgroundColor: CORES, borderRadius: 8, borderSkipped: false }] },
+    data: { labels: comL, datasets: [{ data: comL.map(k=>byCom[k]), backgroundColor: CORES, borderRadius: 8, borderSkipped: false }] },
     options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } }
   });
 
-  const byRadio = {};
-  det.forEach(d => { const k = d.radio||'?'; byRadio[k]=(byRadio[k]||0)+1; });
-  const rLabels = Object.keys(byRadio);
+  const byR = {};
+  deteccoes.forEach(d => { const k = d.radio||'?'; byR[k]=(byR[k]||0)+1; });
+  const rL = Object.keys(byR);
 
   if (chartRadio) chartRadio.destroy();
   chartRadio = new Chart(document.getElementById('graficoRadio').getContext('2d'), {
     type: 'doughnut',
-    data: { labels: rLabels, datasets: [{ data: rLabels.map(k=>byRadio[k]), backgroundColor: CORES, borderWidth: 3, borderColor: '#fff' }] },
+    data: { labels: rL, datasets: [{ data: rL.map(k=>byR[k]), backgroundColor: CORES, borderWidth: 3, borderColor: '#fff' }] },
     options: { cutout: '60%', plugins: { legend: { position: 'bottom', labels: { font: { weight: 'bold' } } } } }
   });
 }
 
-function renderTabela() {
-  const det = deteccoesFiltradas;
-  document.getElementById('loadingMsg').classList.add('hidden');
-  if (!det.length) {
-    document.getElementById('tabelaWrap').classList.add('hidden');
-    document.getElementById('semDados').classList.remove('hidden');
+function renderTabelaDet(silencioso) {
+  document.getElementById('loadingDet').classList.add('hidden');
+  if (!deteccoes.length) {
+    document.getElementById('tabelaDet').classList.add('hidden');
+    document.getElementById('semDet').classList.remove('hidden');
     return;
   }
-  document.getElementById('semDados').classList.add('hidden');
-  document.getElementById('tabelaWrap').classList.remove('hidden');
-  const lista = document.getElementById('listaDeteccoes');
+  document.getElementById('semDet').classList.add('hidden');
+  document.getElementById('tabelaDet').classList.remove('hidden');
+  const lista = document.getElementById('listaDet');
   lista.innerHTML = '';
-  det.slice(0,100).forEach(d => {
+  deteccoes.slice(0,100).forEach(d => {
     const row = document.createElement('div');
     row.className = 'row-item grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-50 items-center rounded-xl transition-all';
     row.innerHTML = `
-      <div class="col-span-2 text-sm font-bold text-slate-500">${utcParaBrt(d.detectado_em)}</div>
-      <div class="col-span-4 text-sm font-black text-slate-800">${d.comercial_nome||'—'}</div>
-      <div class="col-span-2"><span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black">${d.radio||'—'}</span></div>
+      <div class="col-span-2 text-xs font-bold text-slate-500">${brt(d.detectado_em)}</div>
+      <div class="col-span-3 text-sm font-black text-slate-800 truncate">${d.comercial_nome||'—'}</div>
+      <div class="col-span-2 text-xs font-bold text-slate-600 truncate">${d.cliente||'—'}</div>
+      <div class="col-span-2"><span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black">${d.radio||'—'}</span></div>
       <div class="col-span-1"><span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black">${(d.score||0).toFixed(2)}</span></div>
-      <div class="col-span-3">
+      <div class="col-span-2">
         ${d.prova_url
-          ? `<button onclick="abrirProva('${d.prova_url}','${(d.comercial_nome||'prova').replace(/'/g,"\\'")}') "
-               class="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-black text-xs uppercase transition-all hover:scale-105">
-               ▶ Ouvir Prova</button>`
+          ? `<button onclick="abrirProva('${d.prova_url}','${(d.comercial_nome||'').replace(/'/g,"\\'")}','${d.radio||''}','${brt(d.detectado_em)}')"
+               class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-black text-xs uppercase transition-all">▶ Prova</button>`
           : `<span class="text-xs text-slate-300 font-bold">Sem prova</span>`}
       </div>`;
     lista.appendChild(row);
   });
 }
 
-async function abrirProva(provaUrl, nome) {
+async function carregarReferencias() {
+  if (!sb) return;
+  document.getElementById('loadingRef').classList.remove('hidden');
+  document.getElementById('listaRef').classList.add('hidden');
+  document.getElementById('semRef').classList.add('hidden');
+
+  const { data, error } = await sb.from('referencias').select('*').order('criado_em', { ascending: false });
+  document.getElementById('loadingRef').classList.add('hidden');
+  if (error || !data || !data.length) { document.getElementById('semRef').classList.remove('hidden'); return; }
+
+  const lista = document.getElementById('listaRef');
+  lista.innerHTML = '';
+  data.forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white transition-all';
+    const dur = r.duration ? `${r.duration.toFixed(1)}s` : '—';
+    const dt  = r.criado_em ? brt(r.criado_em) : '—';
+    item.innerHTML = `
+      <div class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center flex-shrink-0 text-2xl">🎙️</div>
+      <div class="flex-1 min-w-0">
+        <div class="font-black text-slate-800 truncate">${r.nome||'—'}</div>
+        <div class="text-xs font-bold text-slate-500 mt-0.5">${r.cliente||'—'} · ${dur} · Cadastrado em ${dt}</div>
+      </div>
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <span class="px-3 py-1 rounded-full text-xs font-black ${r.fingerprint ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">
+          ${r.fingerprint ? '✅ DNA Gerado' : '⏳ Aguardando DNA'}
+        </span>
+        ${r.arquivo_url ? `<a href="${r.arquivo_url}" target="_blank" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-black text-xs uppercase transition-all">⬇ Baixar</a>` : ''}
+      </div>`;
+    lista.appendChild(item);
+  });
+  lista.classList.remove('hidden');
+}
+
+async function cadastrarAudio() {
+  const nome    = document.getElementById('cadNome').value.trim();
+  const cliente = document.getElementById('cadCliente').value.trim();
+  const arquivo = document.getElementById('cadArquivo').files[0];
+  const msg     = document.getElementById('msgCadastro');
+
+  if (!nome || !cliente || !arquivo) {
+    msg.className = 'rounded-2xl px-4 py-3 text-sm font-bold bg-red-50 text-red-600 border border-red-200';
+    msg.textContent = '❌ Preencha todos os campos e selecione um arquivo.';
+    msg.classList.remove('hidden');
+    return;
+  }
+
+  msg.classList.add('hidden');
+  document.getElementById('progressoUpload').classList.remove('hidden');
+
+  try {
+    // 1. Upload do arquivo para o bucket "comerciais"
+    const ext      = arquivo.name.split('.').pop();
+    const nomeFile = nome.toUpperCase().replace(/\s+/g,'_').replace(/[^A-Z0-9_]/g,'') + '_' + Date.now() + '.' + ext;
+
+    document.getElementById('barraUpload').style.width = '30%';
+    document.getElementById('pctUpload').textContent = '30%';
+
+    const { data: upData, error: upErr } = await sb.storage.from('comerciais').upload(nomeFile, arquivo, {
+      contentType: arquivo.type || 'audio/mpeg',
+      upsert: false
+    });
+
+    if (upErr) throw upErr;
+
+    document.getElementById('barraUpload').style.width = '70%';
+    document.getElementById('pctUpload').textContent = '70%';
+
+    // 2. Pega URL pública
+    const { data: urlData } = sb.storage.from('comerciais').getPublicUrl(nomeFile);
+    const arquivoUrl = urlData.publicUrl;
+
+    // 3. Grava na tabela referencias
+    const { error: insErr } = await sb.from('referencias').insert({
+      nome:        nome,
+      cliente:     cliente,
+      arquivo_url: arquivoUrl,
+      duration:    null,
+      fingerprint: null
+    });
+
+    if (insErr) throw insErr;
+
+    document.getElementById('barraUpload').style.width = '100%';
+    document.getElementById('pctUpload').textContent = '100%';
+
+    msg.className = 'rounded-2xl px-4 py-3 text-sm font-bold bg-green-50 text-green-700 border border-green-200';
+    msg.textContent = '✅ Áudio cadastrado! O sistema RadioDNA irá gerar o fingerprint e iniciar o monitoramento automaticamente.';
+    msg.classList.remove('hidden');
+
+    // Limpa form
+    document.getElementById('cadNome').value = '';
+    document.getElementById('cadCliente').value = '';
+    document.getElementById('cadArquivo').value = '';
+    document.getElementById('nomeArquivo').classList.add('hidden');
+    document.getElementById('nomeArquivo').textContent = '';
+
+  } catch(e) {
+    msg.className = 'rounded-2xl px-4 py-3 text-sm font-bold bg-red-50 text-red-600 border border-red-200';
+    msg.textContent = '❌ Erro: ' + (e.message || JSON.stringify(e));
+    msg.classList.remove('hidden');
+    console.error(e);
+  } finally {
+    setTimeout(() => document.getElementById('progressoUpload').classList.add('hidden'), 1500);
+  }
+}
+
+function mostrarNomeArquivo(input) {
+  const el = document.getElementById('nomeArquivo');
+  if (input.files[0]) { el.textContent = '📎 ' + input.files[0].name; el.classList.remove('hidden'); }
+}
+
+async function abrirProva(provaUrl, nome, radio, horario) {
   document.getElementById('modalTitulo').textContent = nome;
+  document.getElementById('modalRadio').textContent  = radio;
+  document.getElementById('modalHorario').textContent = horario;
   document.getElementById('audioPlayer').src = '';
   document.getElementById('modalAudio').classList.remove('hidden');
+
   try {
-    const nomeDec = decodeURIComponent(provaUrl.split('/provas/').pop());
-    const res = await fetch(SUPABASE_URL + '/storage/v1/object/sign/provas/' + nomeDec, {
-      method: 'POST',
-      headers: { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ expiresIn: 3600 })
-    });
-    if (res.ok) {
-      const signed = SUPABASE_URL + '/storage/v1' + (await res.json()).signedURL;
-      document.getElementById('audioPlayer').src = signed;
-      document.getElementById('btnDownload').onclick = () => {
-        const a = document.createElement('a'); a.href = signed; a.download = nome + '.wav'; a.click();
-      };
-    }
-  } catch(e) { console.error(e); }
+    // Gera URL assinada via Supabase client
+    const pathParts = provaUrl.split('/object/');
+    const fullPath  = pathParts[1] || ''; // "provas/arquivo.wav" ou "public/provas/arquivo.wav"
+    const cleanPath = fullPath.replace(/^public\//, '').replace(/^provas\//, '');
+    const { data, error } = await sb.storage.from('provas').createSignedUrl(cleanPath, 3600);
+    if (error) throw error;
+    const signed = data.signedUrl;
+    document.getElementById('audioPlayer').src = signed;
+    document.getElementById('btnDownload').onclick = () => {
+      const a = document.createElement('a'); a.href = signed; a.download = nome + '.wav'; a.click();
+    };
+  } catch(e) {
+    // Fallback: tenta URL direta
+    document.getElementById('audioPlayer').src = provaUrl;
+    console.error('Signed URL error:', e);
+  }
 }
 
 function fecharModal() {
@@ -322,21 +526,22 @@ function fecharModal() {
   document.getElementById('audioPlayer').src = '';
 }
 
-async function exportarPDF() {
-  if (!deteccoesFiltradas.length) { alert('Nenhum dado para exportar!'); return; }
-  const dia = document.getElementById('filtroData').value;
-  const radio = document.getElementById('filtroRadio').value || 'Todas';
-  const linhas = deteccoesFiltradas.map(d =>
-    `${utcParaBrt(d.detectado_em)} | ${d.comercial_nome||'—'} | ${d.radio||'—'} | ${(d.score||0).toFixed(2)}`
+async function exportarRelatorio() {
+  if (!deteccoes.length) { alert('Nenhum dado para exportar!'); return; }
+  const dia    = document.getElementById('filtroData').value;
+  const radio  = document.getElementById('filtroRadio').value || 'Todas';
+  const linhas = deteccoes.map(d =>
+    `${brt(d.detectado_em)} | ${d.comercial_nome||'—'} | ${d.cliente||'—'} | ${d.radio||'—'} | ${(d.score||0).toFixed(2)}`
   ).join('\n');
   const blob = new Blob([
-    `RADIODNA - RELATÓRIO DE EXECUÇÕES\nData: ${dia} | Rádio: ${radio}\nTotal: ${deteccoesFiltradas.length} detecções\n\n` +
-    `HORÁRIO (BRT)         | COMERCIAL                      | RÁDIO           | SCORE\n` +
-    '—'.repeat(80) + '\n' + linhas
-  ], { type: 'text/plain' });
+    `RADIODNA - RELATÓRIO DE EXECUÇÕES COMERCIAIS\n` +
+    `Data: ${dia} | Rádio: ${radio}\nTotal: ${deteccoes.length} detecções\n\n` +
+    `HORÁRIO (BRT)        | COMERCIAL                    | CLIENTE          | RÁDIO                | SCORE\n` +
+    '—'.repeat(90) + '\n' + linhas
+  ], { type: 'text/plain;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `radiodna_${dia}_${radio}.txt`;
+  a.download = `radiodna_comercial_${dia}_${radio}.txt`;
   a.click();
 }
 
