@@ -3,18 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IA NO RÁDIO — Em Breve</title>
+  <title>IA NO RÁDIO — Dashboard Comercial</title>
   <link rel="icon" href="data:," />
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: 'Inter', sans-serif; }
     @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-    .fade-up { animation: fadeUp 0.5s ease forwards; }
+    .fade-up { animation: fadeUp 0.4s ease forwards; }
+    @keyframes ping { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .ping { animation: ping 1.2s infinite; }
+    .row-item:hover { background: #f8fafc; }
   </style>
 </head>
-<body class="min-h-screen bg-slate-50 flex flex-col">
+<body class="min-h-screen bg-slate-50">
 
 <script>
 (async () => {
@@ -23,7 +27,7 @@
   const sbGuard = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
   const { data: { session } } = await sbGuard.auth.getSession();
   if (!session) {
-    window.location.href = '/login?redirect=/comercial';
+    window.location.href = '/login?redirect=/comercial-dashboard';
   } else {
     window._supabaseSession = session;
     window._supabaseClient = sbGuard;
@@ -31,18 +35,20 @@
 })();
 </script>
 
-<header class="bg-white border-b border-slate-100 sticky top-0 z-50 shadow-sm">
-  <div class="max-w-5xl mx-auto px-6 h-24 flex items-center justify-between">
+<!-- HEADER -->
+<header class="bg-white border-b border-blue-100 sticky top-0 z-50 shadow-sm">
+  <div class="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
     <div class="flex items-center gap-4">
-      <div class="bg-gradient-to-br from-slate-400 to-slate-500 p-3 rounded-2xl shadow-lg">
+      <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-lg">
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
       </div>
       <div>
         <h1 class="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1>
-        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Monitoramento Comercial</p>
+        <p class="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Dashboard Comercial</p>
       </div>
     </div>
     <div class="flex items-center gap-3">
+      <a href="/musical" class="px-4 py-2 bg-purple-100 hover:bg-purple-200 rounded-xl font-bold text-purple-700 text-xs uppercase tracking-wider transition-all">🎵 Musical</a>
       <a href="/" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-600 text-xs uppercase tracking-wider transition-all">← Início</a>
       <button onclick="fazerLogout()" title="Sair" class="p-4 bg-red-50 rounded-2xl hover:bg-red-100 transition-all hover:scale-105 active:scale-95">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
@@ -51,29 +57,295 @@
   </div>
 </header>
 
-<main class="flex-1 flex items-center justify-center px-6 py-20">
-  <div class="text-center fade-up max-w-lg">
-    <div class="w-32 h-32 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
-      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+<main class="max-w-7xl mx-auto px-6 py-10">
+
+  <!-- FILTROS -->
+  <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 mb-8 fade-up flex flex-wrap gap-4 items-end">
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-black text-slate-500 uppercase tracking-wider">📅 Data</label>
+      <input type="date" id="filtroData" class="border border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
     </div>
-    <h2 class="font-black text-5xl text-slate-800 uppercase tracking-tight mb-4">Em Breve</h2>
-    <p class="text-slate-500 font-bold text-lg mb-2">Dashboard Comercial</p>
-    <p class="text-slate-400 font-medium text-base mb-10">Esta funcionalidade está em desenvolvimento e estará disponível em breve.</p>
-    <a href="/" class="inline-flex items-center gap-3 px-8 py-4 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-black uppercase tracking-wider text-sm transition-all hover:scale-105 active:scale-95 shadow-xl">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      Voltar ao Início
-    </a>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-black text-slate-500 uppercase tracking-wider">📻 Rádio</label>
+      <select id="filtroRadio" class="border border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+        <option value="">Todas as rádios</option>
+      </select>
+    </div>
+    <button onclick="carregarDados()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-wider text-sm transition-all hover:scale-105 active:scale-95 shadow">
+      🔍 Buscar
+    </button>
+    <button onclick="exportarPDF()" class="px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black uppercase tracking-wider text-sm transition-all hover:scale-105 active:scale-95 shadow">
+      📄 Exportar
+    </button>
+    <div class="ml-auto text-xs font-bold text-slate-400 self-center" id="relogio">--</div>
   </div>
+
+  <!-- MÉTRICAS -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 text-center fade-up">
+      <div id="metDeteccoes" class="text-4xl font-black text-blue-600">—</div>
+      <div class="text-xs font-black text-slate-400 uppercase tracking-wider mt-2">Detecções no Dia</div>
+    </div>
+    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 text-center fade-up">
+      <div id="metComerciais" class="text-4xl font-black text-indigo-600">—</div>
+      <div class="text-xs font-black text-slate-400 uppercase tracking-wider mt-2">Comerciais Cadastrados</div>
+    </div>
+    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 text-center fade-up">
+      <div id="metRadios" class="text-4xl font-black text-purple-600">—</div>
+      <div class="text-xs font-black text-slate-400 uppercase tracking-wider mt-2">Rádios Ativas</div>
+    </div>
+    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 text-center fade-up">
+      <div id="metUltima" class="text-lg font-black text-slate-700">—</div>
+      <div class="text-xs font-black text-slate-400 uppercase tracking-wider mt-2">Última Detecção</div>
+    </div>
+  </div>
+
+  <!-- GRÁFICOS -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 fade-up">
+      <div class="text-sm font-black text-slate-700 uppercase tracking-wider mb-4">📊 Detecções por Comercial</div>
+      <canvas id="graficoCom" height="220"></canvas>
+    </div>
+    <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 fade-up">
+      <div class="text-sm font-black text-slate-700 uppercase tracking-wider mb-4">📻 Detecções por Rádio</div>
+      <canvas id="graficoRadio" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- TABELA -->
+  <div class="bg-white rounded-3xl shadow border border-slate-100 p-6 fade-up">
+    <div class="text-sm font-black text-slate-700 uppercase tracking-wider mb-4">📋 Detecções Recentes</div>
+    <div id="loadingMsg" class="text-center text-slate-400 font-bold py-10">Carregando...</div>
+    <div id="tabelaWrap" class="hidden">
+      <div class="grid grid-cols-12 gap-2 px-4 py-2 text-xs font-black text-slate-400 uppercase tracking-wider border-b border-slate-100">
+        <div class="col-span-2">Horário (BRT)</div>
+        <div class="col-span-4">Comercial</div>
+        <div class="col-span-2">Rádio</div>
+        <div class="col-span-1">Score</div>
+        <div class="col-span-3">Prova</div>
+      </div>
+      <div id="listaDeteccoes"></div>
+    </div>
+    <div id="semDados" class="hidden text-center py-12">
+      <div class="text-5xl mb-4">📭</div>
+      <div class="font-black text-slate-400 uppercase">Nenhuma detecção encontrada</div>
+    </div>
+  </div>
+
 </main>
+
+<!-- MODAL ÁUDIO -->
+<div id="modalAudio" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+    <div class="flex items-center justify-between mb-6">
+      <div class="font-black text-slate-800 uppercase text-lg" id="modalTitulo">Prova de Execução</div>
+      <button onclick="fecharModal()" class="p-2 bg-slate-100 rounded-xl hover:bg-slate-200 transition-all">✕</button>
+    </div>
+    <audio id="audioPlayer" controls class="w-full mb-4" style="border-radius:12px"></audio>
+    <button id="btnDownload" class="w-full py-3 bg-slate-800 text-white rounded-2xl font-black uppercase tracking-wider text-sm hover:bg-slate-900 transition-all">⬇ Download WAV</button>
+  </div>
+</div>
 
 <p class="text-center text-xs font-bold text-slate-300 uppercase tracking-widest pb-8">IA NO RÁDIO · Monitoramento em Tempo Real</p>
 
 <script>
+const SUPABASE_URL  = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
+const SERVICE_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODA1NzI5MSwiZXhwIjoyMDgzNjMzMjkxfQ.3j6yfLpn39PugYcEr2D0eSUXJvRUbsFf-CuM-tsl3wI';
+
+let sb, deteccoesFiltradas = [], chartCom = null, chartRadio = null;
+
+function utcParaBrt(str) {
+  if (!str) return '—';
+  try {
+    const d = new Date(str);
+    d.setHours(d.getHours() - 3);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  } catch { return str.slice(0,16); }
+}
+
+function hojeStr() {
+  const d = new Date();
+  d.setHours(d.getHours() - 3);
+  return d.toISOString().slice(0,10);
+}
+
+function atualizaRelogio() {
+  const d = new Date();
+  d.setHours(d.getHours() - 3);
+  document.getElementById('relogio').textContent = '🕐 ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) + ' BRT';
+}
+
+async function init() {
+  sb = window._supabaseClient;
+  if (!sb) { setTimeout(init, 200); return; }
+  document.getElementById('filtroData').value = hojeStr();
+  atualizaRelogio();
+  setInterval(atualizaRelogio, 30000);
+  await carregarRadios();
+  await carregarDados();
+  setInterval(carregarDados, 30000);
+}
+
+async function carregarRadios() {
+  const r = await fetch(SUPABASE_URL + '/rest/v1/deteccoes?select=radio&limit=500', {
+    headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON }
+  });
+  const rows = await r.json();
+  const radios = [...new Set((rows||[]).map(x=>x.radio).filter(Boolean))].sort();
+  const sel = document.getElementById('filtroRadio');
+  radios.forEach(radio => {
+    const opt = document.createElement('option');
+    opt.value = radio; opt.textContent = radio;
+    sel.appendChild(opt);
+  });
+}
+
+async function carregarDados() {
+  const dia = document.getElementById('filtroData').value || hojeStr();
+  const radioSel = document.getElementById('filtroRadio').value;
+  const dtIni = new Date(dia + 'T03:00:00Z').toISOString();
+  const dtFim = new Date(dia + 'T03:00:00Z');
+  dtFim.setDate(dtFim.getDate() + 1);
+
+  let url = SUPABASE_URL + '/rest/v1/deteccoes?select=*' +
+    '&detectado_em=gte.' + dtIni +
+    '&detectado_em=lt.' + dtFim.toISOString() +
+    '&order=detectado_em.desc&limit=500';
+  if (radioSel) url += '&radio=eq.' + encodeURIComponent(radioSel);
+
+  const r = await fetch(url, {
+    headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON, 'Accept-Profile': 'public' }
+  });
+  deteccoesFiltradas = await r.json() || [];
+
+  const r2 = await fetch(SUPABASE_URL + '/rest/v1/referencias?select=id,nome,cliente', {
+    headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON }
+  });
+  const refs = await r2.json() || [];
+
+  renderMetricas(refs);
+  renderGraficos();
+  renderTabela();
+}
+
+function renderMetricas(refs) {
+  const det = deteccoesFiltradas;
+  document.getElementById('metDeteccoes').textContent = det.length;
+  document.getElementById('metComerciais').textContent = refs.length;
+  document.getElementById('metRadios').textContent = new Set(det.map(d=>d.radio).filter(Boolean)).size;
+  document.getElementById('metUltima').textContent = det.length ? utcParaBrt(det[0].detectado_em) : '—';
+}
+
+function renderGraficos() {
+  const det = deteccoesFiltradas;
+  const CORES = ['#1d4ed8','#2563eb','#3b82f6','#60a5fa','#0ea5e9','#4338ca','#6366f1','#818cf8','#0284c7','#1e40af'];
+
+  const byCom = {};
+  det.forEach(d => { const k = d.comercial_nome||'?'; byCom[k]=(byCom[k]||0)+1; });
+  const comLabels = Object.keys(byCom).sort((a,b)=>byCom[b]-byCom[a]).slice(0,10);
+
+  if (chartCom) chartCom.destroy();
+  chartCom = new Chart(document.getElementById('graficoCom').getContext('2d'), {
+    type: 'bar',
+    data: { labels: comLabels, datasets: [{ data: comLabels.map(k=>byCom[k]), backgroundColor: CORES, borderRadius: 8, borderSkipped: false }] },
+    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } } }
+  });
+
+  const byRadio = {};
+  det.forEach(d => { const k = d.radio||'?'; byRadio[k]=(byRadio[k]||0)+1; });
+  const rLabels = Object.keys(byRadio);
+
+  if (chartRadio) chartRadio.destroy();
+  chartRadio = new Chart(document.getElementById('graficoRadio').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: rLabels, datasets: [{ data: rLabels.map(k=>byRadio[k]), backgroundColor: CORES, borderWidth: 3, borderColor: '#fff' }] },
+    options: { cutout: '60%', plugins: { legend: { position: 'bottom', labels: { font: { weight: 'bold' } } } } }
+  });
+}
+
+function renderTabela() {
+  const det = deteccoesFiltradas;
+  document.getElementById('loadingMsg').classList.add('hidden');
+  if (!det.length) {
+    document.getElementById('tabelaWrap').classList.add('hidden');
+    document.getElementById('semDados').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('semDados').classList.add('hidden');
+  document.getElementById('tabelaWrap').classList.remove('hidden');
+  const lista = document.getElementById('listaDeteccoes');
+  lista.innerHTML = '';
+  det.slice(0,100).forEach(d => {
+    const row = document.createElement('div');
+    row.className = 'row-item grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-50 items-center rounded-xl transition-all';
+    row.innerHTML = `
+      <div class="col-span-2 text-sm font-bold text-slate-500">${utcParaBrt(d.detectado_em)}</div>
+      <div class="col-span-4 text-sm font-black text-slate-800">${d.comercial_nome||'—'}</div>
+      <div class="col-span-2"><span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black">${d.radio||'—'}</span></div>
+      <div class="col-span-1"><span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black">${(d.score||0).toFixed(2)}</span></div>
+      <div class="col-span-3">
+        ${d.prova_url
+          ? `<button onclick="abrirProva('${d.prova_url}','${(d.comercial_nome||'prova').replace(/'/g,"\\'")}') "
+               class="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-black text-xs uppercase transition-all hover:scale-105">
+               ▶ Ouvir Prova</button>`
+          : `<span class="text-xs text-slate-300 font-bold">Sem prova</span>`}
+      </div>`;
+    lista.appendChild(row);
+  });
+}
+
+async function abrirProva(provaUrl, nome) {
+  document.getElementById('modalTitulo').textContent = nome;
+  document.getElementById('audioPlayer').src = '';
+  document.getElementById('modalAudio').classList.remove('hidden');
+  try {
+    const nomeDec = decodeURIComponent(provaUrl.split('/provas/').pop());
+    const res = await fetch(SUPABASE_URL + '/storage/v1/object/sign/provas/' + nomeDec, {
+      method: 'POST',
+      headers: { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expiresIn: 3600 })
+    });
+    if (res.ok) {
+      const signed = SUPABASE_URL + '/storage/v1' + (await res.json()).signedURL;
+      document.getElementById('audioPlayer').src = signed;
+      document.getElementById('btnDownload').onclick = () => {
+        const a = document.createElement('a'); a.href = signed; a.download = nome + '.wav'; a.click();
+      };
+    }
+  } catch(e) { console.error(e); }
+}
+
+function fecharModal() {
+  document.getElementById('modalAudio').classList.add('hidden');
+  document.getElementById('audioPlayer').pause();
+  document.getElementById('audioPlayer').src = '';
+}
+
+async function exportarPDF() {
+  if (!deteccoesFiltradas.length) { alert('Nenhum dado para exportar!'); return; }
+  const dia = document.getElementById('filtroData').value;
+  const radio = document.getElementById('filtroRadio').value || 'Todas';
+  const linhas = deteccoesFiltradas.map(d =>
+    `${utcParaBrt(d.detectado_em)} | ${d.comercial_nome||'—'} | ${d.radio||'—'} | ${(d.score||0).toFixed(2)}`
+  ).join('\n');
+  const blob = new Blob([
+    `RADIODNA - RELATÓRIO DE EXECUÇÕES\nData: ${dia} | Rádio: ${radio}\nTotal: ${deteccoesFiltradas.length} detecções\n\n` +
+    `HORÁRIO (BRT)         | COMERCIAL                      | RÁDIO           | SCORE\n` +
+    '—'.repeat(80) + '\n' + linhas
+  ], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `radiodna_${dia}_${radio}.txt`;
+  a.click();
+}
+
 async function fazerLogout() {
-  const sb = window._supabaseClient;
-  if (sb) await sb.auth.signOut();
+  if (window._supabaseClient) await window._supabaseClient.auth.signOut();
   window.location.href = '/login';
 }
+
+window.addEventListener('load', init);
 </script>
 </body>
 </html>
