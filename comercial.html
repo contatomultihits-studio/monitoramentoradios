@@ -295,15 +295,21 @@ const SB_URL='https://ojtdpnrjulrlhxvbmsnr.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
 let sb, deteccoes=[], visivel=10, chartR=null, chartH=null;
 
-// ─── NORMALIZA URL: decodifica quantas vezes precisar, garante URL limpa ──────
+// ─── NORMALIZA URL do Supabase Storage ───────────────────────────────────────
+// Banco salva: .../storage/v1/object/provas/ARQUIVO.wav  (sem /public/)
+// URL pública: .../storage/v1/object/public/provas/ARQUIVO.wav
 function normalizarUrl(raw) {
   if (!raw) return null;
+  // 1. decodifica qualquer encode (resolve https%3A%2F%2F e similares)
   let url = raw;
-  // decodifica em loop até não mudar mais (resolve double-encode)
   try { while (url !== decodeURIComponent(url)) url = decodeURIComponent(url); } catch(e) {}
-  // remove query string (tokens de signed url expirados)
+  // 2. remove query string (tokens expirados de signed URL)
   url = url.split('?')[0];
-  // se ainda não é https absoluta, não é válida
+  // 3. garante que /object/ seja seguido de /public/
+  //    cobre: /object/provas/  →  /object/public/provas/
+  //    cobre: /object/sign/provas/  →  /object/public/provas/
+  url = url.replace(/\/storage\/v1\/object\/(sign\/)?(?!public\/)/, '/storage/v1/object/public/');
+  // 4. valida
   if (!url.startsWith('https://')) return null;
   return url;
 }
@@ -445,9 +451,7 @@ function renderLastDet(){
   if(url){
     btn.classList.remove('hidden');
     btn.onclick=()=>abrirProva(url, d.comercial_nome||'', d.radio||'', brt(d.detectado_em));
-  } else {
-    btn.classList.add('hidden');
-  }
+  } else btn.classList.add('hidden');
 }
 
 function renderLista(){
@@ -474,25 +478,19 @@ function renderLista(){
       </div>
       <div class="flex items-center gap-1.5 flex-shrink-0">
         <span class="px-2 py-1 ${scClr} rounded-full text-[10px] font-black">${sc.toFixed(2)}</span>
-        ${url ? `<button class="btn-prova p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all opacity-0 group-hover:opacity-100" title="Ouvir prova">
+        ${url?`<button class="btn-prova p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all opacity-0 group-hover:opacity-100">
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        </button>` : `<div class="w-7"></div>`}
+        </button>`:`<div class="w-7"></div>`}
       </div>`;
-    // associa URL via JS — sem escape em atributo HTML
-    if(url){
-      const btnP=item.querySelector('.btn-prova');
-      btnP.addEventListener('click',()=>abrirProva(url, d.comercial_nome||'', d.radio||'', brt(d.detectado_em)));
-    }
+    if(url)item.querySelector('.btn-prova').addEventListener('click',()=>abrirProva(url,d.comercial_nome||'',d.radio||'',brt(d.detectado_em)));
     lista.appendChild(item);
   });
-  document.getElementById('btnMais').classList.toggle('hidden', visivel>=deteccoes.length-1);
+  document.getElementById('btnMais').classList.toggle('hidden',visivel>=deteccoes.length-1);
 }
 
 function carregarMais(){visivel+=10;renderLista();}
 
-// ─── PLAYER ──────────────────────────────────────────────────────────────────
-// Recebe URL já limpa (normalizada antes de chamar)
-function abrirProva(url, nome, radio, horario){
+function abrirProva(url,nome,radio,horario){
   document.getElementById('modalNome').textContent=nome;
   document.getElementById('modalInfo').textContent=radio+' · '+horario;
   document.getElementById('erroAudio').classList.add('hidden');
@@ -500,13 +498,8 @@ function abrirProva(url, nome, radio, horario){
   const audio=document.getElementById('audioPlayer');
   audio.src=url;
   audio.load();
-  document.getElementById('btnDownload').onclick=()=>{
-    const a=document.createElement('a');a.href=url;a.download=nome+'_prova.wav';a.click();
-  };
-  audio.onerror=()=>{
-    document.getElementById('erroAudio').textContent='❌ Não foi possível carregar o áudio.';
-    document.getElementById('erroAudio').classList.remove('hidden');
-  };
+  document.getElementById('btnDownload').onclick=()=>{const a=document.createElement('a');a.href=url;a.download=nome+'_prova.wav';a.click();};
+  audio.onerror=()=>{document.getElementById('erroAudio').textContent='❌ Não foi possível carregar o áudio.';document.getElementById('erroAudio').classList.remove('hidden');};
 }
 
 function fecharModal(){const a=document.getElementById('audioPlayer');a.pause();a.src='';document.getElementById('modalAudio').classList.add('hidden');}
@@ -553,11 +546,7 @@ async function cadastrarAudio(){
   const arquivo=document.getElementById('cadArquivo').files[0];
   const msg=document.getElementById('msgCadastro');
   msg.classList.add('hidden');
-  if(!nome||!cliente||!arquivo){
-    msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-red-50 text-red-600 border border-red-200';
-    msg.textContent='❌ Preencha todos os campos.';
-    msg.classList.remove('hidden');return;
-  }
+  if(!nome||!cliente||!arquivo){msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-red-50 text-red-600 border border-red-200';msg.textContent='❌ Preencha todos os campos.';msg.classList.remove('hidden');return;}
   document.getElementById('progressoUpload').classList.remove('hidden');
   const barra=document.getElementById('barraUpload'),pct=document.getElementById('pctUpload');
   const sp=p=>{barra.style.width=p+'%';pct.textContent=p+'%';};
@@ -575,19 +564,15 @@ async function cadastrarAudio(){
     if(insErr)throw insErr;
     sp(100);
     msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-green-50 text-green-700 border border-green-200';
-    msg.textContent='✅ Cadastrado! O RadioDNA gerará o fingerprint e iniciará o monitoramento.';
+    msg.textContent='✅ Cadastrado! O RadioDNA gerará o fingerprint.';
     msg.classList.remove('hidden');
-    document.getElementById('cadNome').value='';
-    document.getElementById('cadCliente').value='';
-    document.getElementById('cadArquivo').value='';
+    ['cadNome','cadCliente','cadArquivo'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('nomeArquivo').classList.add('hidden');
   }catch(e){
     msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-red-50 text-red-600 border border-red-200';
     msg.textContent='❌ Erro: '+(e.message||JSON.stringify(e));
     msg.classList.remove('hidden');
-  }finally{
-    setTimeout(()=>document.getElementById('progressoUpload').classList.add('hidden'),2000);
-  }
+  }finally{setTimeout(()=>document.getElementById('progressoUpload').classList.add('hidden'),2000);}
 }
 
 function mostrarArquivo(input){
