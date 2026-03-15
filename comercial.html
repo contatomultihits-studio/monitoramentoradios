@@ -20,6 +20,8 @@
     .card-comercial { transition: all 0.25s; }
     .card-comercial:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.1); }
     ::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:#f1f5f9} ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px}
+    @keyframes pulse-green { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.4)} 50%{box-shadow:0 0 0 6px rgba(34,197,94,0)} }
+    .dot-online { animation: pulse-green 2s infinite; }
   </style>
 </head>
 <body>
@@ -58,6 +60,20 @@
 
 <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
+  <!-- BLOCO STATUS DAS RÁDIOS -->
+  <div id="blocoStatus" class="mb-6 fade-up">
+    <div id="statusGeral" class="bg-white rounded-2xl border border-slate-200 shadow-sm px-5 py-4 flex flex-wrap items-center gap-4">
+      <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest flex-shrink-0">📡 Status das Rádios</div>
+      <div id="statusCards" class="flex flex-wrap gap-3 flex-1">
+        <!-- preenchido via JS -->
+        <div class="h-7 w-40 bg-slate-100 rounded-full animate-pulse"></div>
+        <div class="h-7 w-36 bg-slate-100 rounded-full animate-pulse"></div>
+        <div class="h-7 w-32 bg-slate-100 rounded-full animate-pulse"></div>
+      </div>
+      <div id="statusUnico" class="hidden w-full mt-1 text-xs font-bold text-slate-500"></div>
+    </div>
+  </div>
+
   <div class="flex gap-2 mb-8 flex-wrap">
     <button class="tab-btn active px-5 py-2.5 rounded-2xl font-black uppercase text-sm bg-slate-100 text-slate-600" onclick="trocarAba('deteccoes',this)">📋 Detecções</button>
     <button class="tab-btn px-5 py-2.5 rounded-2xl font-black uppercase text-sm bg-slate-100 text-slate-600" onclick="trocarAba('comerciais',this)">🎙️ Comerciais</button>
@@ -74,7 +90,7 @@
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">📻 Rádio</label>
-          <select id="filtroRadio" onchange="carregarDeteccoes()" class="border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-slate-50">
+          <select id="filtroRadio" onchange="carregarDeteccoes(); atualizarStatusUnico()" class="border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-slate-50">
             <option value="">Todas as rádios</option>
           </select>
         </div>
@@ -250,6 +266,7 @@
 const SB_URL='https://ojtdpnrjulrlhxvbmsnr.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
 let sb, deteccoes=[], visivel=10, chartR=null, chartH=null;
+let statusRadios = {}; // { "Metropolitana FM SP": {online: true, updated_at: "..."}, ... }
 
 function normalizarUrl(raw) {
   if (!raw) return null;
@@ -261,9 +278,6 @@ function normalizarUrl(raw) {
   return url;
 }
 
-// ─── DOWNLOAD REAL via blob ─────────────────────────────────────────────────────────
-// Chrome não respeita o atributo download para URLs de outros domínios.
-// Solução: fetch do arquivo como blob -> cria URL local -> dispara download.
 async function baixarBlob(url, nomeArquivo) {
   const btn = document.getElementById('btnDownload');
   btn.textContent = '⏳ Baixando...';
@@ -315,13 +329,59 @@ function trocarAba(aba,btn){
   if(aba==='comerciais')carregarReferencias();
 }
 
+// ─── STATUS DAS RÁDIOS ──────────────────────────────────────────────────────
+async function carregarStatus() {
+  if (!sb) return;
+  const { data } = await sb.from('status_radios').select('*');
+  if (!data) return;
+  statusRadios = {};
+  data.forEach(r => { statusRadios[r.radio] = r; });
+  renderStatusCards();
+}
+
+function renderStatusCards() {
+  const cont = document.getElementById('statusCards');
+  if (!Object.keys(statusRadios).length) { cont.innerHTML = '<span class="text-xs font-bold text-slate-400">Carregando...</span>'; return; }
+  const todoOnline = Object.values(statusRadios).every(r => r.online);
+  cont.innerHTML = '';
+  Object.values(statusRadios).forEach(r => {
+    const span = document.createElement('span');
+    if (r.online) {
+      span.className = 'inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full text-xs font-black text-green-700';
+      span.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 dot-online flex-shrink-0"></span>${r.radio}`;
+    } else {
+      const ultima = r.ultima_vez_online ? ' · última: ' + brt(r.ultima_vez_online) : '';
+      span.className = 'inline-flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-full text-xs font-black text-red-600';
+      span.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>${r.radio}<span class="font-bold text-red-400 text-[10px]">${ultima}</span>`;
+    }
+    cont.appendChild(span);
+  });
+}
+
+function atualizarStatusUnico() {
+  const radio = document.getElementById('filtroRadio').value;
+  const el = document.getElementById('statusUnico');
+  if (!radio || !statusRadios[radio]) { el.classList.add('hidden'); return; }
+  const r = statusRadios[radio];
+  if (r.online) {
+    el.className = 'w-full mt-2 text-xs font-bold text-green-600 flex items-center gap-1.5';
+    el.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 dot-online"></span> ${radio} está <strong>NO AR</strong> agora`;
+  } else {
+    const ultima = r.ultima_vez_online ? ' · foi vista online em ' + brt(r.ultima_vez_online) : '';
+    el.className = 'w-full mt-2 text-xs font-bold text-red-500 flex items-center gap-1.5';
+    el.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> ${radio} está <strong>OFFLINE</strong>${ultima}`;
+  }
+  el.classList.remove('hidden');
+}
+
 async function init(){
   sb=window._supabaseClient;
   if(!sb){setTimeout(init,300);return;}
   document.getElementById('filtroData').value=hojeStr();
   tickRelogio(); setInterval(tickRelogio,10000);
-  await Promise.all([popularFiltros(),carregarDeteccoes()]);
-  setInterval(()=>carregarDeteccoes(true),30000);
+  await Promise.all([popularFiltros(), carregarDeteccoes(), carregarStatus()]);
+  setInterval(()=>carregarDeteccoes(true), 30000);
+  setInterval(()=>carregarStatus(), 60000);
 }
 
 async function popularFiltros(){
@@ -465,7 +525,6 @@ function renderLista(){
 
 function carregarMais(){visivel+=10;renderLista();}
 
-// ─── PLAYER ──────────────────────────────────────────────────────────────────
 function abrirProva(url, nome, radio, horario){
   document.getElementById('modalNome').textContent=nome;
   document.getElementById('modalInfo').textContent=radio+' · '+horario;
@@ -477,7 +536,6 @@ function abrirProva(url, nome, radio, horario){
   audio.src=url;
   audio.load();
   audio.play().catch(()=>{});
-  // Extrai nome do arquivo para o download
   const nomeArq = url.split('/').pop().split('?')[0] || nome+'_prova.wav';
   document.getElementById('btnDownload').onclick = () => baixarBlob(url, nomeArq);
   audio.onerror=()=>{
