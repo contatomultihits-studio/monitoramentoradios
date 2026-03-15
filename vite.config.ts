@@ -10,7 +10,6 @@ export default defineConfig({
         main: './index.html',
         musical: './musical.html',
         comercial: './comercial.html',
-        comercialDashboard: './comercial-dashboard.html',
         login: './login.html',
         trocarSenha: './trocar-senha.html',
         gerenciamento: './gerenciamento.html'
