@@ -66,25 +66,21 @@
 
   <!-- ABA DETECÇÕES -->
   <div id="aba-deteccoes">
-
     <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 mb-6 fade-up">
       <div class="flex flex-wrap gap-3 items-end">
         <div class="flex flex-col gap-1">
           <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">📅 Data</label>
-          <input type="date" id="filtroData" onchange="carregarDeteccoes()"
-            class="border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-slate-50" />
+          <input type="date" id="filtroData" onchange="carregarDeteccoes()" class="border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-slate-50" />
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">📻 Rádio</label>
-          <select id="filtroRadio" onchange="carregarDeteccoes()"
-            class="border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-slate-50">
+          <select id="filtroRadio" onchange="carregarDeteccoes()" class="border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-slate-50">
             <option value="">Todas as rádios</option>
           </select>
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">🏷️ Cliente</label>
-          <select id="filtroCliente" onchange="carregarDeteccoes()"
-            class="border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-slate-50">
+          <select id="filtroCliente" onchange="carregarDeteccoes()" class="border border-slate-200 rounded-xl px-4 py-2.5 font-bold text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-slate-50">
             <option value="">Todos os clientes</option>
           </select>
         </div>
@@ -98,53 +94,31 @@
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-up text-center">
-        <div id="metDet" class="text-4xl font-black text-blue-600">—</div>
-        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Detecções</div>
-      </div>
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-up text-center">
-        <div id="metCli" class="text-4xl font-black text-indigo-600">—</div>
-        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Clientes</div>
-      </div>
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-up text-center">
-        <div id="metRad" class="text-4xl font-black text-purple-600">—</div>
-        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Rádios</div>
-      </div>
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-up text-center">
-        <div id="metUlt" class="text-sm font-black text-slate-700 leading-snug">—</div>
-        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Última</div>
-      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-up text-center"><div id="metDet" class="text-4xl font-black text-blue-600">—</div><div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Detecções</div></div>
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-up text-center"><div id="metCli" class="text-4xl font-black text-indigo-600">—</div><div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Clientes</div></div>
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-up text-center"><div id="metRad" class="text-4xl font-black text-purple-600">—</div><div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Rádios</div></div>
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-up text-center"><div id="metUlt" class="text-sm font-black text-slate-700 leading-snug">—</div><div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Última</div></div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 fade-up">
         <div class="text-xs font-black text-slate-700 uppercase tracking-widest mb-0.5">📻 Por Rádio</div>
         <div class="text-[10px] font-bold text-slate-400 mb-3">Execuções por estação</div>
-        <div style="position:relative;height:130px">
-          <canvas id="graficoRadio"></canvas>
-          <div id="semGrafico" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-bold">Sem dados</div>
-        </div>
+        <div style="position:relative;height:130px"><canvas id="graficoRadio"></canvas><div id="semGrafico" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-bold">Sem dados</div></div>
       </div>
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 fade-up">
         <div class="text-xs font-black text-slate-700 uppercase tracking-widest mb-0.5">📈 Por Hora</div>
         <div class="text-[10px] font-bold text-slate-400 mb-3">Volume por horário do dia</div>
-        <div style="position:relative;height:130px">
-          <canvas id="graficoHora"></canvas>
-          <div id="semGraficoHora" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-bold">Sem dados</div>
-        </div>
+        <div style="position:relative;height:130px"><canvas id="graficoHora"></canvas><div id="semGraficoHora" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-bold">Sem dados</div></div>
       </div>
     </div>
 
-    <!-- CARD ÚLTIMA DETECÇÃO -->
     <div id="lastDetCard" class="hidden mb-6 fade-up">
       <div class="relative overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-800 p-7 rounded-3xl shadow-2xl">
         <div class="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent"></div>
         <div class="relative z-10">
           <div class="flex items-center gap-2 mb-4">
-            <span class="flex h-2.5 w-2.5 relative">
-              <span class="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-sky-400 opacity-75"></span>
-              <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-sky-300"></span>
-            </span>
+            <span class="flex h-2.5 w-2.5 relative"><span class="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-sky-400 opacity-75"></span><span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-sky-300"></span></span>
             <span class="text-white/80 font-black text-xs uppercase tracking-widest">✨ Última Detecção</span>
           </div>
           <div class="flex items-center gap-5 flex-wrap">
@@ -178,13 +152,8 @@
         <div class="h-14 bg-slate-100 rounded-2xl animate-pulse"></div>
       </div>
       <div id="listaDet" class="space-y-2"></div>
-      <button id="btnMais" onclick="carregarMais()" class="hidden w-full mt-4 py-3.5 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all">
-        + Carregar Mais
-      </button>
-      <div id="semDet" class="hidden text-center py-14">
-        <div class="text-4xl mb-2">📭</div>
-        <div class="font-black text-slate-300 uppercase text-sm">Nenhuma detecção no período</div>
-      </div>
+      <button id="btnMais" onclick="carregarMais()" class="hidden w-full mt-4 py-3.5 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all">+ Carregar Mais</button>
+      <div id="semDet" class="hidden text-center py-14"><div class="text-4xl mb-2">📭</div><div class="font-black text-slate-300 uppercase text-sm">Nenhuma detecção no período</div></div>
     </div>
   </div>
 
@@ -200,10 +169,7 @@
       </div>
       <div id="loadingRef" class="text-center text-slate-400 font-bold py-12">Carregando...</div>
       <div id="gridRef" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-      <div id="semRef" class="hidden text-center py-16">
-        <div class="text-4xl mb-2">🎙️</div>
-        <div class="font-black text-slate-300 uppercase text-sm">Nenhum áudio cadastrado</div>
-      </div>
+      <div id="semRef" class="hidden text-center py-16"><div class="text-4xl mb-2">🎙️</div><div class="font-black text-slate-300 uppercase text-sm">Nenhum áudio cadastrado</div></div>
     </div>
   </div>
 
@@ -223,18 +189,15 @@
         <div class="space-y-5">
           <div>
             <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Nome *</label>
-            <input type="text" id="cadNome" placeholder="Ex: FISK INSTITUCIONAL 2026"
-              class="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:border-blue-400 transition-all" />
+            <input type="text" id="cadNome" placeholder="Ex: FISK INSTITUCIONAL 2026" class="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:border-blue-400 transition-all" />
           </div>
           <div>
             <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Cliente *</label>
-            <input type="text" id="cadCliente" placeholder="Ex: FISK INGLÊS"
-              class="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:border-blue-400 transition-all" />
+            <input type="text" id="cadCliente" placeholder="Ex: FISK INGLÊS" class="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:border-blue-400 transition-all" />
           </div>
           <div>
             <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Arquivo *</label>
-            <div onclick="document.getElementById('cadArquivo').click()"
-              class="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all group">
+            <div onclick="document.getElementById('cadArquivo').click()" class="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all group">
               <div class="text-4xl mb-2 group-hover:scale-110 transition-transform">🎵</div>
               <div class="font-black text-slate-500 uppercase text-sm">Clique para selecionar</div>
               <div class="text-xs text-slate-400 mt-1">MP3 ou WAV</div>
@@ -243,18 +206,11 @@
             <input type="file" id="cadArquivo" accept=".mp3,.wav,audio/*" class="hidden" onchange="mostrarArquivo(this)" />
           </div>
           <div id="progressoUpload" class="hidden">
-            <div class="flex justify-between mb-1">
-              <span class="text-xs font-black text-slate-500 uppercase">Enviando...</span>
-              <span id="pctUpload" class="text-xs font-black text-blue-600">0%</span>
-            </div>
-            <div class="w-full bg-slate-100 rounded-full h-2">
-              <div id="barraUpload" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width:0%"></div>
-            </div>
+            <div class="flex justify-between mb-1"><span class="text-xs font-black text-slate-500 uppercase">Enviando...</span><span id="pctUpload" class="text-xs font-black text-blue-600">0%</span></div>
+            <div class="w-full bg-slate-100 rounded-full h-2"><div id="barraUpload" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width:0%"></div></div>
           </div>
           <div id="msgCadastro" class="hidden rounded-2xl px-4 py-3 text-sm font-bold"></div>
-          <button onclick="cadastrarAudio()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm transition-all shadow-lg hover:scale-105 active:scale-95">
-            🚀 Cadastrar e Enviar para Monitoramento
-          </button>
+          <button onclick="cadastrarAudio()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm transition-all shadow-lg hover:scale-105 active:scale-95">🚀 Cadastrar e Enviar para Monitoramento</button>
         </div>
         <div class="mt-6 p-4 bg-blue-50 rounded-2xl border border-blue-100">
           <div class="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2">ℹ️ Como funciona</div>
@@ -284,9 +240,6 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div id="loadingAudio" class="hidden text-center py-4">
-      <div class="text-slate-400 text-sm font-bold animate-pulse">⏳ Carregando áudio...</div>
-    </div>
     <audio id="audioPlayer" controls class="w-full mb-3" style="border-radius:10px"></audio>
     <button id="btnDownload" class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-black uppercase tracking-wider text-sm transition-all">⬇ Download</button>
     <div id="erroAudio" class="hidden text-center text-xs font-bold text-red-500 mt-3"></div>
@@ -298,37 +251,23 @@ const SB_URL='https://ojtdpnrjulrlhxvbmsnr.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
 let sb, deteccoes=[], visivel=10, chartR=null, chartH=null;
 
-// ─── EXTRAI PATH DO ARQUIVO DENTRO DO BUCKET 'provas' ───────────────────────
-// A URL salva no banco pode ser:
-//   https://xxx.supabase.co/storage/v1/object/provas/ARQUIVO.wav
-//   https://xxx.supabase.co/storage/v1/object/public/provas/ARQUIVO.wav
-//   https://xxx.supabase.co/storage/v1/object/sign/provas/ARQUIVO.wav?token=...
-// Todas viram apenas: ARQUIVO.wav  (o path dentro do bucket)
-function extrairPath(raw) {
+// ─── NORMALIZA URL do bucket provas (agora público) ──────────────────────────
+// Banco salva:  .../storage/v1/object/provas/ARQUIVO.wav          (sem /public/)
+// URL correta:  .../storage/v1/object/public/provas/ARQUIVO.wav
+// Cobre tb:     /object/sign/provas/  e  /object/public/provas/  (já correto)
+function normalizarUrl(raw) {
   if (!raw) return null;
-  try {
-    // decodifica qualquer encode
-    let url = raw;
-    while (url !== decodeURIComponent(url)) url = decodeURIComponent(url);
-    // remove query string
-    url = url.split('?')[0];
-    // extrai tudo depois de /provas/
-    const match = url.match(/\/provas\/(.+)$/);
-    return match ? match[1] : null;
-  } catch(e) { return null; }
+  let url = raw;
+  // 1. decodifica qualquer percent-encode em cascata
+  try { while (url !== decodeURIComponent(url)) url = decodeURIComponent(url); } catch(e) {}
+  // 2. remove query string (tokens expirados)
+  url = url.split('?')[0];
+  // 3. garante /object/public/ — cobre /object/provas/ e /object/sign/provas/
+  url = url.replace(/\/storage\/v1\/object\/(sign\/)?(?!public\/)/, '/storage/v1/object/public/');
+  // 4. valida que é https absoluto
+  if (!url.startsWith('https://')) return null;
+  return url;
 }
-
-// Gera signed URL fresca (60 min) para o bucket privado 'provas'
-async function gerarSignedUrl(raw) {
-  const path = extrairPath(raw);
-  if (!path) return null;
-  const { data, error } = await sb.storage.from('provas').createSignedUrl(path, 3600);
-  if (error || !data?.signedUrl) { console.error('signedUrl error', error); return null; }
-  return data.signedUrl;
-}
-
-// Retorna true se a deteccao tem prova_url valida (para exibir o botao)
-function temProva(d) { return !!d.prova_url; }
 
 function brt(s){
   if(!s)return'—';
@@ -463,9 +402,10 @@ function renderLastDet(){
   document.getElementById('lastRadio').textContent=d.radio||'—';
   document.getElementById('lastScore').textContent='Score '+(d.score||0).toFixed(2);
   const btn=document.getElementById('lastProvaBtn');
-  if(temProva(d)){
+  const url=normalizarUrl(d.prova_url);
+  if(url){
     btn.classList.remove('hidden');
-    btn.onclick=()=>abrirProva(d.prova_url, d.comercial_nome||'', d.radio||'', brt(d.detectado_em));
+    btn.onclick=()=>abrirProva(url, d.comercial_nome||'', d.radio||'', brt(d.detectado_em));
   } else btn.classList.add('hidden');
 }
 
@@ -478,6 +418,7 @@ function renderLista(){
   deteccoes.slice(1,visivel+1).forEach(d=>{
     const sc=parseFloat(d.score)||0;
     const scClr=sc>=0.8?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700';
+    const url=normalizarUrl(d.prova_url);
     const item=document.createElement('div');
     item.className='card-det flex items-center gap-3 px-4 py-3 bg-white border border-slate-100 rounded-2xl group';
     item.innerHTML=`
@@ -492,41 +433,31 @@ function renderLista(){
       </div>
       <div class="flex items-center gap-1.5 flex-shrink-0">
         <span class="px-2 py-1 ${scClr} rounded-full text-[10px] font-black">${sc.toFixed(2)}</span>
-        ${temProva(d)?`<button class="btn-prova p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all opacity-0 group-hover:opacity-100">
+        ${url?`<button class="btn-prova p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all opacity-0 group-hover:opacity-100" title="Ouvir prova">
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </button>`:`<div class="w-7"></div>`}
       </div>`;
-    if(temProva(d))item.querySelector('.btn-prova').addEventListener('click',()=>abrirProva(d.prova_url,d.comercial_nome||'',d.radio||'',brt(d.detectado_em)));
+    if(url) item.querySelector('.btn-prova').addEventListener('click', ()=>abrirProva(url, d.comercial_nome||'', d.radio||'', brt(d.detectado_em)));
     lista.appendChild(item);
   });
-  document.getElementById('btnMais').classList.toggle('hidden',visivel>=deteccoes.length-1);
+  document.getElementById('btnMais').classList.toggle('hidden', visivel>=deteccoes.length-1);
 }
 
 function carregarMais(){visivel+=10;renderLista();}
 
-// ─── PLAYER: gera signed URL na hora, aí carrega o audio ─────────────────────
-async function abrirProva(rawUrl, nome, radio, horario){
+// ─── PLAYER ──────────────────────────────────────────────────────────────────
+function abrirProva(url, nome, radio, horario){
   document.getElementById('modalNome').textContent=nome;
   document.getElementById('modalInfo').textContent=radio+' · '+horario;
   document.getElementById('erroAudio').classList.add('hidden');
-  document.getElementById('loadingAudio').classList.remove('hidden');
   document.getElementById('modalAudio').classList.remove('hidden');
   const audio=document.getElementById('audioPlayer');
-  audio.src='';
-
-  const url = await gerarSignedUrl(rawUrl);
-  document.getElementById('loadingAudio').classList.add('hidden');
-
-  if(!url){
-    document.getElementById('erroAudio').textContent='❌ Não foi possível gerar o link do áudio.';
-    document.getElementById('erroAudio').classList.remove('hidden');
-    return;
-  }
-
   audio.src=url;
   audio.load();
   audio.play().catch(()=>{});
-  document.getElementById('btnDownload').onclick=()=>{const a=document.createElement('a');a.href=url;a.download=nome+'_prova.wav';a.click();};
+  document.getElementById('btnDownload').onclick=()=>{
+    const a=document.createElement('a'); a.href=url; a.download=nome+'_prova.wav'; a.click();
+  };
   audio.onerror=()=>{
     document.getElementById('erroAudio').textContent='❌ Não foi possível carregar o áudio.';
     document.getElementById('erroAudio').classList.remove('hidden');
