@@ -45,7 +45,7 @@
       </div>
       <div>
         <h1 class="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1>
-        <p class="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Gerenciamento de Usuários</p>
+        <p class="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Gerenciamento</p>
       </div>
     </div>
     <div class="flex items-center gap-3">
@@ -59,60 +59,134 @@
 
 <main class="max-w-5xl mx-auto px-6 py-10">
 
-  <!-- CARD CRIAR USUÁRIO -->
-  <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 mb-8">
-    <div class="flex items-center gap-3 mb-6">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" x2="22" y1="11" y2="13"/><line x1="21" x2="23" y1="12" y2="12"/></svg>
-      <h3 class="font-black text-xl text-slate-900 uppercase tracking-tight">Criar novo usuário</h3>
-    </div>
-
-    <div id="alerta-criar" class="hidden mb-5 rounded-2xl px-5 py-4"></div>
-
-    <form onsubmit="criarUsuario(event)">
-      <div class="mb-4">
-        <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">E-mail do usuário</label>
-        <div class="relative">
-          <svg class="absolute left-4 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-          <input id="inp-email-novo" type="email" placeholder="usuario@email.com" required
-            class="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 transition-all" />
-        </div>
-      </div>
-
-      <div class="mb-6">
-        <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Nome completo</label>
-        <div class="relative">
-          <svg class="absolute left-4 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <input id="inp-nome-novo" type="text" placeholder="Nome do usuário" required
-            class="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 transition-all" />
-        </div>
-      </div>
-
-      <div class="bg-blue-50 border border-blue-200 rounded-2xl px-5 py-4 mb-6">
-        <p class="font-bold text-blue-700 text-sm">🔑 Senha padrão: <code class="bg-white px-2 py-1 rounded font-mono">123mudar</code></p>
-        <p class="text-xs text-blue-600 mt-1">O usuário será obrigado a trocar a senha no primeiro acesso.</p>
-      </div>
-
-      <button type="submit" id="btn-criar"
-        class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
-        Criar usuário agora
-      </button>
-    </form>
+  <div class="flex gap-2 mb-8 flex-wrap">
+    <button class="tab-btn active px-5 py-2.5 rounded-2xl font-black uppercase text-sm bg-slate-100 text-slate-600" onclick="trocarAba('usuarios',this)">👥 Usuários</button>
+    <button class="tab-btn px-5 py-2.5 rounded-2xl font-black uppercase text-sm bg-slate-100 text-slate-600" onclick="trocarAba('comerciais',this)">🎙️ Comerciais</button>
   </div>
 
-  <!-- LISTA DE USUÁRIOS -->
-  <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-3">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <h3 class="font-black text-xl text-slate-900 uppercase tracking-tight">Usuários cadastrados</h3>
+  <!-- ABA USUÁRIOS -->
+  <div id="aba-usuarios">
+    <!-- CARD CRIAR USUÁRIO -->
+    <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 mb-8">
+      <div class="flex items-center gap-3 mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" x2="22" y1="11" y2="13"/><line x1="21" x2="23" y1="12" y2="12"/></svg>
+        <h3 class="font-black text-xl text-slate-900 uppercase tracking-tight">Criar novo usuário</h3>
       </div>
-      <button onclick="carregarUsuarios()" class="p-3 bg-blue-50 rounded-xl hover:bg-blue-100 transition-all">
-        <svg id="ico-refresh-lista" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-      </button>
+
+      <div id="alerta-criar" class="hidden mb-5 rounded-2xl px-5 py-4"></div>
+
+      <form onsubmit="criarUsuario(event)">
+        <div class="mb-4">
+          <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">E-mail do usuário</label>
+          <div class="relative">
+            <svg class="absolute left-4 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            <input id="inp-email-novo" type="email" placeholder="usuario@email.com" required
+              class="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 transition-all" />
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Nome completo</label>
+          <div class="relative">
+            <svg class="absolute left-4 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input id="inp-nome-novo" type="text" placeholder="Nome do usuário" required
+              class="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 transition-all" />
+          </div>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-2xl px-5 py-4 mb-6">
+          <p class="font-bold text-blue-700 text-sm">🔑 Senha padrão: <code class="bg-white px-2 py-1 rounded font-mono">123mudar</code></p>
+          <p class="text-xs text-blue-600 mt-1">O usuário será obrigado a trocar a senha no primeiro acesso.</p>
+        </div>
+
+        <button type="submit" id="btn-criar"
+          class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+          Criar usuário agora
+        </button>
+      </form>
     </div>
 
-    <div id="lista-usuarios"></div>
+    <!-- LISTA DE USUÁRIOS -->
+    <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <h3 class="font-black text-xl text-slate-900 uppercase tracking-tight">Usuários cadastrados</h3>
+        </div>
+        <button onclick="carregarUsuarios()" class="p-3 bg-blue-50 rounded-xl hover:bg-blue-100 transition-all">
+          <svg id="ico-refresh-lista" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        </button>
+      </div>
+
+      <div id="lista-usuarios"></div>
+    </div>
+  </div>
+
+  <!-- ABA COMERCIAIS -->
+  <div id="aba-comerciais" class="hidden">
+    <!-- CARD CADASTRAR COMERCIAL -->
+    <div class="max-w-2xl mx-auto">
+      <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 mb-8 fade-up">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+          <div>
+            <div class="font-black text-slate-800 text-base uppercase">Cadastrar Novo Comercial</div>
+            <div class="text-xs font-bold text-slate-400">MP3 ou WAV — máx. 50MB</div>
+          </div>
+        </div>
+        <div class="space-y-5">
+          <div>
+            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Nome do Comercial *</label>
+            <input type="text" id="cadNome" placeholder="Ex: FISK INSTITUCIONAL 2026" class="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:border-blue-400 transition-all" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Cliente *</label>
+            <input type="text" id="cadCliente" placeholder="Ex: FISK INGLÊS" class="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:border-blue-400 transition-all" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Arquivo de Áudio *</label>
+            <div onclick="document.getElementById('cadArquivo').click()" class="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all group">
+              <div class="text-4xl mb-2 group-hover:scale-110 transition-transform">🎵</div>
+              <div class="font-black text-slate-500 uppercase text-sm">Clique para selecionar</div>
+              <div class="text-xs text-slate-400 mt-1">MP3 ou WAV</div>
+              <div id="nomeArquivo" class="mt-3 text-sm font-bold text-blue-600 hidden"></div>
+            </div>
+            <input type="file" id="cadArquivo" accept=".mp3,.wav,audio/*" class="hidden" onchange="mostrarArquivo(this)" />
+          </div>
+          <div id="progressoUpload" class="hidden">
+            <div class="flex justify-between mb-1"><span class="text-xs font-black text-slate-500 uppercase">Enviando...</span><span id="pctUpload" class="text-xs font-black text-blue-600">0%</span></div>
+            <div class="w-full bg-slate-100 rounded-full h-2"><div id="barraUpload" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width:0%"></div></div>
+          </div>
+          <div id="msgCadastro" class="hidden rounded-2xl px-4 py-3 text-sm font-bold"></div>
+          <button onclick="cadastrarAudio()" type="button" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm transition-all shadow-lg hover:scale-105 active:scale-95">🚀 Cadastrar e Gerar DNA</button>
+        </div>
+        <div class="mt-6 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+          <div class="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2">ℹ️ Como funciona</div>
+          <ul class="text-xs text-blue-600 font-bold space-y-1">
+            <li>• Arquivo salvo no bucket <code class="bg-white px-1 rounded">comerciais</code></li>
+            <li>• RadioDNA gera fingerprint automaticamente</li>
+            <li>• Monitoramento inicia na próxima varredura</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- LISTA DE COMERCIAIS -->
+      <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 fade-up">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <div class="text-sm font-black text-slate-800 uppercase tracking-wider">🎙️ Áudios de Referência</div>
+            <div class="text-xs font-bold text-slate-400 mt-1">Todos os comerciais no sistema</div>
+          </div>
+          <button onclick="carregarReferencias()" class="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-black text-xs uppercase transition-all">🔄 Atualizar</button>
+        </div>
+        <div id="loadingRef" class="text-center text-slate-400 font-bold py-12">Carregando...</div>
+        <div id="gridRef" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+        <div id="semRef" class="hidden text-center py-16"><div class="text-4xl mb-2">🎙️</div><div class="font-black text-slate-300 uppercase text-sm">Nenhum áudio cadastrado</div></div>
+      </div>
+    </div>
   </div>
 
 </main>
@@ -120,6 +194,20 @@
 <script>
 const SUPABASE_URL = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
+let sb;
+
+function brt(s){
+  if(!s)return'—';
+  try{return new Date(s).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return s.slice(0,16);}
+}
+
+function trocarAba(aba,btn){
+  ['usuarios','comerciais'].forEach(a=>document.getElementById('aba-'+a).classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('aba-'+aba).classList.remove('hidden');
+  btn.classList.add('active');
+  if(aba==='comerciais')carregarReferencias();
+}
 
 async function fazerLogout() {
   const sb = window._supabaseClient;
@@ -163,7 +251,7 @@ async function criarUsuario(e) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ user_id: authData.user.id })
-    }).catch(() => null); // Ignora erro se RPC não existir
+    }).catch(() => null);
 
     // 3. Insere perfil do usuário
     const { error: perfilError } = await sb.from('perfis_usuarios').insert({
@@ -237,8 +325,89 @@ async function carregarUsuarios() {
   }
 }
 
-// Carrega usuários ao abrir a página
-setTimeout(carregarUsuarios, 500);
+async function carregarReferencias(){
+  if(!sb)return;
+  document.getElementById('loadingRef').classList.remove('hidden');
+  document.getElementById('gridRef').classList.add('hidden');
+  document.getElementById('semRef').classList.add('hidden');
+  const{data,error}=await sb.from('referencias').select('*').order('criado_em',{ascending:false});
+  document.getElementById('loadingRef').classList.add('hidden');
+  if(error||!data||!data.length){document.getElementById('semRef').classList.remove('hidden');return;}
+  const grid=document.getElementById('gridRef');
+  grid.innerHTML='';
+  data.forEach(r=>{
+    const has=!!r.fingerprint;
+    const dur=r.duration?r.duration.toFixed(1)+'s':'—';
+    const dt=r.criado_em?brt(r.criado_em):'—';
+    const card=document.createElement('div');
+    card.className='bg-white rounded-2xl border border-slate-200 p-5 shadow-sm';
+    card.innerHTML=`
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${has?'bg-green-50':'bg-amber-50'}">${has?'✅':'⏳'}</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-black text-slate-800 text-sm truncate">${r.nome||'—'}</div>
+          <div class="text-xs font-bold text-slate-500">${r.cliente||'—'}</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-black ${has?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}">${has?'✅ DNA OK':'⏳ Aguardando'}</span>
+        <span class="text-[10px] font-bold text-slate-400">${dur}</span>
+      </div>
+      <div class="text-[10px] text-slate-300 mt-2">${dt}</div>
+      ${r.arquivo_url?`<a href="${r.arquivo_url}" target="_blank" class="mt-3 block w-full py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-center text-xs font-black text-slate-600 uppercase transition-all">⬇ Baixar</a>`:''}`;
+    grid.appendChild(card);
+  });
+  grid.classList.remove('hidden');
+}
+
+async function cadastrarAudio(){
+  const nome=document.getElementById('cadNome').value.trim();
+  const cliente=document.getElementById('cadCliente').value.trim();
+  const arquivo=document.getElementById('cadArquivo').files[0];
+  const msg=document.getElementById('msgCadastro');
+  msg.classList.add('hidden');
+  if(!nome||!cliente||!arquivo){msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-red-50 text-red-600 border border-red-200';msg.textContent='❌ Preencha todos os campos.';msg.classList.remove('hidden');return;}
+  document.getElementById('progressoUpload').classList.remove('hidden');
+  const barra=document.getElementById('barraUpload'),pct=document.getElementById('pctUpload');
+  const sp=p=>{barra.style.width=p+'%';pct.textContent=p+'%';};
+  try{
+    sp(20);
+    const ext=arquivo.name.split('.').pop();
+    const slug=nome.toUpperCase().replace(/\s+/g,'_').replace(/[^A-Z0-9_]/g,'')+'_'+Date.now()+'.'+ext;
+    sp(40);
+    const{error:upErr}=await sb.storage.from('comerciais').upload(slug,arquivo,{contentType:arquivo.type||'audio/mpeg',upsert:false});
+    if(upErr)throw upErr;
+    sp(70);
+    const{data:urlData}=sb.storage.from('comerciais').getPublicUrl(slug);
+    sp(85);
+    const{error:insErr}=await sb.from('referencias').insert({nome,cliente,arquivo_url:urlData.publicUrl,duration:null,fingerprint:null});
+    if(insErr)throw insErr;
+    sp(100);
+    msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-green-50 text-green-700 border border-green-200';
+    msg.textContent='✅ Cadastrado! O RadioDNA gerará o fingerprint.';
+    msg.classList.remove('hidden');
+    ['cadNome','cadCliente','cadArquivo'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('nomeArquivo').classList.add('hidden');
+    setTimeout(()=>carregarReferencias(),2000);
+  }catch(e){
+    msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-red-50 text-red-600 border border-red-200';
+    msg.textContent='❌ Erro: '+(e.message||JSON.stringify(e));
+    msg.classList.remove('hidden');
+  }finally{setTimeout(()=>document.getElementById('progressoUpload').classList.add('hidden'),2000);}
+}
+
+function mostrarArquivo(input){
+  const el=document.getElementById('nomeArquivo');
+  if(input.files[0]){el.textContent='📎 '+input.files[0].name;el.classList.remove('hidden');}
+}
+
+async function init(){
+  sb=window._supabaseClient;
+  if(!sb){setTimeout(init,300);return;}
+  carregarUsuarios();
+}
+
+window.addEventListener('load',init);
 </script>
 </body>
 </html>
