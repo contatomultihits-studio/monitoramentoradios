@@ -251,22 +251,42 @@ const SB_URL='https://ojtdpnrjulrlhxvbmsnr.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
 let sb, deteccoes=[], visivel=10, chartR=null, chartH=null;
 
-// ─── NORMALIZA URL do bucket provas (agora público) ──────────────────────────
-// Banco salva:  .../storage/v1/object/provas/ARQUIVO.wav          (sem /public/)
-// URL correta:  .../storage/v1/object/public/provas/ARQUIVO.wav
-// Cobre tb:     /object/sign/provas/  e  /object/public/provas/  (já correto)
 function normalizarUrl(raw) {
   if (!raw) return null;
   let url = raw;
-  // 1. decodifica qualquer percent-encode em cascata
   try { while (url !== decodeURIComponent(url)) url = decodeURIComponent(url); } catch(e) {}
-  // 2. remove query string (tokens expirados)
   url = url.split('?')[0];
-  // 3. garante /object/public/ — cobre /object/provas/ e /object/sign/provas/
   url = url.replace(/\/storage\/v1\/object\/(sign\/)?(?!public\/)/, '/storage/v1/object/public/');
-  // 4. valida que é https absoluto
   if (!url.startsWith('https://')) return null;
   return url;
+}
+
+// ─── DOWNLOAD REAL via blob ─────────────────────────────────────────────────────────
+// Chrome não respeita o atributo download para URLs de outros domínios.
+// Solução: fetch do arquivo como blob -> cria URL local -> dispara download.
+async function baixarBlob(url, nomeArquivo) {
+  const btn = document.getElementById('btnDownload');
+  btn.textContent = '⏳ Baixando...';
+  btn.disabled = true;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('Falha ao buscar o arquivo');
+    const blob = await resp.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = nomeArquivo;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+  } catch(e) {
+    document.getElementById('erroAudio').textContent = '❌ Erro no download: ' + e.message;
+    document.getElementById('erroAudio').classList.remove('hidden');
+  } finally {
+    btn.textContent = '⬇ Download';
+    btn.disabled = false;
+  }
 }
 
 function brt(s){
@@ -450,14 +470,16 @@ function abrirProva(url, nome, radio, horario){
   document.getElementById('modalNome').textContent=nome;
   document.getElementById('modalInfo').textContent=radio+' · '+horario;
   document.getElementById('erroAudio').classList.add('hidden');
+  document.getElementById('btnDownload').textContent='⬇ Download';
+  document.getElementById('btnDownload').disabled=false;
   document.getElementById('modalAudio').classList.remove('hidden');
   const audio=document.getElementById('audioPlayer');
   audio.src=url;
   audio.load();
   audio.play().catch(()=>{});
-  document.getElementById('btnDownload').onclick=()=>{
-    const a=document.createElement('a'); a.href=url; a.download=nome+'_prova.wav'; a.click();
-  };
+  // Extrai nome do arquivo para o download
+  const nomeArq = url.split('/').pop().split('?')[0] || nome+'_prova.wav';
+  document.getElementById('btnDownload').onclick = () => baixarBlob(url, nomeArq);
   audio.onerror=()=>{
     document.getElementById('erroAudio').textContent='❌ Não foi possível carregar o áudio.';
     document.getElementById('erroAudio').classList.remove('hidden');
