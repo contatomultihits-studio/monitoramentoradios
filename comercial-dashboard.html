@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: 'Inter', sans-serif; }
     @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
@@ -85,7 +86,10 @@
         </select>
       </div>
       <button onclick="carregarDeteccoes()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-wider text-sm transition-all shadow">🔍 Buscar</button>
-      <button onclick="exportarRelatorio()" class="px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black uppercase tracking-wider text-sm transition-all shadow">📄 Exportar</button>
+      <button onclick="exportarPDF()" class="px-6 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black uppercase tracking-wider text-sm transition-all shadow flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        PDF
+      </button>
       <div class="ml-auto text-xs font-bold text-slate-400 self-center" id="relogio">--</div>
     </div>
 
@@ -433,7 +437,6 @@ async function cadastrarAudio() {
   document.getElementById('progressoUpload').classList.remove('hidden');
 
   try {
-    // 1. Upload do arquivo para o bucket "comerciais"
     const ext      = arquivo.name.split('.').pop();
     const nomeFile = nome.toUpperCase().replace(/\s+/g,'_').replace(/[^A-Z0-9_]/g,'') + '_' + Date.now() + '.' + ext;
 
@@ -450,11 +453,9 @@ async function cadastrarAudio() {
     document.getElementById('barraUpload').style.width = '70%';
     document.getElementById('pctUpload').textContent = '70%';
 
-    // 2. Pega URL pública
     const { data: urlData } = sb.storage.from('comerciais').getPublicUrl(nomeFile);
     const arquivoUrl = urlData.publicUrl;
 
-    // 3. Grava na tabela referencias
     const { error: insErr } = await sb.from('referencias').insert({
       nome:        nome,
       cliente:     cliente,
@@ -469,10 +470,9 @@ async function cadastrarAudio() {
     document.getElementById('pctUpload').textContent = '100%';
 
     msg.className = 'rounded-2xl px-4 py-3 text-sm font-bold bg-green-50 text-green-700 border border-green-200';
-    msg.textContent = '✅ Áudio cadastrado! O sistema RadioDNA irá gerar o fingerprint e iniciar o monitoramento automaticamente.';
+    msg.textContent = '✅ Áudio cadastrado! O sistema RadioDNA irá gerar o fingerprint automaticamente.';
     msg.classList.remove('hidden');
 
-    // Limpa form
     document.getElementById('cadNome').value = '';
     document.getElementById('cadCliente').value = '';
     document.getElementById('cadArquivo').value = '';
@@ -502,9 +502,8 @@ async function abrirProva(provaUrl, nome, radio, horario) {
   document.getElementById('modalAudio').classList.remove('hidden');
 
   try {
-    // Gera URL assinada via Supabase client
     const pathParts = provaUrl.split('/object/');
-    const fullPath  = pathParts[1] || ''; // "provas/arquivo.wav" ou "public/provas/arquivo.wav"
+    const fullPath  = pathParts[1] || '';
     const cleanPath = fullPath.replace(/^public\//, '').replace(/^provas\//, '');
     const { data, error } = await sb.storage.from('provas').createSignedUrl(cleanPath, 3600);
     if (error) throw error;
@@ -514,7 +513,6 @@ async function abrirProva(provaUrl, nome, radio, horario) {
       const a = document.createElement('a'); a.href = signed; a.download = nome + '.wav'; a.click();
     };
   } catch(e) {
-    // Fallback: tenta URL direta
     document.getElementById('audioPlayer').src = provaUrl;
     console.error('Signed URL error:', e);
   }
@@ -526,23 +524,102 @@ function fecharModal() {
   document.getElementById('audioPlayer').src = '';
 }
 
-async function exportarRelatorio() {
+function exportarPDF() {
   if (!deteccoes.length) { alert('Nenhum dado para exportar!'); return; }
-  const dia    = document.getElementById('filtroData').value;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const dia    = document.getElementById('filtroData').value || hojeStr();
   const radio  = document.getElementById('filtroRadio').value || 'Todas';
-  const linhas = deteccoes.map(d =>
-    `${brt(d.detectado_em)} | ${d.comercial_nome||'—'} | ${d.cliente||'—'} | ${d.radio||'—'} | ${(d.score||0).toFixed(2)}`
-  ).join('\n');
-  const blob = new Blob([
-    `RADIODNA - RELATÓRIO DE EXECUÇÕES COMERCIAIS\n` +
-    `Data: ${dia} | Rádio: ${radio}\nTotal: ${deteccoes.length} detecções\n\n` +
-    `HORÁRIO (BRT)        | COMERCIAL                    | CLIENTE          | RÁDIO                | SCORE\n` +
-    '—'.repeat(90) + '\n' + linhas
-  ], { type: 'text/plain;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `radiodna_comercial_${dia}_${radio}.txt`;
-  a.click();
+  const cliente = document.getElementById('filtroCliente').value || 'Todos';
+  const pageW  = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  let y = margin;
+
+  // Cabeçalho azul
+  doc.setFillColor(29, 78, 216);
+  doc.rect(0, 0, pageW, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('IA NO RADIO', margin, 11);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('RELATORIO DE EXECUCOES COMERCIAIS', margin, 18);
+  doc.text('Gerado em: ' + new Date().toLocaleString('pt-BR', {timeZone:'America/Sao_Paulo'}), margin, 24);
+  y = 36;
+
+  // Filtros
+  doc.setTextColor(71, 85, 105);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Data: ${dia}   |   Radio: ${radio}   |   Cliente: ${cliente}   |   Total: ${deteccoes.length} deteccoes`, margin, y);
+  y += 8;
+
+  doc.setDrawColor(203, 213, 225);
+  doc.line(margin, y, pageW - margin, y);
+  y += 6;
+
+  // Cabeçalho da tabela
+  doc.setFillColor(241, 245, 249);
+  doc.rect(margin, y - 4, pageW - margin * 2, 8, 'F');
+  doc.setTextColor(30, 41, 59);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'bold');
+  doc.text('HORARIO (BRT)', margin + 1, y + 1);
+  doc.text('COMERCIAL', margin + 38, y + 1);
+  doc.text('CLIENTE', margin + 95, y + 1);
+  doc.text('RADIO', margin + 130, y + 1);
+  doc.text('SCORE', margin + 163, y + 1);
+  y += 8;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  deteccoes.forEach((d, i) => {
+    if (y > 275) {
+      doc.addPage();
+      y = 14;
+      doc.setFillColor(241, 245, 249);
+      doc.rect(margin, y - 4, pageW - margin * 2, 8, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(30, 41, 59);
+      doc.text('HORARIO (BRT)', margin + 1, y + 1);
+      doc.text('COMERCIAL', margin + 38, y + 1);
+      doc.text('CLIENTE', margin + 95, y + 1);
+      doc.text('RADIO', margin + 130, y + 1);
+      doc.text('SCORE', margin + 163, y + 1);
+      y += 8;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+    }
+    if (i % 2 === 0) {
+      doc.setFillColor(248, 250, 252);
+      doc.rect(margin, y - 3.5, pageW - margin * 2, 7, 'F');
+    }
+    const sc = parseFloat(d.score) || 0;
+    doc.setTextColor(51, 65, 85);
+    doc.text(brt(d.detectado_em), margin + 1, y + 1);
+    doc.text((d.comercial_nome||'—').substring(0,35), margin + 38, y + 1);
+    doc.text((d.cliente||'—').substring(0,22), margin + 95, y + 1);
+    doc.text((d.radio||'—').substring(0,20), margin + 130, y + 1);
+    if (sc >= 0.8) doc.setTextColor(21, 128, 61);
+    else doc.setTextColor(180, 120, 0);
+    doc.text(sc.toFixed(2), margin + 163, y + 1);
+    y += 7;
+  });
+
+  // Rodapé
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.setFont('helvetica', 'normal');
+    doc.text('IA NO RADIO · Monitoramento Comercial', margin, 290);
+    doc.text(`Pagina ${p} de ${totalPages}`, pageW - margin - 20, 290);
+  }
+
+  doc.save(`comercial_${dia}_${radio.replace(/\s+/g,'_')}.pdf`);
 }
 
 async function fazerLogout() {
