@@ -42,12 +42,12 @@
 <div id="modal-excluir" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
   <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full">
     <div class="text-4xl text-center mb-4">🗑️</div>
-    <div class="font-black text-slate-800 text-center text-base uppercase mb-2">Excluir Comercial?</div>
+    <div class="font-black text-slate-800 text-center text-base uppercase mb-2">Desativar Comercial?</div>
     <div id="modal-excluir-nome" class="text-center text-sm font-bold text-slate-500 mb-6"></div>
-    <p class="text-xs text-center text-slate-400 mb-6">O DNA de fingerprint e o arquivo de áudio serão <strong>removidos permanentemente</strong>. As detecções históricas são mantidas.</p>
+    <p class="text-xs text-center text-slate-400 mb-6">O comercial será <strong>desativado</strong> e não aparecerá mais na lista. O monitoramento para imediatamente. As detecções históricas são <strong>preservadas</strong>.</p>
     <div class="flex gap-3">
       <button onclick="fecharModalExcluir()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-black uppercase text-sm transition-all">Cancelar</button>
-      <button id="btn-confirmar-excluir" onclick="confirmarExclusao()" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-sm transition-all">Excluir</button>
+      <button id="btn-confirmar-excluir" onclick="confirmarExclusao()" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-sm transition-all">Desativar</button>
     </div>
   </div>
 </div>
@@ -198,7 +198,7 @@
         <div class="flex items-center justify-between mb-6">
           <div>
             <div class="text-sm font-black text-slate-800 uppercase tracking-wider">🎙️ Áudios de Referência</div>
-            <div class="text-xs font-bold text-slate-400 mt-1">Todos os comerciais no sistema</div>
+            <div class="text-xs font-bold text-slate-400 mt-1">Comerciais ativos no sistema</div>
           </div>
           <button onclick="carregarReferencias()" class="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-black text-xs uppercase transition-all">🔄 Atualizar</button>
         </div>
@@ -296,7 +296,7 @@ async function fazerLogout(){
   window.location.href='/login';
 }
 
-// ─── MODAL EXCLUSÃO COMERCIAL ──────────────────────────────────────
+// ─── MODAL EXCLUSÃO COMERCIAL (SOFT DELETE) ────────────────────────
 function abrirModalExcluir(id, nome, arquivo_url){
   _excluirItem = { id, nome, arquivo_url };
   document.getElementById('modal-excluir-nome').textContent = nome;
@@ -310,22 +310,17 @@ async function confirmarExclusao(){
   if(!_excluirItem) return;
   const btn = document.getElementById('btn-confirmar-excluir');
   btn.disabled = true;
-  btn.textContent = 'Excluindo...';
+  btn.textContent = 'Desativando...';
   try{
-    const { error: delErr } = await sb.from('referencias').delete().eq('id', _excluirItem.id);
-    if(delErr) throw delErr;
-    if(_excluirItem.arquivo_url){
-      try{
-        const parts = _excluirItem.arquivo_url.split('/comerciais/');
-        if(parts[1]) await sb.storage.from('comerciais').remove([parts[1]]);
-      }catch(e){ console.warn('Storage remove:', e); }
-    }
+    // SOFT DELETE — apenas marca ativo=false, preserva histórico de detecções
+    const { error } = await sb.from('referencias').update({ ativo: false }).eq('id', _excluirItem.id);
+    if(error) throw error;
     fecharModalExcluir();
     carregarReferencias();
   }catch(e){
-    alert('❌ Erro ao excluir: ' + e.message);
+    alert('❌ Erro ao desativar: ' + e.message);
     btn.disabled = false;
-    btn.textContent = 'Excluir';
+    btn.textContent = 'Desativar';
   }
 }
 
@@ -508,12 +503,14 @@ async function carregarUsuarios(){
   }finally{ico.style.animation='';}
 }
 
+// ─── CARREGAR COMERCIAIS (só ativos) ──────────────────────────────
 async function carregarReferencias(){
   if(!sb){ setTimeout(carregarReferencias, 300); return; }
   document.getElementById('loadingRef').classList.remove('hidden');
   document.getElementById('gridRef').classList.add('hidden');
   document.getElementById('semRef').classList.add('hidden');
-  const{data,error}=await sb.from('referencias').select('*').order('criado_em',{ascending:false});
+  // Filtra apenas ativo=true — soft deleted não aparecem
+  const{data,error}=await sb.from('referencias').select('*').eq('ativo', true).order('criado_em',{ascending:false});
   document.getElementById('loadingRef').classList.add('hidden');
   if(error||!data||!data.length){document.getElementById('semRef').classList.remove('hidden');return;}
   const grid=document.getElementById('gridRef');
@@ -543,7 +540,7 @@ async function carregarReferencias(){
         <button onclick="abrirModalExcluir('${r.id}', '${nomeEsc}', '${r.arquivo_url||''}')"
           class="${r.arquivo_url?'':'flex-1 '}py-2 px-4 bg-red-50 hover:bg-red-100 rounded-xl text-xs font-black text-red-600 uppercase transition-all flex items-center justify-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-          Excluir
+          Desativar
         </button>
       </div>`;
     grid.appendChild(card);
@@ -571,7 +568,7 @@ async function cadastrarAudio(){
     sp(70);
     const{data:urlData}=sb.storage.from('comerciais').getPublicUrl(slug);
     sp(85);
-    const{error:insErr}=await sb.from('referencias').insert({nome,cliente,arquivo_url:urlData.publicUrl,duration:null,fingerprint:null});
+    const{error:insErr}=await sb.from('referencias').insert({nome,cliente,arquivo_url:urlData.publicUrl,duration:null,fingerprint:null,ativo:true});
     if(insErr)throw insErr;
     sp(100);
     msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-green-50 text-green-700 border border-green-200';
