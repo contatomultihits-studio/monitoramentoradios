@@ -4,7 +4,7 @@ import {
   Search, Clock, RefreshCw, Radio, 
   Music, Loader2, Plus, Download,
   TrendingUp, Sparkles, Filter, Megaphone, Activity,
-  Trophy, X, Youtube, CalendarDays
+  Trophy, X, Youtube, CalendarDays, ChevronDown
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -48,6 +48,12 @@ const parseTocouEm = (tocouEm: string) => {
   const [datePart, timePart] = str.split(', ');
   const [day, month, year] = datePart.split('/');
   return { data: `${year}-${month}-${day}`, hora: timePart, timestamp: utcDate.getTime() };
+};
+
+const formatDateBR = (iso: string) => {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -294,7 +300,7 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
 };
 
 // ─────────────────────────────────────────────────────────────
-// DATE PICKER
+// DATE PICKER — dropdown customizado com datas disponíveis
 // ─────────────────────────────────────────────────────────────
 const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
   value: string;
@@ -303,36 +309,71 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
   onChange: (d: string) => void;
   onOpen: () => void;
 }) => {
-  const dateSet  = useMemo(() => new Set(availableDates), [availableDates]);
-  const minDate  = availableDates.length ? availableDates[availableDates.length - 1] : undefined;
-  const maxDate  = availableDates.length ? availableDates[0] : undefined;
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => { if (dateSet.has(e.target.value)) onChange(e.target.value); };
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Fecha ao clicar fora
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const handleToggle = () => {
+    if (!open) onOpen(); // carrega datas ao abrir
+    setOpen(o => !o);
+  };
+
+  const handleSelect = (d: string) => {
+    onChange(d);
+    setOpen(false);
+  };
+
   return (
-    <div className="relative">
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+    <div ref={ref} className="relative">
+      {/* Botão principal */}
+      <button
+        type="button"
+        onClick={handleToggle}
+        className="w-full flex items-center gap-3 pl-4 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer"
+      >
         {loadingDates
-          ? <Loader2 size={16} className="text-blue-400 animate-spin" />
-          : <CalendarDays size={16} className="text-blue-500" />}
-      </div>
-      <input
-        type="date"
-        value={value}
-        min={minDate}
-        max={maxDate}
-        onChange={handleChange}
-        onFocus={onOpen}
-        onClick={onOpen}
-        className="w-full pl-10 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none border-2 border-transparent focus:border-blue-300 transition-all cursor-pointer"
-        title="Selecione uma data com dados"
-      />
-      {value && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
-            loadingDates ? 'bg-blue-100 text-blue-500' :
-            dateSet.has(value) ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-500'
-          }`}>
-            {loadingDates ? '...' : dateSet.has(value) ? '✓' : 'sem dados'}
-          </span>
+          ? <Loader2 size={16} className="text-blue-400 animate-spin flex-shrink-0" />
+          : <CalendarDays size={16} className="text-blue-500 flex-shrink-0" />}
+        <span className="flex-1 text-left text-sm">
+          {value ? formatDateBR(value) : 'Selecionar data'}
+        </span>
+        <ChevronDown size={16} className={`text-slate-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
+          {loadingDates ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-slate-400">
+              <Loader2 size={16} className="animate-spin" />
+              <span className="text-sm font-bold">Carregando datas...</span>
+            </div>
+          ) : availableDates.length === 0 ? (
+            <div className="py-8 text-center text-slate-400 text-sm font-bold">Nenhuma data disponível</div>
+          ) : (
+            availableDates.map(d => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => handleSelect(d)}
+                className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-blue-50 ${
+                  d === value ? 'bg-blue-100 text-blue-700' : 'text-slate-700'
+                }`}
+              >
+                📅 {formatDateBR(d)}
+                {d === availableDates[0] && <span className="ml-2 text-[10px] font-black text-emerald-600 uppercase">Mais recente</span>}
+              </button>
+            ))
+          )}
         </div>
       )}
     </div>
@@ -340,8 +381,7 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
 };
 
 // ─────────────────────────────────────────────────────────────
-// FETCH DATA — função pura, recebe data+radio como parâmetros
-// sem depender de closure de filters
+// FETCH DATA
 // ─────────────────────────────────────────────────────────────
 async function loadDayData(radio: string, date: string): Promise<any[]> {
   const supabase = getSupabaseClient();
@@ -359,7 +399,6 @@ async function loadDayData(radio: string, date: string): Promise<any[]> {
     .filter((t: any) => !isBlocked(t.artista, t.musica));
 }
 
-// Busca só a data mais recente disponível para a rádio (1 request rápido)
 async function loadLatestDate(radio: string): Promise<string> {
   const supabase = getSupabaseClient();
   if (!supabase) return '';
@@ -394,7 +433,6 @@ async function loadAvailableDates(radio: string): Promise<string[]> {
   return [...allDates].sort().reverse();
 }
 
-// Cache de datas por rádio para não rebuscar se já carregou
 const datesCache: Record<string, string[]> = {};
 
 // ─────────────────────────────────────────────────────────────
@@ -410,7 +448,6 @@ const App = () => {
   const [visibleCount, setVisibleCount] = useState(9);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
-  // Ref sempre atualizado — usado no auto-refresh sem closure stale
   const filtersRef = useRef(filters);
   useEffect(() => { filtersRef.current = filters; }, [filters]);
 
@@ -425,8 +462,6 @@ const App = () => {
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
-  // Carrega datas históricas sob demanda (quando usuário abre o datepicker)
-  // Usa cache por rádio para não rebuscar
   const handleOpenDatePicker = useCallback(async () => {
     const radio = filtersRef.current.radio;
     if (datesCache[radio]) {
@@ -443,15 +478,13 @@ const App = () => {
     finally { setLoadingDates(false); }
   }, [loadingDates]);
 
-  // Inicialização: busca só a data mais recente (1 request) + dados do dia
-  // NÃO carrega o histórico completo de datas aqui
   useEffect(() => {
     (async () => {
       const radio = 'Metropolitana FM';
       const firstDate = await loadLatestDate(radio);
       setFilters(f => ({ ...f, date: firstDate }));
       if (firstDate) {
-        setAvailableDates([firstDate]); // já mostra a data atual no picker
+        setAvailableDates([firstDate]);
         await doFetch(radio, firstDate);
       } else {
         setLoading(false);
@@ -459,15 +492,12 @@ const App = () => {
     })();
   }, []);
 
-  // Dispara fetch quando data ou rádio mudam (via setFilters)
-  // Usa um flag para não disparar na inicialização (já feita acima)
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
     if (filters.date) doFetch(filters.radio, filters.date);
   }, [filters.date, filters.radio]);
 
-  // Auto-refresh: usa filtersRef para sempre ter valores atuais
   useEffect(() => {
     const interval = setInterval(() => {
       const { radio, date } = filtersRef.current;
@@ -476,8 +506,6 @@ const App = () => {
     return () => clearInterval(interval);
   }, [doFetch]);
 
-  // Troca de rádio: busca só a data mais recente (1 request) + dados do dia
-  // NÃO espera carregar histórico de datas para mostrar a tela
   const handleRadioChange = useCallback(async (r: string) => {
     setData([]);
     setAvailableDates([]);
