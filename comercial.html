@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); min-height: 100vh; }
     @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
@@ -65,7 +66,6 @@
     <div id="statusGeral" class="bg-white rounded-2xl border border-slate-200 shadow-sm px-5 py-4 flex flex-wrap items-center gap-4">
       <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest flex-shrink-0">📡 Status das Rádios</div>
       <div id="statusCards" class="flex flex-wrap gap-3 flex-1">
-        <!-- preenchido via JS -->
         <div class="h-7 w-40 bg-slate-100 rounded-full animate-pulse"></div>
         <div class="h-7 w-36 bg-slate-100 rounded-full animate-pulse"></div>
         <div class="h-7 w-32 bg-slate-100 rounded-full animate-pulse"></div>
@@ -104,7 +104,10 @@
           <button onclick="carregarDeteccoes()" class="p-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl transition-all">
             <svg id="iconeRefresh" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           </button>
-          <button onclick="exportarTxt()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black uppercase text-xs tracking-wider transition-all">📄 Exportar</button>
+          <button onclick="exportarPDF()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black uppercase text-xs tracking-wider transition-all flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            PDF
+          </button>
         </div>
       </div>
     </div>
@@ -266,7 +269,7 @@
 const SB_URL='https://ojtdpnrjulrlhxvbmsnr.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
 let sb, deteccoes=[], visivel=10, chartR=null, chartH=null;
-let statusRadios = {}; // { "Metropolitana FM SP": {online: true, updated_at: "..."}, ... }
+let statusRadios = {};
 
 function normalizarUrl(raw) {
   if (!raw) return null;
@@ -329,7 +332,6 @@ function trocarAba(aba,btn){
   if(aba==='comerciais')carregarReferencias();
 }
 
-// ─── STATUS DAS RÁDIOS ──────────────────────────────────────────────────────
 async function carregarStatus() {
   if (!sb) return;
   const { data } = await sb.from('status_radios').select('*');
@@ -342,7 +344,6 @@ async function carregarStatus() {
 function renderStatusCards() {
   const cont = document.getElementById('statusCards');
   if (!Object.keys(statusRadios).length) { cont.innerHTML = '<span class="text-xs font-bold text-slate-400">Carregando...</span>'; return; }
-  const todoOnline = Object.values(statusRadios).every(r => r.online);
   cont.innerHTML = '';
   Object.values(statusRadios).forEach(r => {
     const span = document.createElement('span');
@@ -622,13 +623,113 @@ function mostrarArquivo(input){
   if(input.files[0]){el.textContent='📎 '+input.files[0].name;el.classList.remove('hidden');}
 }
 
-function exportarTxt(){
-  if(!deteccoes.length){alert('Nenhum dado!');return;}
-  const dia=document.getElementById('filtroData').value;
-  const radio=document.getElementById('filtroRadio').value||'Todas';
-  const linhas=deteccoes.map(d=>`${brt(d.detectado_em)} | ${d.comercial_nome||'—'} | ${d.cliente||'—'} | ${d.radio||'—'} | ${(d.score||0).toFixed(2)}`).join('\n');
-  const blob=new Blob([`RADIODNA - RELATÓRIO COMERCIAL\nData: ${dia} | Rádio: ${radio} | Total: ${deteccoes.length}\n\n`+linhas],{type:'text/plain;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`comercial_${dia}_${radio}.txt`;a.click();
+function exportarPDF(){
+  if(!deteccoes.length){alert('Nenhum dado para exportar!');return;}
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const dia    = document.getElementById('filtroData').value || hojeStr();
+  const radio  = document.getElementById('filtroRadio').value || 'Todas';
+  const cliente = document.getElementById('filtroCliente').value || 'Todos';
+  const pageW  = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  let y = margin;
+
+  // Cabeçalho
+  doc.setFillColor(29, 78, 216);
+  doc.rect(0, 0, pageW, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('IA NO RADIO', margin, 11);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('RELATORIO DE EXECUCOES COMERCIAIS', margin, 18);
+  doc.text('Gerado em: ' + new Date().toLocaleString('pt-BR', {timeZone:'America/Sao_Paulo'}), margin, 24);
+  y = 36;
+
+  // Filtros aplicados
+  doc.setTextColor(71, 85, 105);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Data: ${dia}   |   Radio: ${radio}   |   Cliente: ${cliente}   |   Total: ${deteccoes.length} deteccoes`, margin, y);
+  y += 8;
+
+  // Linha divisória
+  doc.setDrawColor(203, 213, 225);
+  doc.line(margin, y, pageW - margin, y);
+  y += 6;
+
+  // Cabeçalho da tabela
+  doc.setFillColor(241, 245, 249);
+  doc.rect(margin, y - 4, pageW - margin * 2, 8, 'F');
+  doc.setTextColor(30, 41, 59);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'bold');
+  doc.text('HORARIO (BRT)', margin + 1, y + 1);
+  doc.text('COMERCIAL', margin + 38, y + 1);
+  doc.text('CLIENTE', margin + 95, y + 1);
+  doc.text('RADIO', margin + 130, y + 1);
+  doc.text('SCORE', margin + 163, y + 1);
+  y += 8;
+
+  // Linhas
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  deteccoes.forEach((d, i) => {
+    if (y > 275) {
+      doc.addPage();
+      y = 14;
+      // Repete cabeçalho da tabela
+      doc.setFillColor(241, 245, 249);
+      doc.rect(margin, y - 4, pageW - margin * 2, 8, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(30, 41, 59);
+      doc.text('HORARIO (BRT)', margin + 1, y + 1);
+      doc.text('COMERCIAL', margin + 38, y + 1);
+      doc.text('CLIENTE', margin + 95, y + 1);
+      doc.text('RADIO', margin + 130, y + 1);
+      doc.text('SCORE', margin + 163, y + 1);
+      y += 8;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+    }
+    if (i % 2 === 0) {
+      doc.setFillColor(248, 250, 252);
+      doc.rect(margin, y - 3.5, pageW - margin * 2, 7, 'F');
+    }
+    doc.setTextColor(51, 65, 85);
+    const sc = parseFloat(d.score) || 0;
+    if (sc >= 0.8) doc.setTextColor(21, 128, 61);
+    else doc.setTextColor(51, 65, 85);
+
+    const nomeComercial = (d.comercial_nome || '—').substring(0, 35);
+    const nomeCliente   = (d.cliente || '—').substring(0, 22);
+    const nomeRadio     = (d.radio || '—').substring(0, 20);
+
+    doc.setTextColor(51, 65, 85);
+    doc.text(brt(d.detectado_em), margin + 1, y + 1);
+    doc.text(nomeComercial, margin + 38, y + 1);
+    doc.text(nomeCliente, margin + 95, y + 1);
+    doc.text(nomeRadio, margin + 130, y + 1);
+    if (sc >= 0.8) doc.setTextColor(21, 128, 61);
+    else doc.setTextColor(180, 120, 0);
+    doc.text(sc.toFixed(2), margin + 163, y + 1);
+    y += 7;
+  });
+
+  // Rodapé
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.setFont('helvetica', 'normal');
+    doc.text('IA NO RADIO · Monitoramento Comercial', margin, 290);
+    doc.text(`Pagina ${p} de ${totalPages}`, pageW - margin - 20, 290);
+  }
+
+  doc.save(`comercial_${dia}_${radio.replace(/\s+/g,'_')}.pdf`);
 }
 
 async function fazerLogout(){
