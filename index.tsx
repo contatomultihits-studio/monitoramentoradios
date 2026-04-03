@@ -581,7 +581,18 @@ const App = () => {
             <div><h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1><p className="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Monitoramento Musical</p></div>
           </div>
           <div className="flex items-center gap-3">
-            <a href="/comercial" className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 rounded-xl font-bold text-emerald-700 text-xs uppercase tracking-wider transition-all flex items-center gap-2"><Megaphone size={14} /> Ver Comercial</a>
+            {/* Botão Comercial — EM BREVE */}
+            <span
+              title="Monitoramento Comercial em breve"
+              className="px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl font-black text-amber-600 text-xs uppercase tracking-wider flex items-center gap-2 cursor-default select-none opacity-75"
+              style={{ animation: 'none' }}
+            >
+              <Megaphone size={14} />
+              Comercial
+              <span className="ml-1 px-2 py-0.5 bg-amber-400 text-white rounded-full text-[9px] font-black uppercase tracking-wider">
+                Em Breve
+              </span>
+            </span>
             <button onClick={() => doFetch(filters.radio, filters.date)} className="p-4 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-all hover:scale-105 active:scale-95"><RefreshCw className={refreshing ? 'animate-spin text-blue-600' : 'text-blue-600'} size={24} /></button>
           </div>
         </div>
