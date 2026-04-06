@@ -601,8 +601,14 @@ const App = () => {
       <main className="max-w-5xl mx-auto px-6 py-10">
         <div className="bg-white p-8 rounded-3xl shadow-xl mb-8 border border-slate-200">
           <div className="flex items-center gap-3 mb-6"><Filter className="text-blue-600" size={24} /><h3 className="font-black text-xl text-slate-900 uppercase tracking-tight">Filtros</h3></div>
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            {['Metropolitana FM', 'Antena 1', 'Forbes Radio'].map(r => (
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            {['Metropolitana FM', 'Antena 1'].map(r => (
+              <button key={r} onClick={() => handleRadioChange(r)}
+                className={`py-5 rounded-2xl font-black text-sm uppercase transition-all transform hover:scale-105 active:scale-95 ${filters.radio===r?'bg-blue-600 text-white shadow-xl':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{r}</button>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {['Forbes Radio', 'MIX Rio FM'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
                 className={`py-5 rounded-2xl font-black text-sm uppercase transition-all transform hover:scale-105 active:scale-95 ${filters.radio===r?'bg-blue-600 text-white shadow-xl':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{r}</button>
             ))}
