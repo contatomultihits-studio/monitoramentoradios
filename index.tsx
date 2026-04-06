@@ -20,6 +20,9 @@ const getSupabaseClient = () => (window as any)._supabaseClient;
 // ─────────────────────────────────────────────────────────────
 const BLOCKED_TRACKS: { artista?: string; musica?: string }[] = [
   { musica: 'SP' },
+  // Breaks da MIX Rio FM
+  { musica: 'O melhor Mix do Brasil' },
+  { musica: 'Mix Rio FM' },
 ];
 const isBlocked = (artista: string, musica: string): boolean =>
   BLOCKED_TRACKS.some(b => {
