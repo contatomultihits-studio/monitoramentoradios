@@ -16,6 +16,26 @@ const PAGE_SIZE = 1000;
 const getSupabaseClient = () => (window as any)._supabaseClient;
 
 // ─────────────────────────────────────────────────────────────
+// TIMEZONE HELPER — retorna offset atual de Brasília em minutos
+// (lida corretamente com horário de verão: UTC-3 ou UTC-2)
+// ─────────────────────────────────────────────────────────────
+function getBrasiliaOffsetMs(date: Date = new Date()): number {
+  // Usa Intl para obter o offset real no instante dado
+  const utcStr = date.toLocaleString('en-US', { timeZone: 'UTC' });
+  const brStr  = date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
+  const utcDate = new Date(utcStr);
+  const brDate  = new Date(brStr);
+  return brDate.getTime() - utcDate.getTime(); // negativo = atrás do UTC
+}
+
+// Converte uma data local de Brasília (sem offset) para ISO UTC
+function brasiliaLocalToUTC(isoLocal: string): string {
+  const local = new Date(isoLocal + 'Z'); // trata como se fosse UTC temporariamente
+  const offset = getBrasiliaOffsetMs(local); // offset em ms (normalmente -10800000 = -3h)
+  return new Date(local.getTime() - offset).toISOString();
+}
+
+// ─────────────────────────────────────────────────────────────
 // BLOQUEIO
 // ─────────────────────────────────────────────────────────────
 const BLOCKED_TRACKS: { artista?: string; musica?: string }[] = [
@@ -42,8 +62,15 @@ const GENRE_COLORS: Record<string, string> = {
 const ytURL = (artista: string, musica: string) =>
   `https://www.youtube.com/results?search_query=${encodeURIComponent(`"${artista}" "${musica}"`)}` ;
 
+// ─────────────────────────────────────────────────────────────
+// parseTocouEm — converte UTC → Brasília corretamente
+// ─────────────────────────────────────────────────────────────
 const parseTocouEm = (tocouEm: string) => {
-  const utcDate = new Date(tocouEm);
+  // Garante que o valor é tratado como UTC mesmo sem sufixo Z
+  const raw = tocouEm.endsWith('Z') || tocouEm.includes('+') || /[+-]\d{2}:\d{2}$/.test(tocouEm)
+    ? tocouEm
+    : tocouEm + 'Z'; // adiciona Z se não tiver indicação de timezone
+  const utcDate = new Date(raw);
   const str = utcDate.toLocaleString('pt-BR', {
     timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit',
     day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false
@@ -385,12 +412,21 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
 
 // ─────────────────────────────────────────────────────────────
 // FETCH DATA
+// Usa Intl.DateTimeFormat para calcular os limites do dia em
+// Brasília dinamicamente, sem offset fixo (-03:00).
+// Isso resolve corretamente o horário de verão (UTC-2 em SP).
 // ─────────────────────────────────────────────────────────────
+function getBrasiliaDateBounds(date: string): { dayStart: string; dayEnd: string } {
+  // Constrói início e fim do dia em Brasília de forma dinâmica
+  const dayStart = brasiliaLocalToUTC(`${date}T00:00:00`);
+  const dayEnd   = brasiliaLocalToUTC(`${date}T23:59:59`);
+  return { dayStart, dayEnd };
+}
+
 async function loadDayData(radio: string, date: string): Promise<any[]> {
   const supabase = getSupabaseClient();
   if (!supabase || !date) return [];
-  const dayStart = new Date(`${date}T00:00:00-03:00`).toISOString();
-  const dayEnd   = new Date(`${date}T23:59:59-03:00`).toISOString();
+  const { dayStart, dayEnd } = getBrasiliaDateBounds(date);
   const { data: tracks, error } = await supabase
     .from('radio_airplay').select('*')
     .eq('radio', radio)
@@ -562,7 +598,8 @@ const App = () => {
     doc.setFontSize(10); doc.setFont('helvetica', 'normal');
     const hourLabel = filters.hour === 'all' ? 'Todas as horas' : `${filters.hour}:00`;
     doc.text(`Data: ${filters.date} | Horario: ${hourLabel}`, 14, 28);
-    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 34);
+    // Usa timeZone explícito para garantir horário de Brasília no PDF
+    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`, 14, 34);
     let y = 45;
     if (chartRef.current && genreData.length > 0) {
       try { const html2canvas = (await import('https://esm.sh/html2canvas@1.4.1')).default; const canvas = await html2canvas(chartRef.current, { backgroundColor: '#ffffff', scale: 2 }); doc.addImage(canvas.toDataURL('image/png'), 'PNG', 14, y, 180, 90); y += 100; } catch {}
@@ -596,94 +633,149 @@ const App = () => {
                 Em Breve
               </span>
             </span>
-            <button onClick={() => doFetch(filters.radio, filters.date)} className="p-4 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-all hover:scale-105 active:scale-95"><RefreshCw className={refreshing ? 'animate-spin text-blue-600' : 'text-blue-600'} size={24} /></button>
+            <button onClick={() => doFetch(filters.radio, filters.date)} className="p-4 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-all hover:scale-105 active:scale-95"><RefreshCw className={`text-blue-600 ${refreshing ? 'animate-spin' : ''}`} size={20} /></button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
-        <div className="bg-white p-8 rounded-3xl shadow-xl mb-8 border border-slate-200">
-          <div className="flex items-center gap-3 mb-6"><Filter className="text-blue-600" size={24} /><h3 className="font-black text-xl text-slate-900 uppercase tracking-tight">Filtros</h3></div>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            {['Metropolitana FM', 'Antena 1'].map(r => (
+      {/* SELETOR DE RÁDIO */}
+      <div className="bg-white border-b border-slate-100 shadow-sm">
+        <div className="max-w-5xl mx-auto px-6 py-4">
+          <div className="flex gap-2 flex-wrap">
+            {['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
-                className={`py-5 rounded-2xl font-black text-sm uppercase transition-all transform hover:scale-105 active:scale-95 ${filters.radio===r?'bg-blue-600 text-white shadow-xl':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{r}</button>
+                className={`px-5 py-2.5 rounded-2xl font-black text-sm uppercase tracking-wide transition-all ${filters.radio === r ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600'}`}>
+                {r}
+              </button>
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            {['Forbes Radio', 'MIX Rio FM'].map(r => (
-              <button key={r} onClick={() => handleRadioChange(r)}
-                className={`py-5 rounded-2xl font-black text-sm uppercase transition-all transform hover:scale-105 active:scale-95 ${filters.radio===r?'bg-blue-600 text-white shadow-xl':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{r}</button>
-            ))}
-          </div>
-          <div className="relative mb-4">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input type="text" placeholder="Buscar artista ou música..."
-              className="w-full pl-14 pr-5 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 transition-all"
-              value={filters.search} onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        </div>
+      </div>
+
+      <main className="max-w-5xl mx-auto px-6 py-8">
+        {/* FILTROS */}
+        <div className="bg-white rounded-3xl shadow-xl p-6 mb-8 border border-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            {/* DATE PICKER */}
             <DatePicker
               value={filters.date}
               availableDates={availableDates}
               loadingDates={loadingDates}
-              onChange={d => { setFilters(f => ({ ...f, date: d, genero: '', hour: 'all' })); setVisibleCount(9); }}
+              onChange={d => { setFilters(f => ({ ...f, date: d })); setVisibleCount(9); }}
               onOpen={handleOpenDatePicker}
             />
-            <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.hour} onChange={e => setFilters(f => ({ ...f, hour: e.target.value }))}>
-              <option value="all">Todas as horas</option>
-              {hourOptions.map(h => <option key={h} value={h}>{h}:00</option>)}
-            </select>
-            <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.genero} onChange={e => setFilters(f => ({ ...f, genero: e.target.value }))}>
-              <option value="">Todos os gêneros</option>
-              {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}
-            </select>
-            <select className="p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-blue-300" value={filters.bpm} onChange={e => setFilters(f => ({ ...f, bpm: e.target.value }))}>
-              <option value="all">Todos os BPMs</option>
-              <option value="slow">🐢 Lento (&lt;100)</option>
-              <option value="moderate">🚶 Moderado (100-120)</option>
-              <option value="fast">🏃 Rápido (&gt;120)</option>
-            </select>
+            {/* HORA */}
+            <div className="relative">
+              <select value={filters.hour} onChange={e => { setFilters(f => ({ ...f, hour: e.target.value })); setVisibleCount(9); }}
+                className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer text-sm">
+                <option value="all">Todas as horas</option>
+                {hourOptions.map(h => <option key={h} value={h}>{h}:00 – {h}:59</option>)}
+              </select>
+              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
+            {/* GÊNERO */}
+            <div className="relative">
+              <select value={filters.genero} onChange={e => { setFilters(f => ({ ...f, genero: e.target.value })); setVisibleCount(9); }}
+                className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer text-sm">
+                <option value="">Todos os gêneros</option>
+                {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
+            {/* BPM */}
+            <div className="relative">
+              <select value={filters.bpm} onChange={e => { setFilters(f => ({ ...f, bpm: e.target.value })); setVisibleCount(9); }}
+                className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer text-sm">
+                <option value="all">Todos os BPMs</option>
+                <option value="slow">Lento (&lt; 100 BPM)</option>
+                <option value="moderate">Moderado (100–120 BPM)</option>
+                <option value="fast">Rápido (&gt; 120 BPM)</option>
+              </select>
+              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
           </div>
-          <button onClick={exportPDF} className="w-full mt-2 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95">
-            <Download size={20} /> Exportar Relatório PDF
+          {/* BUSCA */}
+          <div className="relative mb-4">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input type="text" placeholder="Buscar artista ou música..." value={filters.search}
+              onChange={e => { setFilters(f => ({ ...f, search: e.target.value })); setVisibleCount(9); }}
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 focus:outline-none transition-all text-sm" />
+          </div>
+          {/* EXPORT */}
+          <button onClick={exportPDF}
+            className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95">
+            <Download size={18} />
+            Exportar Relatório PDF
           </button>
         </div>
 
-        {filteredData.length > 0 && !filters.search && <NowPlayingCard track={filteredData[0]} />}
-        {!loading && <TopArtistsCard filteredData={filteredData} />}
-        <GenreChart data={genreData} chartRef={chartRef} />
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <Loader2 size={48} className="animate-spin text-blue-500" />
+            <p className="font-black text-slate-400 uppercase text-sm">Carregando playlist...</p>
+          </div>
+        ) : (
+          <>
+            {/* NOW PLAYING */}
+            {filteredData.length > 0 && <NowPlayingCard track={filteredData[0]} />}
 
-        <div className="space-y-3">
-          {loading ? (
-            <div className="py-32 text-center"><Loader2 className="animate-spin mx-auto text-blue-600 mb-6" size={48} /><p className="font-bold text-slate-500 text-sm uppercase tracking-wider">Carregando dados...</p></div>
-          ) : filteredData.length > 0 ? (
-            <>
-              <div className="flex items-center gap-3 mb-4"><Music className="text-blue-600" size={24} /><h3 className="font-black text-xl text-slate-900 uppercase">Últimas Execuções ({filteredData.length} músicas)</h3></div>
-              {filteredData.slice(filters.search ? 0 : 1, visibleCount + 1).map(track => {
-                const rc = repeatCountMap[`${track.artista}|||${track.musica}`];
-                return <MusicCard key={track.id} track={track} repeatCount={rc} />;
-              })}
-              {filteredData.length > visibleCount + 1 && (
-                <button onClick={() => setVisibleCount(c => c + 9)} className="w-full py-6 rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 font-black uppercase tracking-wider flex items-center justify-center gap-2 hover:scale-105 active:scale-95">
-                  <Plus size={20} /> Carregar Mais Músicas
-                </button>
-              )}
-            </>
-          ) : (
-            <div className="bg-white p-24 rounded-3xl text-center border-4 border-dashed border-slate-200"><Music className="mx-auto text-slate-300 mb-4" size={64} /><p className="font-black text-slate-400 uppercase text-lg tracking-wider">Nenhum registro encontrado</p></div>
-          )}
-        </div>
+            {/* TOP 5 */}
+            <TopArtistsCard filteredData={filteredData} />
+
+            {/* GÊNEROS */}
+            <GenreChart data={genreData} chartRef={chartRef} />
+
+            {/* CONTAGEM */}
+            {filteredData.length > 0 && (
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-100 p-2.5 rounded-xl"><Music size={20} className="text-blue-600" /></div>
+                  <div>
+                    <p className="font-black text-slate-800 text-lg">{filteredData.length} execuções</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase">{filters.radio} • {formatDateBR(filters.date)}</p>
+                  </div>
+                </div>
+                {filters.search || filters.genero || filters.hour !== 'all' || filters.bpm !== 'all' ? (
+                  <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', bpm: 'all' }))}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 font-black text-xs uppercase transition-all">
+                    <X size={14} /> Limpar filtros
+                  </button>
+                ) : null}
+              </div>
+            )}
+
+            {/* LISTA */}
+            {filteredData.length === 0 ? (
+              <div className="text-center py-32">
+                <div className="text-6xl mb-4">🎵</div>
+                <p className="font-black text-slate-300 uppercase text-xl">Nenhuma música encontrada</p>
+                <p className="text-slate-400 font-bold mt-2 text-sm">Tente outros filtros ou selecione outra data</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-3">
+                  {filteredData.slice(0, visibleCount).map(track => {
+                    const key = `${track.artista}|||${track.musica}`;
+                    return <MusicCard key={track.id} track={track} repeatCount={repeatCountMap[key]} />;
+                  })}
+                </div>
+                {visibleCount < filteredData.length && (
+                  <button onClick={() => setVisibleCount(v => v + 9)}
+                    className="w-full mt-6 py-4 bg-white border-2 border-blue-200 hover:border-blue-400 text-blue-600 rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all hover:shadow-lg">
+                    <Plus size={18} /> Carregar mais ({filteredData.length - visibleCount} restantes)
+                  </button>
+                )}
+              </>
+            )}
+          </>
+        )}
       </main>
     </div>
   );
 };
 
-(async () => {
-  const maxAttempts = 10; let attempts = 0;
-  while (attempts < maxAttempts) {
-    if ((window as any)._supabaseReady && (window as any)._supabaseClient) { createRoot(document.getElementById('root')!).render(<App />); return; }
-    await new Promise(r => setTimeout(r, 500)); attempts++;
-  }
-  document.getElementById('root')!.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#EF4444"><div style="text-align:center;color:white;padding:2rem"><h1 style="font-size:2rem;font-weight:900;margin-bottom:1rem">❌ Erro</h1><button onclick="location.reload()" style="background:white;color:#DC2626;padding:1rem 2rem;border:none;border-radius:.5rem;font-weight:bold;cursor:pointer">Tentar Novamente</button></div></div>`;
-})();
+const container = document.getElementById('root');
+if (container) {
+  const root = createRoot(container);
+  root.render(<App />);
+}
