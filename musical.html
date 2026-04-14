@@ -50,9 +50,11 @@
       console.log('[INIT] Sessão válida, configurando globals...');
       window._supabaseSession = session;
       window._supabaseClient = sbGuard;
-      window._supabaseReady = true; // ⭐ FLAG para index.tsx saber que pode iniciar
+      window._supabaseReady = true;
       
-      console.log('[INIT] ✅ Client pronto!');
+      console.log('[INIT] ✅ Client pronto, disparando evento...');
+      // Dispara evento para o React saber que pode iniciar o boot
+      window.dispatchEvent(new Event('supabase-ready'));
     })();
     </script>
     
