@@ -6,9 +6,7 @@
   <title>IA NO RÁDIO — Comparações</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet" />
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <style>
     body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%); min-height:100vh; }
@@ -25,7 +23,28 @@
 </head>
 <body>
 
-<!-- ======== HEADER ======== -->
+<!-- AUTH GUARD -->
+<script>
+(async () => {
+  const SUPABASE_URL = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
+
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  const { data: { session } } = await sb.auth.getSession();
+
+  if (!session) {
+    window.location.href = '/login?redirect=/comparacoes';
+    return;
+  }
+
+  window._supabaseSession = session;
+  window._supabaseClient = sb;
+  window._supabaseReady = true;
+  window.dispatchEvent(new Event('supabase-ready'));
+})();
+</script>
+
+<!-- HEADER -->
 <header class="bg-white border-b border-indigo-100 sticky top-0 z-50 shadow-sm">
   <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
     <div class="flex items-center gap-4">
@@ -39,7 +58,7 @@
       </div>
       <div>
         <h1 class="font-black text-xl tracking-tight text-slate-900 uppercase leading-none">Comparações</h1>
-        <p class="text-xs font-bold text-indigo-500 uppercase tracking-wider">Anlise lado a lado</p>
+        <p class="text-xs font-bold text-indigo-500 uppercase tracking-wider">Análise lado a lado</p>
       </div>
     </div>
     <div id="last-updated" class="text-xs font-bold text-slate-400 uppercase hidden sm:block"></div>
@@ -48,21 +67,15 @@
 
 <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
 
-  <!-- === PAINEL DE CONTROLE === -->
+  <!-- PAINEL DE CONTROLE -->
   <div class="bg-white rounded-2xl shadow-md p-6 mb-6">
-
-    <!-- SELEÇÃO DE RÁDIOS -->
     <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Selecione até 3 rádios para comparar</p>
     <div id="radio-chips" class="flex flex-wrap gap-2 mb-6"></div>
-
-    <!-- PERIOD + TABS -->
     <div class="flex flex-col sm:flex-row gap-4">
-      <!-- Período -->
       <div>
         <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Período</p>
         <div id="period-tabs" class="flex gap-2 flex-wrap"></div>
       </div>
-      <!-- Vista -->
       <div class="sm:ml-auto">
         <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Vista</p>
         <div class="flex gap-2">
@@ -74,28 +87,22 @@
     </div>
   </div>
 
-  <!-- === INDICADOR DE LOADING === -->
+  <!-- LOADING -->
   <div id="loading-banner" class="hidden flex items-center gap-3 bg-indigo-50 border border-indigo-200 rounded-2xl px-5 py-4 mb-6">
     <div class="spinner"></div>
     <span class="font-bold text-indigo-700 text-sm">Carregando dados...</span>
   </div>
 
-  <!-- === ÁREA DE CONTEÚDE === -->
+  <!-- CONTEÚDO -->
   <div id="content-area"></div>
 
 </div>
 
-<p class="text-center text-xs font-bold text-slate-300 uppercase tracking-widest py-8">
-  IA NO RÁDIO · Comparações
-</p>
+<p class="text-center text-xs font-bold text-slate-300 uppercase tracking-widest py-8">IA NO RÁDIO · Comparações</p>
 
-<!-- ============================================================
-     SCRIPT
-============================================================ -->
 <script>
-// ─ CONFIG
-const SUPABASE_URL = 'https://zfrclldopxbgtzpbgtmt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpmcm NsbGRvcHhiZ3R6cGJndG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDY3MjU2MDIsImV4cCI6MjAyMjMwMTYwMn0.supabase-anon';
+const SUPABASE_URL  = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
 
 const ALL_RADIOS = ['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM'];
 const COLORS = ['#4f46e5','#10b981','#f59e0b','#ef4444'];
@@ -112,27 +119,15 @@ const PERIODS = [
   { value:'30d',   label:'30 dias' },
 ];
 
-// ─ STATE
-let supabase = null;
 let selectedRadios = ['Metropolitana FM','Antena 1'];
 let selectedPeriod = '7d';
 let currentView = 'artistas';
 let chartInstances = {};
 
-// ─ INIT SUPABASE
-try {
-  const sbModule = window.supabase || (typeof createClient !== 'undefined' ? { createClient } : null);
-  if (sbModule && sbModule.createClient) {
-    supabase = sbModule.createClient(SUPABASE_URL, SUPABASE_KEY);
-  }
-} catch(e) { console.warn('Supabase init error', e); }
-
-// Tenta pegar o cliente do index.html (caso exista na window)
 function getClient() {
-  return supabase || (window._supabaseClient) || null;
+  return window._supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 }
 
-// ─ DOM SETUP
 function buildRadioChips() {
   const wrap = document.getElementById('radio-chips');
   wrap.innerHTML = '';
@@ -140,8 +135,7 @@ function buildRadioChips() {
     const isActive = selectedRadios.includes(r);
     const btn = document.createElement('button');
     btn.className = `px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all ${ isActive ? 'radio-chip-active' : 'radio-chip-inactive' }`;
-    btn.style.borderColor = isActive ? COLORS[ALL_RADIOS.indexOf(r)] : '';
-    btn.style.backgroundColor = isActive ? COLORS[ALL_RADIOS.indexOf(r)] : '';
+    if (isActive) { btn.style.backgroundColor = COLORS[i]; btn.style.borderColor = COLORS[i]; }
     btn.innerHTML = `<span class="mr-1.5 inline-block w-2.5 h-2.5 rounded-full" style="background:${COLORS[i]}"></span>${r}`;
     btn.onclick = () => toggleRadio(r);
     wrap.appendChild(btn);
@@ -161,13 +155,12 @@ function buildPeriodTabs() {
   });
 }
 
-// ─ INTERACTIONS
 function toggleRadio(r) {
   if (selectedRadios.includes(r)) {
-    if (selectedRadios.length <= 1) return; // mínimo 1
+    if (selectedRadios.length <= 1) return;
     selectedRadios = selectedRadios.filter(x => x !== r);
   } else {
-    if (selectedRadios.length >= 3) return; // máximo 3
+    if (selectedRadios.length >= 3) return;
     selectedRadios.push(r);
   }
   buildRadioChips();
@@ -183,13 +176,12 @@ function setPeriod(v) {
 function setView(v) {
   currentView = v;
   ['artistas','generos','horarios'].forEach(id => {
-    const el = document.getElementById(`view-${id}`);
-    el.className = `${ v === id ? 'tab-active' : 'tab-inactive' } px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all`;
+    document.getElementById(`view-${id}`).className =
+      `${ v === id ? 'tab-active' : 'tab-inactive' } px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all`;
   });
   loadAndRender();
 }
 
-// ─ DATA
 function getCutoff() {
   const now = new Date();
   if (selectedPeriod === 'today') {
@@ -204,7 +196,6 @@ function getCutoff() {
 
 async function fetchRadioData(radio) {
   const client = getClient();
-  if (!client) return [];
   const cutoff = getCutoff();
   const { data, error } = await client
     .from('radio_airplay')
@@ -216,59 +207,38 @@ async function fetchRadioData(radio) {
   return data || [];
 }
 
-// ─ LOAD + RENDER
 async function loadAndRender() {
   const loading = document.getElementById('loading-banner');
   const area    = document.getElementById('content-area');
-  loading.classList.remove('hidden');
-  loading.classList.add('flex');
+  loading.classList.remove('hidden'); loading.classList.add('flex');
   area.innerHTML = '';
-
-  // Limpa charts anteriores
   Object.values(chartInstances).forEach(c => c.destroy());
   chartInstances = {};
-
   try {
     const datasets = {};
-    await Promise.all(selectedRadios.map(async r => {
-      datasets[r] = await fetchRadioData(r);
-    }));
-
-    // Atualiza timestamp
+    await Promise.all(selectedRadios.map(async r => { datasets[r] = await fetchRadioData(r); }));
     const upd = document.getElementById('last-updated');
     upd.textContent = `Atualizado: ${new Date().toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo'})}`;
     upd.classList.remove('hidden');
-
     if (currentView === 'artistas') renderArtistas(datasets, area);
     else if (currentView === 'generos') renderGeneros(datasets, area);
     else renderHorarios(datasets, area);
-
   } catch(e) {
     area.innerHTML = `<div class="bg-red-50 border border-red-200 rounded-2xl p-6 text-center"><p class="font-black text-red-600">Erro ao carregar dados</p><p class="text-sm text-red-400 mt-1">${e.message}</p></div>`;
   } finally {
-    loading.classList.add('hidden');
-    loading.classList.remove('flex');
+    loading.classList.add('hidden'); loading.classList.remove('flex');
   }
 }
 
-// ─ VIEW: TOP ARTISTAS
 function renderArtistas(datasets, area) {
-  // Calcula top artistas por rádio
   const tops = {};
   selectedRadios.forEach(r => {
     const counts = {};
-    datasets[r].forEach(t => {
-      if (!counts[t.artista]) counts[t.artista] = 0;
-      counts[t.artista]++;
-    });
+    datasets[r].forEach(t => { counts[t.artista] = (counts[t.artista]||0) + 1; });
     tops[r] = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10);
   });
-
-  // Max value para normalizar barras
-  const allCounts = Object.values(tops).flatMap(arr => arr.map(x=>x[1]));
-  const maxVal = Math.max(...allCounts, 1);
-
-  const html = `
+  const maxVal = Math.max(...Object.values(tops).flatMap(arr => arr.map(x=>x[1])), 1);
+  area.innerHTML = `
     <div class="grid grid-cols-1 md:grid-cols-${selectedRadios.length} gap-5">
       ${selectedRadios.map((r,i) => `
         <div class="bg-white rounded-2xl shadow-md p-5">
@@ -285,7 +255,7 @@ function renderArtistas(datasets, area) {
               <div class="mb-3">
                 <div class="flex items-center justify-between mb-1">
                   <div class="flex items-center gap-2">
-                    <span class="text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center text-white"
+                    <span class="text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center"
                       style="background:${ idx===0?'#f59e0b':idx===1?'#94a3b8':idx===2?'#b45309':'#e2e8f0'}; color:${ idx < 3 ? '#fff' : '#64748b'}">${idx+1}</span>
                     <span class="text-sm font-black text-slate-700 truncate max-w-[130px]" title="${artista}">${artista}</span>
                   </div>
@@ -302,10 +272,8 @@ function renderArtistas(datasets, area) {
     </div>
     ${ selectedRadios.length >= 2 ? renderIntersection(tops) : '' }
   `;
-  area.innerHTML = html;
 }
 
-// artistas em comum entre as rádios selecionadas
 function renderIntersection(tops) {
   const sets = selectedRadios.map(r => new Set(tops[r].map(x=>x[0])));
   let common = [...sets[0]];
@@ -316,27 +284,21 @@ function renderIntersection(tops) {
     </div>`;
   return `
     <div class="mt-5 bg-indigo-50 border border-indigo-200 rounded-2xl p-5">
-      <p class="font-black text-indigo-700 uppercase text-sm mb-3">🎯 ${common.length} artista${common.length > 1 ? 's' : ''} em comum entre as rádios selecionadas</p>
+      <p class="font-black text-indigo-700 uppercase text-sm mb-3">🎯 ${common.length} artista${common.length>1?'s':''} em comum entre as rádios selecionadas</p>
       <div class="flex flex-wrap gap-2">
         ${ common.map(a => `<span class="bg-white border border-indigo-200 text-indigo-700 font-black text-xs px-3 py-1.5 rounded-full shadow-sm">${a}</span>`).join('') }
       </div>
     </div>`;
 }
 
-// ─ VIEW: GÊENEROS
 function renderGeneros(datasets, area) {
   const canvasIds = selectedRadios.map((_,i) => `chart-genero-${i}`);
-
   area.innerHTML = `
     <div class="grid grid-cols-1 md:grid-cols-${selectedRadios.length} gap-5">
       ${selectedRadios.map((r,i) => {
         const counts = {};
-        datasets[r].forEach(t => {
-          const g = t.genero || 'Desconhecido';
-          if (g === 'Desconhecido') return;
-          counts[g] = (counts[g] || 0) + 1;
-        });
-        const total = Object.values(counts).reduce((a,b)=>a+b,0);
+        datasets[r].forEach(t => { const g = t.genero||'Desconhecido'; if(g==='Desconhecido')return; counts[g]=(counts[g]||0)+1; });
+        const total = Object.values(counts).reduce((a,b)=>a+b,0)||1;
         const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
         return `
           <div class="bg-white rounded-2xl shadow-md p-5">
@@ -354,54 +316,34 @@ function renderGeneros(datasets, area) {
                 </div>
               `).join('') }
             </div>
-          </div>
-        `;
+          </div>`;
       }).join('')}
     </div>
   `;
-
-  // Desenha os charts
   selectedRadios.forEach((r,i) => {
     const counts = {};
-    datasets[r].forEach(t => {
-      const g = t.genero || 'Desconhecido';
-      if (g === 'Desconhecido') return;
-      counts[g] = (counts[g] || 0) + 1;
-    });
+    datasets[r].forEach(t => { const g=t.genero||'Desconhecido'; if(g==='Desconhecido')return; counts[g]=(counts[g]||0)+1; });
     const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
-    const labels = sorted.map(x=>x[0]);
-    const values = sorted.map(x=>x[1]);
-    const bgColors = labels.map(l => GENRE_COLORS_MAP[l] || '#94a3b8');
-
     const ctx = document.getElementById(canvasIds[i]);
-    if (!ctx || !values.length) return;
+    if (!ctx || !sorted.length) return;
     chartInstances[canvasIds[i]] = new Chart(ctx, {
       type: 'doughnut',
-      data: { labels, datasets: [{ data: values, backgroundColor: bgColors, borderWidth: 2, borderColor: '#fff' }] },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: ctx => ` ${ctx.raw} músicas` } }
-        }
-      }
+      data: { labels: sorted.map(x=>x[0]), datasets: [{ data: sorted.map(x=>x[1]), backgroundColor: sorted.map(x=>GENRE_COLORS_MAP[x[0]]||'#94a3b8'), borderWidth:2, borderColor:'#fff' }] },
+      options: { responsive:true, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw} músicas`}} } }
     });
   });
 }
 
-// ─ VIEW: POR HORÁRIO
 function renderHorarios(datasets, area) {
   const hours = Array.from({length:24},(_,i)=>String(i).padStart(2,'0'));
-
   const seriesData = selectedRadios.map(r => {
     const map = {};
     datasets[r].forEach(t => {
-      const h = new Date(t.tocou_em).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',hour12:false}).split(',')[1]?.trim().substring(0,2) || '00';
-      map[h] = (map[h] || 0) + 1;
+      const h = new Date(t.tocou_em).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',hour12:false}).split(',')[1]?.trim().substring(0,2)||'00';
+      map[h] = (map[h]||0)+1;
     });
-    return hours.map(h => map[h] || 0);
+    return hours.map(h => map[h]||0);
   });
-
   area.innerHTML = `
     <div class="bg-white rounded-2xl shadow-md p-6">
       <p class="font-black text-slate-700 uppercase text-sm mb-1">Execuções por Horário</p>
@@ -416,60 +358,39 @@ function renderHorarios(datasets, area) {
       </div>
     </div>
   `;
-
   const ctx = document.getElementById('chart-horarios');
   if (!ctx) return;
   chartInstances['horarios'] = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: hours.map(h => `${h}h`),
+      labels: hours.map(h=>`${h}h`),
       datasets: selectedRadios.map((r,i) => ({
-        label: r,
-        data: seriesData[i],
+        label: r, data: seriesData[i],
         borderColor: COLORS[ALL_RADIOS.indexOf(r)],
-        backgroundColor: COLORS[ALL_RADIOS.indexOf(r)] + '22',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 3,
-        pointHoverRadius: 6,
-        borderWidth: 2.5
+        backgroundColor: COLORS[ALL_RADIOS.indexOf(r)]+'22',
+        fill:true, tension:0.4, pointRadius:3, pointHoverRadius:6, borderWidth:2.5
       }))
     },
     options: {
-      responsive: true,
-      interaction: { mode:'index', intersect:false },
-      plugins: { legend:{ display:false } },
-      scales: {
-        x: { grid:{ display:false }, ticks:{ font:{ weight:'bold', size:11 } } },
-        y: { grid:{ color:'#f1f5f9' }, ticks:{ font:{ weight:'bold', size:11 } } }
+      responsive:true, interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{weight:'bold',size:11}}},
+        y:{grid:{color:'#f1f5f9'},ticks:{font:{weight:'bold',size:11}}}
       }
     }
   });
 }
 
-// ─ INICIALIZAÇÃO
 function init() {
-  // Tenta conectar ao supabase do index.html via evento
+  buildRadioChips();
+  buildPeriodTabs();
   if (window._supabaseReady) {
-    buildRadioChips();
-    buildPeriodTabs();
     loadAndRender();
-    return;
+  } else {
+    window.addEventListener('supabase-ready', loadAndRender);
+    setTimeout(() => { if (!window._supabaseReady) loadAndRender(); }, 1500);
   }
-  window.addEventListener('supabase-ready', () => {
-    buildRadioChips();
-    buildPeriodTabs();
-    loadAndRender();
-  });
-
-  // Inicializa próprio Supabase se o do pai não estiver disponível
-  setTimeout(() => {
-    if (!window._supabaseReady) {
-      buildRadioChips();
-      buildPeriodTabs();
-      loadAndRender();
-    }
-  }, 1200);
 }
 
 document.addEventListener('DOMContentLoaded', init);
