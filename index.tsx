@@ -76,7 +76,7 @@ const GENRE_COLORS: Record<string, string> = {
 };
 
 const ytURL = (artista: string, musica: string) =>
-  `https://www.youtube.com/results?search_query=${encodeURIComponent(`"${artista}" "${musica}"`)}`;
+  `https://www.youtube.com/results?search_query=${encodeURIComponent(`"${artista}" "${musica}"`)}` ;
 
 // ─────────────────────────────────────────────────────────────
 // parseTocouEm — UTC → Brasília
@@ -430,7 +430,6 @@ const TOP_PERIOD_OPTIONS: { value: TopPeriod; label: string; shortLabel: string;
 function getPeriodCutoff(period: TopPeriod): string {
   const now = new Date();
   if (period === 'today') {
-    // meia-noite de hoje em Brasília → UTC
     const today = getTodayBrasilia();
     return brasiliaLocalToUTC(`${today}T00:00:00`);
   }
@@ -481,7 +480,6 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
 
   const fetchPeriodData = useCallback(async (r: string, p: TopPeriod) => {
     const cacheKey = `${r}___${p}`;
-    // 'today' nunca usa cache (dados ao vivo)
     if (p !== 'today' && topArtistsCache[cacheKey]) {
       setPeriodData(topArtistsCache[cacheKey]);
       return;
@@ -495,7 +493,6 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
     finally { setLoadingPeriod(false); }
   }, []);
 
-  // Carrega ao montar e quando radio/period mudar
   useEffect(() => {
     setVisibleTop(TOP_PER_COL);
     fetchPeriodData(radio, period);
@@ -556,7 +553,6 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
         />
       )}
       <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-8 rounded-3xl shadow-xl mb-8 border border-amber-100">
-        {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-5">
           <div className="flex items-center gap-4">
             <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg">
@@ -574,7 +570,6 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
           )}
         </div>
 
-        {/* Seletor de período */}
         <div className="flex gap-2 flex-wrap mb-6">
           {TOP_PERIOD_OPTIONS.map(opt => (
             <button
@@ -592,7 +587,6 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
           ))}
         </div>
 
-        {/* Grid de artistas */}
         {loadingPeriod ? (
           <div className="flex items-center justify-center gap-3 py-12 text-amber-500">
             <Loader2 size={28} className="animate-spin" />
@@ -1076,13 +1070,16 @@ const App = () => {
 
       <header className="bg-white border-b border-blue-100 sticky top-0 z-50 shadow-sm">
         <div className="max-w-5xl mx-auto px-6 h-24 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-lg"><Radio size={32} className="text-white" /></div>
+          {/* Logo + título clicáveis → volta para a home */}
+          <a href="/" className="flex items-center gap-4 group" title="Voltar para a home">
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all">
+              <Radio size={32} className="text-white" />
+            </div>
             <div>
-              <h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1>
+              <h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none group-hover:text-blue-600 transition-colors">IA NO RÁDIO</h1>
               <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Monitoramento Musical</p>
             </div>
-          </div>
+          </a>
           <div className="flex items-center gap-3">
             <span
               title="Monitoramento Comercial em breve"
@@ -1175,7 +1172,6 @@ const App = () => {
           <>
             {filteredData.length > 0 && <NowPlayingCard track={filteredData[0]} />}
 
-            {/* Top Artistas — seletor de período independente */}
             <TopArtistsCard radio={filters.radio} />
 
             <GenreChart data={genreData} chartRef={chartRef} />
