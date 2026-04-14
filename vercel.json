@@ -26,6 +26,10 @@
       "destination": "/comparacao.html"
     },
     {
+      "source": "/comparacoes",
+      "destination": "/comparacoes.html"
+    },
+    {
       "source": "/",
       "destination": "/index.html"
     }
