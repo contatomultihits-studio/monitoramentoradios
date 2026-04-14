@@ -13,12 +13,12 @@
     .font-black { font-weight:900 !important; }
     .tab-active  { background:#4f46e5; color:#fff; box-shadow:0 4px 14px rgba(79,70,229,0.35); }
     .tab-inactive { background:#fff; color:#64748b; border:2px solid #e2e8f0; }
-    .radio-chip-active   { background:#4f46e5; color:#fff; }
+    .radio-chip-active   { color:#fff; }
     .radio-chip-inactive { background:#fff; color:#64748b; border:2px solid #e2e8f0; }
     .spinner { border:3px solid #e2e8f0; border-top-color:#4f46e5; border-radius:50%; width:28px; height:28px; animation:spin .7s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
     .bar-fill { transition: width 0.7s cubic-bezier(.4,0,.2,1); }
-    canvas { max-height: 280px; }
+    canvas { max-height: 260px; }
   </style>
 </head>
 <body>
@@ -28,15 +28,9 @@
 (async () => {
   const SUPABASE_URL = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
-
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
   const { data: { session } } = await sb.auth.getSession();
-
-  if (!session) {
-    window.location.href = '/login?redirect=/comparacoes';
-    return;
-  }
-
+  if (!session) { window.location.href = '/login?redirect=/comparacoes'; return; }
   window._supabaseSession = session;
   window._supabaseClient = sb;
   window._supabaseReady = true;
@@ -81,7 +75,6 @@
         <div class="flex gap-2">
           <button onclick="setView('artistas')" id="view-artistas" class="tab-active px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all">Top Artistas</button>
           <button onclick="setView('generos')"  id="view-generos"  class="tab-inactive px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all">Gêneros</button>
-          <button onclick="setView('horarios')" id="view-horarios" class="tab-inactive px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all">Por Horário</button>
         </div>
       </div>
     </div>
@@ -135,8 +128,8 @@ function buildRadioChips() {
     const isActive = selectedRadios.includes(r);
     const btn = document.createElement('button');
     btn.className = `px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all ${ isActive ? 'radio-chip-active' : 'radio-chip-inactive' }`;
-    if (isActive) { btn.style.backgroundColor = COLORS[i]; btn.style.borderColor = COLORS[i]; }
-    btn.innerHTML = `<span class="mr-1.5 inline-block w-2.5 h-2.5 rounded-full" style="background:${COLORS[i]}"></span>${r}`;
+    if (isActive) { btn.style.backgroundColor = COLORS[i]; }
+    btn.innerHTML = `<span class="mr-1.5 inline-block w-2.5 h-2.5 rounded-full" style="background:${isActive ? '#fff' : COLORS[i]}"></span>${r}`;
     btn.onclick = () => toggleRadio(r);
     wrap.appendChild(btn);
   });
@@ -175,7 +168,7 @@ function setPeriod(v) {
 
 function setView(v) {
   currentView = v;
-  ['artistas','generos','horarios'].forEach(id => {
+  ['artistas','generos'].forEach(id => {
     document.getElementById(`view-${id}`).className =
       `${ v === id ? 'tab-active' : 'tab-inactive' } px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all`;
   });
@@ -221,8 +214,7 @@ async function loadAndRender() {
     upd.textContent = `Atualizado: ${new Date().toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo'})}`;
     upd.classList.remove('hidden');
     if (currentView === 'artistas') renderArtistas(datasets, area);
-    else if (currentView === 'generos') renderGeneros(datasets, area);
-    else renderHorarios(datasets, area);
+    else renderGeneros(datasets, area);
   } catch(e) {
     area.innerHTML = `<div class="bg-red-50 border border-red-200 rounded-2xl p-6 text-center"><p class="font-black text-red-600">Erro ao carregar dados</p><p class="text-sm text-red-400 mt-1">${e.message}</p></div>`;
   } finally {
@@ -230,6 +222,7 @@ async function loadAndRender() {
   }
 }
 
+// ── VIEW: TOP ARTISTAS ──
 function renderArtistas(datasets, area) {
   const tops = {};
   selectedRadios.forEach(r => {
@@ -238,6 +231,7 @@ function renderArtistas(datasets, area) {
     tops[r] = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10);
   });
   const maxVal = Math.max(...Object.values(tops).flatMap(arr => arr.map(x=>x[1])), 1);
+
   area.innerHTML = `
     <div class="grid grid-cols-1 md:grid-cols-${selectedRadios.length} gap-5">
       ${selectedRadios.map((r,i) => `
@@ -291,28 +285,33 @@ function renderIntersection(tops) {
     </div>`;
 }
 
+// ── VIEW: GÊNEROS (% no tooltip e legenda) ──
 function renderGeneros(datasets, area) {
   const canvasIds = selectedRadios.map((_,i) => `chart-genero-${i}`);
+
   area.innerHTML = `
     <div class="grid grid-cols-1 md:grid-cols-${selectedRadios.length} gap-5">
       ${selectedRadios.map((r,i) => {
         const counts = {};
-        datasets[r].forEach(t => { const g = t.genero||'Desconhecido'; if(g==='Desconhecido')return; counts[g]=(counts[g]||0)+1; });
+        datasets[r].forEach(t => { const g = t.genero || 'Desconhecido'; if(g==='Desconhecido')return; counts[g]=(counts[g]||0)+1; });
         const total = Object.values(counts).reduce((a,b)=>a+b,0)||1;
         const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
         return `
           <div class="bg-white rounded-2xl shadow-md p-5">
             <div class="flex items-center gap-3 mb-4">
               <span class="w-3.5 h-3.5 rounded-full" style="background:${COLORS[ALL_RADIOS.indexOf(r)]}"></span>
-              <p class="font-black text-slate-800 text-sm uppercase">${r}</p>
+              <div>
+                <p class="font-black text-slate-800 text-sm uppercase">${r}</p>
+                <p class="text-xs font-bold text-slate-400">${datasets[r].length} execuções no período</p>
+              </div>
             </div>
             <canvas id="${canvasIds[i]}" height="220"></canvas>
             <div class="mt-4 space-y-2">
-              ${ sorted.slice(0,6).map(([g,c]) => `
+              ${ sorted.slice(0,8).map(([g,c]) => `
                 <div class="flex items-center gap-2">
                   <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:${GENRE_COLORS_MAP[g]||'#94a3b8'}"></span>
                   <span class="text-xs font-black text-slate-700 flex-1 truncate">${g}</span>
-                  <span class="text-xs font-bold text-slate-400">${((c/total)*100).toFixed(0)}%</span>
+                  <span class="text-xs font-black px-2 py-0.5 rounded-full" style="background:${GENRE_COLORS_MAP[g]||'#94a3b8'}22; color:${GENRE_COLORS_MAP[g]||'#64748b'}">${((c/total)*100).toFixed(1)}%</span>
                 </div>
               `).join('') }
             </div>
@@ -320,65 +319,32 @@ function renderGeneros(datasets, area) {
       }).join('')}
     </div>
   `;
+
   selectedRadios.forEach((r,i) => {
     const counts = {};
     datasets[r].forEach(t => { const g=t.genero||'Desconhecido'; if(g==='Desconhecido')return; counts[g]=(counts[g]||0)+1; });
+    const total = Object.values(counts).reduce((a,b)=>a+b,0)||1;
     const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
     const ctx = document.getElementById(canvasIds[i]);
     if (!ctx || !sorted.length) return;
     chartInstances[canvasIds[i]] = new Chart(ctx, {
       type: 'doughnut',
-      data: { labels: sorted.map(x=>x[0]), datasets: [{ data: sorted.map(x=>x[1]), backgroundColor: sorted.map(x=>GENRE_COLORS_MAP[x[0]]||'#94a3b8'), borderWidth:2, borderColor:'#fff' }] },
-      options: { responsive:true, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw} músicas`}} } }
-    });
-  });
-}
-
-function renderHorarios(datasets, area) {
-  const hours = Array.from({length:24},(_,i)=>String(i).padStart(2,'0'));
-  const seriesData = selectedRadios.map(r => {
-    const map = {};
-    datasets[r].forEach(t => {
-      const h = new Date(t.tocou_em).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',hour12:false}).split(',')[1]?.trim().substring(0,2)||'00';
-      map[h] = (map[h]||0)+1;
-    });
-    return hours.map(h => map[h]||0);
-  });
-  area.innerHTML = `
-    <div class="bg-white rounded-2xl shadow-md p-6">
-      <p class="font-black text-slate-700 uppercase text-sm mb-1">Execuções por Horário</p>
-      <p class="text-xs font-bold text-slate-400 mb-5">Distribuição ao longo do dia (horário de Brasília)</p>
-      <canvas id="chart-horarios" height="160"></canvas>
-      <div class="flex flex-wrap gap-4 mt-5">
-        ${ selectedRadios.map((r,i) => `
-          <span class="flex items-center gap-2 text-xs font-black text-slate-600">
-            <span class="w-4 h-1 rounded" style="background:${COLORS[ALL_RADIOS.indexOf(r)]}"></span>${r}
-          </span>
-        `).join('') }
-      </div>
-    </div>
-  `;
-  const ctx = document.getElementById('chart-horarios');
-  if (!ctx) return;
-  chartInstances['horarios'] = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: hours.map(h=>`${h}h`),
-      datasets: selectedRadios.map((r,i) => ({
-        label: r, data: seriesData[i],
-        borderColor: COLORS[ALL_RADIOS.indexOf(r)],
-        backgroundColor: COLORS[ALL_RADIOS.indexOf(r)]+'22',
-        fill:true, tension:0.4, pointRadius:3, pointHoverRadius:6, borderWidth:2.5
-      }))
-    },
-    options: {
-      responsive:true, interaction:{mode:'index',intersect:false},
-      plugins:{legend:{display:false}},
-      scales:{
-        x:{grid:{display:false},ticks:{font:{weight:'bold',size:11}}},
-        y:{grid:{color:'#f1f5f9'},ticks:{font:{weight:'bold',size:11}}}
+      data: {
+        labels: sorted.map(x=>x[0]),
+        datasets: [{ data: sorted.map(x=>x[1]), backgroundColor: sorted.map(x=>GENRE_COLORS_MAP[x[0]]||'#94a3b8'), borderWidth:2, borderColor:'#fff' }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${((ctx.raw/total)*100).toFixed(1)}%  (${ctx.raw} músicas)`
+            }
+          }
+        }
       }
-    }
+    });
   });
 }
 
