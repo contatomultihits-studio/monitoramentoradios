@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IA NO RÁDIO — Comparações</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet" />
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%); min-height:100vh; }
+    .font-black { font-weight:900 !important; }
+    .tab-active  { background:#4f46e5; color:#fff; box-shadow:0 4px 14px rgba(79,70,229,0.35); }
+    .tab-inactive { background:#fff; color:#64748b; border:2px solid #e2e8f0; }
+    .radio-chip-active   { background:#4f46e5; color:#fff; }
+    .radio-chip-inactive { background:#fff; color:#64748b; border:2px solid #e2e8f0; }
+    .spinner { border:3px solid #e2e8f0; border-top-color:#4f46e5; border-radius:50%; width:28px; height:28px; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .bar-fill { transition: width 0.7s cubic-bezier(.4,0,.2,1); }
+    canvas { max-height: 280px; }
+  </style>
+</head>
+<body>
+
+<!-- ======== HEADER ======== -->
+<header class="bg-white border-b border-indigo-100 sticky top-0 z-50 shadow-sm">
+  <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <a href="/" class="p-2 rounded-xl hover:bg-slate-100 transition-all" title="Voltar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </a>
+      <div class="bg-gradient-to-br from-indigo-500 to-violet-600 p-2.5 rounded-xl shadow-md">
+        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="4" height="14" rx="1"/><rect x="9" y="3" width="4" height="18" rx="1"/><rect x="16" y="10" width="4" height="11" rx="1"/><line x1="2" y1="22" x2="22" y2="22"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="font-black text-xl tracking-tight text-slate-900 uppercase leading-none">Comparações</h1>
+        <p class="text-xs font-bold text-indigo-500 uppercase tracking-wider">Anlise lado a lado</p>
+      </div>
+    </div>
+    <div id="last-updated" class="text-xs font-bold text-slate-400 uppercase hidden sm:block"></div>
+  </div>
+</header>
+
+<div class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+
+  <!-- === PAINEL DE CONTROLE === -->
+  <div class="bg-white rounded-2xl shadow-md p-6 mb-6">
+
+    <!-- SELEÇÃO DE RÁDIOS -->
+    <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Selecione até 3 rádios para comparar</p>
+    <div id="radio-chips" class="flex flex-wrap gap-2 mb-6"></div>
+
+    <!-- PERIOD + TABS -->
+    <div class="flex flex-col sm:flex-row gap-4">
+      <!-- Período -->
+      <div>
+        <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Período</p>
+        <div id="period-tabs" class="flex gap-2 flex-wrap"></div>
+      </div>
+      <!-- Vista -->
+      <div class="sm:ml-auto">
+        <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Vista</p>
+        <div class="flex gap-2">
+          <button onclick="setView('artistas')" id="view-artistas" class="tab-active px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all">Top Artistas</button>
+          <button onclick="setView('generos')"  id="view-generos"  class="tab-inactive px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all">Gêneros</button>
+          <button onclick="setView('horarios')" id="view-horarios" class="tab-inactive px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all">Por Horário</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === INDICADOR DE LOADING === -->
+  <div id="loading-banner" class="hidden flex items-center gap-3 bg-indigo-50 border border-indigo-200 rounded-2xl px-5 py-4 mb-6">
+    <div class="spinner"></div>
+    <span class="font-bold text-indigo-700 text-sm">Carregando dados...</span>
+  </div>
+
+  <!-- === ÁREA DE CONTEÚDE === -->
+  <div id="content-area"></div>
+
+</div>
+
+<p class="text-center text-xs font-bold text-slate-300 uppercase tracking-widest py-8">
+  IA NO RÁDIO · Comparações
+</p>
+
+<!-- ============================================================
+     SCRIPT
+============================================================ -->
+<script>
+// ─ CONFIG
+const SUPABASE_URL = 'https://zfrclldopxbgtzpbgtmt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpmcm NsbGRvcHhiZ3R6cGJndG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDY3MjU2MDIsImV4cCI6MjAyMjMwMTYwMn0.supabase-anon';
+
+const ALL_RADIOS = ['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM'];
+const COLORS = ['#4f46e5','#10b981','#f59e0b','#ef4444'];
+const GENRE_COLORS_MAP = {
+  'Sertanejo':'#3B82F6','Pop':'#0EA5E9','Rock':'#1E40AF','MPB':'#60A5FA',
+  'Funk':'#2563EB','Pagode':'#0284C7','Rap/Hip Hop':'#1D4ED8',
+  'Eletrônica':'#06B6D4','Gospel':'#7DD3FC','Samba':'#1E3A8A',
+  'Forró':'#93C5FD','Reggae':'#34D399','Jazz':'#1e293b',
+  'Desconhecido':'#D3D3D3','Outros':'#B8B8B8'
+};
+const PERIODS = [
+  { value:'today', label:'Hoje' },
+  { value:'7d',    label:'7 dias' },
+  { value:'30d',   label:'30 dias' },
+];
+
+// ─ STATE
+let supabase = null;
+let selectedRadios = ['Metropolitana FM','Antena 1'];
+let selectedPeriod = '7d';
+let currentView = 'artistas';
+let chartInstances = {};
+
+// ─ INIT SUPABASE
+try {
+  const sbModule = window.supabase || (typeof createClient !== 'undefined' ? { createClient } : null);
+  if (sbModule && sbModule.createClient) {
+    supabase = sbModule.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+} catch(e) { console.warn('Supabase init error', e); }
+
+// Tenta pegar o cliente do index.html (caso exista na window)
+function getClient() {
+  return supabase || (window._supabaseClient) || null;
+}
+
+// ─ DOM SETUP
+function buildRadioChips() {
+  const wrap = document.getElementById('radio-chips');
+  wrap.innerHTML = '';
+  ALL_RADIOS.forEach((r, i) => {
+    const isActive = selectedRadios.includes(r);
+    const btn = document.createElement('button');
+    btn.className = `px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all ${ isActive ? 'radio-chip-active' : 'radio-chip-inactive' }`;
+    btn.style.borderColor = isActive ? COLORS[ALL_RADIOS.indexOf(r)] : '';
+    btn.style.backgroundColor = isActive ? COLORS[ALL_RADIOS.indexOf(r)] : '';
+    btn.innerHTML = `<span class="mr-1.5 inline-block w-2.5 h-2.5 rounded-full" style="background:${COLORS[i]}"></span>${r}`;
+    btn.onclick = () => toggleRadio(r);
+    wrap.appendChild(btn);
+  });
+}
+
+function buildPeriodTabs() {
+  const wrap = document.getElementById('period-tabs');
+  wrap.innerHTML = '';
+  PERIODS.forEach(p => {
+    const btn = document.createElement('button');
+    btn.id = `period-${p.value}`;
+    btn.className = `px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all ${ selectedPeriod === p.value ? 'tab-active' : 'tab-inactive' }`;
+    btn.textContent = p.label;
+    btn.onclick = () => setPeriod(p.value);
+    wrap.appendChild(btn);
+  });
+}
+
+// ─ INTERACTIONS
+function toggleRadio(r) {
+  if (selectedRadios.includes(r)) {
+    if (selectedRadios.length <= 1) return; // mínimo 1
+    selectedRadios = selectedRadios.filter(x => x !== r);
+  } else {
+    if (selectedRadios.length >= 3) return; // máximo 3
+    selectedRadios.push(r);
+  }
+  buildRadioChips();
+  loadAndRender();
+}
+
+function setPeriod(v) {
+  selectedPeriod = v;
+  buildPeriodTabs();
+  loadAndRender();
+}
+
+function setView(v) {
+  currentView = v;
+  ['artistas','generos','horarios'].forEach(id => {
+    const el = document.getElementById(`view-${id}`);
+    el.className = `${ v === id ? 'tab-active' : 'tab-inactive' } px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wide transition-all`;
+  });
+  loadAndRender();
+}
+
+// ─ DATA
+function getCutoff() {
+  const now = new Date();
+  if (selectedPeriod === 'today') {
+    const s = now.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'});
+    const [d,m,y] = s.split('/');
+    return new Date(`${y}-${m}-${d}T00:00:00-03:00`).toISOString();
+  }
+  const days = selectedPeriod === '7d' ? 7 : 30;
+  const c = new Date(now); c.setDate(now.getDate() - days);
+  return c.toISOString();
+}
+
+async function fetchRadioData(radio) {
+  const client = getClient();
+  if (!client) return [];
+  const cutoff = getCutoff();
+  const { data, error } = await client
+    .from('radio_airplay')
+    .select('artista, musica, genero, tocou_em, bpm')
+    .eq('radio', radio)
+    .gte('tocou_em', cutoff)
+    .order('tocou_em', { ascending: false });
+  if (error) { console.error(radio, error); return []; }
+  return data || [];
+}
+
+// ─ LOAD + RENDER
+async function loadAndRender() {
+  const loading = document.getElementById('loading-banner');
+  const area    = document.getElementById('content-area');
+  loading.classList.remove('hidden');
+  loading.classList.add('flex');
+  area.innerHTML = '';
+
+  // Limpa charts anteriores
+  Object.values(chartInstances).forEach(c => c.destroy());
+  chartInstances = {};
+
+  try {
+    const datasets = {};
+    await Promise.all(selectedRadios.map(async r => {
+      datasets[r] = await fetchRadioData(r);
+    }));
+
+    // Atualiza timestamp
+    const upd = document.getElementById('last-updated');
+    upd.textContent = `Atualizado: ${new Date().toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo'})}`;
+    upd.classList.remove('hidden');
+
+    if (currentView === 'artistas') renderArtistas(datasets, area);
+    else if (currentView === 'generos') renderGeneros(datasets, area);
+    else renderHorarios(datasets, area);
+
+  } catch(e) {
+    area.innerHTML = `<div class="bg-red-50 border border-red-200 rounded-2xl p-6 text-center"><p class="font-black text-red-600">Erro ao carregar dados</p><p class="text-sm text-red-400 mt-1">${e.message}</p></div>`;
+  } finally {
+    loading.classList.add('hidden');
+    loading.classList.remove('flex');
+  }
+}
+
+// ─ VIEW: TOP ARTISTAS
+function renderArtistas(datasets, area) {
+  // Calcula top artistas por rádio
+  const tops = {};
+  selectedRadios.forEach(r => {
+    const counts = {};
+    datasets[r].forEach(t => {
+      if (!counts[t.artista]) counts[t.artista] = 0;
+      counts[t.artista]++;
+    });
+    tops[r] = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  });
+
+  // Max value para normalizar barras
+  const allCounts = Object.values(tops).flatMap(arr => arr.map(x=>x[1]));
+  const maxVal = Math.max(...allCounts, 1);
+
+  const html = `
+    <div class="grid grid-cols-1 md:grid-cols-${selectedRadios.length} gap-5">
+      ${selectedRadios.map((r,i) => `
+        <div class="bg-white rounded-2xl shadow-md p-5">
+          <div class="flex items-center gap-3 mb-5">
+            <span class="w-3.5 h-3.5 rounded-full flex-shrink-0" style="background:${COLORS[ALL_RADIOS.indexOf(r)]}"></span>
+            <div>
+              <p class="font-black text-slate-800 text-sm uppercase leading-tight">${r}</p>
+              <p class="text-xs font-bold text-slate-400">${datasets[r].length} execuções no período</p>
+            </div>
+          </div>
+          ${ tops[r].length === 0
+            ? `<p class="text-center text-slate-300 font-bold py-8 text-sm">Sem dados</p>`
+            : tops[r].map(([artista, count], idx) => `
+              <div class="mb-3">
+                <div class="flex items-center justify-between mb-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center text-white"
+                      style="background:${ idx===0?'#f59e0b':idx===1?'#94a3b8':idx===2?'#b45309':'#e2e8f0'}; color:${ idx < 3 ? '#fff' : '#64748b'}">${idx+1}</span>
+                    <span class="text-sm font-black text-slate-700 truncate max-w-[130px]" title="${artista}">${artista}</span>
+                  </div>
+                  <span class="text-xs font-black px-2 py-0.5 rounded-full" style="background:${COLORS[ALL_RADIOS.indexOf(r)]}22; color:${COLORS[ALL_RADIOS.indexOf(r)]}">${count}x</span>
+                </div>
+                <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="bar-fill h-full rounded-full" style="width:${ Math.round((count/maxVal)*100) }%; background:${COLORS[ALL_RADIOS.indexOf(r)]}"></div>
+                </div>
+              </div>
+            `).join('')
+          }
+        </div>
+      `).join('')}
+    </div>
+    ${ selectedRadios.length >= 2 ? renderIntersection(tops) : '' }
+  `;
+  area.innerHTML = html;
+}
+
+// artistas em comum entre as rádios selecionadas
+function renderIntersection(tops) {
+  const sets = selectedRadios.map(r => new Set(tops[r].map(x=>x[0])));
+  let common = [...sets[0]];
+  sets.slice(1).forEach(s => { common = common.filter(a => s.has(a)); });
+  if (!common.length) return `
+    <div class="mt-5 bg-slate-50 border border-slate-200 rounded-2xl p-5 text-center">
+      <p class="font-black text-slate-400 uppercase text-sm">🔍 Nenhum artista em comum no Top 10</p>
+    </div>`;
+  return `
+    <div class="mt-5 bg-indigo-50 border border-indigo-200 rounded-2xl p-5">
+      <p class="font-black text-indigo-700 uppercase text-sm mb-3">🎯 ${common.length} artista${common.length > 1 ? 's' : ''} em comum entre as rádios selecionadas</p>
+      <div class="flex flex-wrap gap-2">
+        ${ common.map(a => `<span class="bg-white border border-indigo-200 text-indigo-700 font-black text-xs px-3 py-1.5 rounded-full shadow-sm">${a}</span>`).join('') }
+      </div>
+    </div>`;
+}
+
+// ─ VIEW: GÊENEROS
+function renderGeneros(datasets, area) {
+  const canvasIds = selectedRadios.map((_,i) => `chart-genero-${i}`);
+
+  area.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-${selectedRadios.length} gap-5">
+      ${selectedRadios.map((r,i) => {
+        const counts = {};
+        datasets[r].forEach(t => {
+          const g = t.genero || 'Desconhecido';
+          if (g === 'Desconhecido') return;
+          counts[g] = (counts[g] || 0) + 1;
+        });
+        const total = Object.values(counts).reduce((a,b)=>a+b,0);
+        const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+        return `
+          <div class="bg-white rounded-2xl shadow-md p-5">
+            <div class="flex items-center gap-3 mb-4">
+              <span class="w-3.5 h-3.5 rounded-full" style="background:${COLORS[ALL_RADIOS.indexOf(r)]}"></span>
+              <p class="font-black text-slate-800 text-sm uppercase">${r}</p>
+            </div>
+            <canvas id="${canvasIds[i]}" height="220"></canvas>
+            <div class="mt-4 space-y-2">
+              ${ sorted.slice(0,6).map(([g,c]) => `
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:${GENRE_COLORS_MAP[g]||'#94a3b8'}"></span>
+                  <span class="text-xs font-black text-slate-700 flex-1 truncate">${g}</span>
+                  <span class="text-xs font-bold text-slate-400">${((c/total)*100).toFixed(0)}%</span>
+                </div>
+              `).join('') }
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  // Desenha os charts
+  selectedRadios.forEach((r,i) => {
+    const counts = {};
+    datasets[r].forEach(t => {
+      const g = t.genero || 'Desconhecido';
+      if (g === 'Desconhecido') return;
+      counts[g] = (counts[g] || 0) + 1;
+    });
+    const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const labels = sorted.map(x=>x[0]);
+    const values = sorted.map(x=>x[1]);
+    const bgColors = labels.map(l => GENRE_COLORS_MAP[l] || '#94a3b8');
+
+    const ctx = document.getElementById(canvasIds[i]);
+    if (!ctx || !values.length) return;
+    chartInstances[canvasIds[i]] = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data: values, backgroundColor: bgColors, borderWidth: 2, borderColor: '#fff' }] },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.raw} músicas` } }
+        }
+      }
+    });
+  });
+}
+
+// ─ VIEW: POR HORÁRIO
+function renderHorarios(datasets, area) {
+  const hours = Array.from({length:24},(_,i)=>String(i).padStart(2,'0'));
+
+  const seriesData = selectedRadios.map(r => {
+    const map = {};
+    datasets[r].forEach(t => {
+      const h = new Date(t.tocou_em).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',hour12:false}).split(',')[1]?.trim().substring(0,2) || '00';
+      map[h] = (map[h] || 0) + 1;
+    });
+    return hours.map(h => map[h] || 0);
+  });
+
+  area.innerHTML = `
+    <div class="bg-white rounded-2xl shadow-md p-6">
+      <p class="font-black text-slate-700 uppercase text-sm mb-1">Execuções por Horário</p>
+      <p class="text-xs font-bold text-slate-400 mb-5">Distribuição ao longo do dia (horário de Brasília)</p>
+      <canvas id="chart-horarios" height="160"></canvas>
+      <div class="flex flex-wrap gap-4 mt-5">
+        ${ selectedRadios.map((r,i) => `
+          <span class="flex items-center gap-2 text-xs font-black text-slate-600">
+            <span class="w-4 h-1 rounded" style="background:${COLORS[ALL_RADIOS.indexOf(r)]}"></span>${r}
+          </span>
+        `).join('') }
+      </div>
+    </div>
+  `;
+
+  const ctx = document.getElementById('chart-horarios');
+  if (!ctx) return;
+  chartInstances['horarios'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: hours.map(h => `${h}h`),
+      datasets: selectedRadios.map((r,i) => ({
+        label: r,
+        data: seriesData[i],
+        borderColor: COLORS[ALL_RADIOS.indexOf(r)],
+        backgroundColor: COLORS[ALL_RADIOS.indexOf(r)] + '22',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        borderWidth: 2.5
+      }))
+    },
+    options: {
+      responsive: true,
+      interaction: { mode:'index', intersect:false },
+      plugins: { legend:{ display:false } },
+      scales: {
+        x: { grid:{ display:false }, ticks:{ font:{ weight:'bold', size:11 } } },
+        y: { grid:{ color:'#f1f5f9' }, ticks:{ font:{ weight:'bold', size:11 } } }
+      }
+    }
+  });
+}
+
+// ─ INICIALIZAÇÃO
+function init() {
+  // Tenta conectar ao supabase do index.html via evento
+  if (window._supabaseReady) {
+    buildRadioChips();
+    buildPeriodTabs();
+    loadAndRender();
+    return;
+  }
+  window.addEventListener('supabase-ready', () => {
+    buildRadioChips();
+    buildPeriodTabs();
+    loadAndRender();
+  });
+
+  // Inicializa próprio Supabase se o do pai não estiver disponível
+  setTimeout(() => {
+    if (!window._supabaseReady) {
+      buildRadioChips();
+      buildPeriodTabs();
+      loadAndRender();
+    }
+  }, 1200);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
