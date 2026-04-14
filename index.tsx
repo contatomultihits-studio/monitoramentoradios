@@ -17,6 +17,21 @@ const PAGE_SIZE = 1000;
 const getSupabaseClient = () => (window as any)._supabaseClient;
 
 // ─────────────────────────────────────────────────────────────
+// Aguarda o Supabase estar pronto (evento 'supabase-ready')
+// Evita race condition entre o AUTH GUARD async e o boot do React
+// ─────────────────────────────────────────────────────────────
+function waitForSupabase(): Promise<void> {
+  return new Promise(resolve => {
+    if ((window as any)._supabaseReady) {
+      resolve();
+      return;
+    }
+    const handler = () => { window.removeEventListener('supabase-ready', handler); resolve(); };
+    window.addEventListener('supabase-ready', handler);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
 // TIMEZONE HELPER
 // ─────────────────────────────────────────────────────────────
 function getBrasiliaOffsetMs(date: Date = new Date()): number {
@@ -605,15 +620,12 @@ const DatePicker = ({ value, availableDates, loadingDates, datesLoaded, onChange
   }, [open]);
 
   const handleToggle = () => {
-    // Só dispara onOpen se ainda não carregou as datas
     if (!open && !datesLoaded) onOpen();
     setOpen(o => !o);
   };
 
   const handleSelect = (d: string) => { onChange(d); setOpen(false); };
 
-  // Constrói lista a exibir: se as datas completas ainda não foram carregadas,
-  // mostra apenas o dia atual; após carregamento, mostra a lista completa.
   const displayDates = datesLoaded ? availableDates : (value ? [value] : []);
 
   return (
@@ -641,7 +653,8 @@ const DatePicker = ({ value, availableDates, loadingDates, datesLoaded, onChange
               <button key={d} type="button" onClick={() => handleSelect(d)}
                 className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-blue-50 ${d === value ? 'bg-blue-100 text-blue-700' : 'text-slate-700'}`}>
                 📅 {formatDateBR(d)}
-                {i === 0 && <span className="ml-2 text-[10px] font-black text-emerald-600 uppercase">Hoje</span>}
+                {i === 0 && !datesLoaded && <span className="ml-2 text-[10px] font-black text-emerald-600 uppercase">Hoje</span>}
+                {datesLoaded && d === displayDates[0] && <span className="ml-2 text-[10px] font-black text-emerald-600 uppercase">Mais recente</span>}
               </button>
             ))
           )}
@@ -678,7 +691,6 @@ async function loadDayData(radio: string, date: string): Promise<any[]> {
     .filter((t: any) => !isBlocked(t.artista, t.musica));
 }
 
-// Carrega 7 dias de dados para o Top Artistas e execuções semanais
 async function loadWeeklyData(radio: string): Promise<any[]> {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
@@ -700,7 +712,6 @@ async function loadWeeklyData(radio: string): Promise<any[]> {
     .filter((t: any) => !isBlocked(t.artista, t.musica));
 }
 
-// Retorna apenas a data mais recente — usado no boot para saber o dia atual
 async function loadLatestDate(radio: string): Promise<string> {
   const supabase = getSupabaseClient();
   if (!supabase) return '';
@@ -715,7 +726,6 @@ async function loadLatestDate(radio: string): Promise<string> {
   return parseTocouEm(rows.tocou_em).data;
 }
 
-// Carrega TODAS as datas disponíveis — chamado apenas ao abrir o seletor (lazy)
 async function loadAvailableDates(radio: string): Promise<string[]> {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
@@ -736,7 +746,6 @@ async function loadAvailableDates(radio: string): Promise<string[]> {
   return [...allDates].sort().reverse();
 }
 
-// Caches em memória
 const datesCache: Record<string, string[]> = {};
 const weeklyCache: Record<string, any[]> = {};
 
@@ -747,7 +756,6 @@ const App = () => {
   const [data, setData] = useState<any[]>([]);
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
-  // true = lista completa de datas já foi carregada (lazy)
   const [datesLoaded, setDatesLoaded] = useState(false);
   const [loadingDates, setLoadingDates] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -760,13 +768,11 @@ const App = () => {
   const filtersRef = useRef(filters);
   useEffect(() => { filtersRef.current = filters; }, [filters]);
 
-  // Apenas os últimos 7 dias
   const weeklyLast7 = useMemo(() => {
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
     return weeklyData.filter(t => t.timestamp >= cutoff);
   }, [weeklyData]);
 
-  // Mapa de execuções semanais por música
   const weeklyExecsMap = useMemo(() => {
     const map: Record<string, ExecucaoItem[]> = {};
     weeklyLast7.forEach(t => {
@@ -797,10 +803,8 @@ const App = () => {
     } catch (err) { console.error('Erro loadWeeklyData:', err); }
   }, []);
 
-  // ── Abre o seletor de datas: carrega a lista completa SOMENTE na 1ª vez ──
   const handleOpenDatePicker = useCallback(async () => {
     const radio = filtersRef.current.radio;
-    // Se já há cache, apenas exibe
     if (datesCache[radio]) {
       setAvailableDates(datesCache[radio]);
       setDatesLoaded(true);
@@ -817,14 +821,14 @@ const App = () => {
     finally { setLoadingDates(false); }
   }, [loadingDates]);
 
-  // ── Boot: carrega só o dia atual + dados semanais em background ──
+  // ── Boot: aguarda Supabase estar pronto, depois carrega dia atual + dados semanais ──
   useEffect(() => {
     (async () => {
+      await waitForSupabase(); // ⭐ AGUARDA o AUTH GUARD terminar antes de qualquer query
       const radio = 'Metropolitana FM';
       const today = await loadLatestDate(radio);
       if (today) {
         setFilters(f => ({ ...f, date: today }));
-        // Não setamos availableDates aqui — isso é feito ao abrir o seletor
         await Promise.all([
           doFetch(radio, today),
           fetchWeekly(radio),
@@ -835,14 +839,12 @@ const App = () => {
     })();
   }, []);
 
-  // Recarrega quando muda a data ou a rádio (mas não na primeira renderização)
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
     if (filters.date) doFetch(filters.radio, filters.date);
   }, [filters.date, filters.radio]);
 
-  // Auto-refresh a cada 30s
   useEffect(() => {
     const interval = setInterval(() => {
       const { radio, date } = filtersRef.current;
@@ -851,7 +853,6 @@ const App = () => {
     return () => clearInterval(interval);
   }, [doFetch]);
 
-  // ── Troca de rádio: reseta estado e carrega o dia mais recente dessa rádio ──
   const handleRadioChange = useCallback(async (r: string) => {
     setData([]);
     setWeeklyData([]);
