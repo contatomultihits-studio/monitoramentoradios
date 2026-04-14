@@ -12,7 +12,8 @@ export default defineConfig({
         comercial: './comercial.html',
         login: './login.html',
         trocarSenha: './trocar-senha.html',
-        gerenciamento: './gerenciamento.html'
+        gerenciamento: './gerenciamento.html',
+        comparacoes: './comparacoes.html'
       }
     }
   }
