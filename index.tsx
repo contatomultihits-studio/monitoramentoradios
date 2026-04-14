@@ -18,14 +18,10 @@ const getSupabaseClient = () => (window as any)._supabaseClient;
 
 // ─────────────────────────────────────────────────────────────
 // Aguarda o Supabase estar pronto (evento 'supabase-ready')
-// Evita race condition entre o AUTH GUARD async e o boot do React
 // ─────────────────────────────────────────────────────────────
 function waitForSupabase(): Promise<void> {
   return new Promise(resolve => {
-    if ((window as any)._supabaseReady) {
-      resolve();
-      return;
-    }
+    if ((window as any)._supabaseReady) { resolve(); return; }
     const handler = () => { window.removeEventListener('supabase-ready', handler); resolve(); };
     window.addEventListener('supabase-ready', handler);
   });
@@ -37,15 +33,23 @@ function waitForSupabase(): Promise<void> {
 function getBrasiliaOffsetMs(date: Date = new Date()): number {
   const utcStr = date.toLocaleString('en-US', { timeZone: 'UTC' });
   const brStr  = date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
-  const utcDate = new Date(utcStr);
-  const brDate  = new Date(brStr);
-  return brDate.getTime() - utcDate.getTime();
+  return new Date(brStr).getTime() - new Date(utcStr).getTime();
 }
 
 function brasiliaLocalToUTC(isoLocal: string): string {
   const local = new Date(isoLocal + 'Z');
   const offset = getBrasiliaOffsetMs(local);
   return new Date(local.getTime() - offset).toISOString();
+}
+
+// Retorna a data atual em Brasília no formato YYYY-MM-DD
+function getTodayBrasilia(): string {
+  const now = new Date();
+  const str = now.toLocaleString('pt-BR', {
+    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit'
+  });
+  const [day, month, year] = str.split('/');
+  return `${year}-${month}-${day}`;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -72,7 +76,7 @@ const GENRE_COLORS: Record<string, string> = {
 };
 
 const ytURL = (artista: string, musica: string) =>
-  `https://www.youtube.com/results?search_query=${encodeURIComponent(`"${artista}" "${musica}"`)}` ;
+  `https://www.youtube.com/results?search_query=${encodeURIComponent(`"${artista}" "${musica}"`)}`;
 
 // ─────────────────────────────────────────────────────────────
 // parseTocouEm — UTC → Brasília
@@ -152,8 +156,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// MODAL DE EXECUÇÕES — ao clicar na capa, mostra dia + horário
-// de cada execução da música no período de 7 dias
+// MODAL DE EXECUÇÕES
 // ─────────────────────────────────────────────────────────────
 interface ExecucaoItem {
   data: string;
@@ -254,9 +257,9 @@ const TrackExecutionsModal = ({
 };
 
 // ─────────────────────────────────────────────────────────────
-// MODAL — playlist do artista (clique na foto do Top Artistas)
+// MODAL — playlist do artista
 // ─────────────────────────────────────────────────────────────
-const ArtistModal = ({ artist, tracks, photo, onClose }: { artist: string; tracks: any[]; photo: string; onClose: () => void }) => {
+const ArtistModal = ({ artist, tracks, photo, periodLabel, onClose }: { artist: string; tracks: any[]; photo: string; periodLabel: string; onClose: () => void }) => {
   const grouped = useMemo(() => {
     const map: Record<string, { track: any; count: number; horarios: string[] }> = {};
     tracks.forEach(t => {
@@ -282,6 +285,7 @@ const ArtistModal = ({ artist, tracks, photo, onClose }: { artist: string; track
           <div className="flex-1 min-w-0">
             <h2 className="font-black text-xl text-white uppercase leading-tight truncate">{artist}</h2>
             <p className="text-blue-200 text-xs font-bold mt-0.5">{tracks.length} execuções • {grouped.length} música{grouped.length !== 1 ? 's' : ''} diferente{grouped.length !== 1 ? 's' : ''}</p>
+            <p className="text-blue-300 text-[10px] font-bold mt-0.5 uppercase">{periodLabel}</p>
           </div>
           <button onClick={onClose} className="flex-shrink-0 p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-all"><X size={20} className="text-white" /></button>
         </div>
@@ -339,7 +343,7 @@ const NowPlayingCard = ({ track }: { track: any }) => (
 );
 
 // ─────────────────────────────────────────────────────────────
-// MUSIC CARD — com capa clicável que abre modal de execuções
+// MUSIC CARD
 // ─────────────────────────────────────────────────────────────
 const MusicCard = ({
   track,
@@ -411,19 +415,95 @@ const MusicCard = ({
 );
 
 // ─────────────────────────────────────────────────────────────
-// TOP ARTISTAS — com paginação 5 por coluna + carregar mais
+// TIPOS DO SELETOR DE PERÍODO — Top Artistas
+// ─────────────────────────────────────────────────────────────
+type TopPeriod = 'today' | '7d' | '30d' | '3m' | '1y';
+
+const TOP_PERIOD_OPTIONS: { value: TopPeriod; label: string; shortLabel: string; emoji: string }[] = [
+  { value: 'today', label: 'Hoje',     shortLabel: 'Hoje',   emoji: '☀️' },
+  { value: '7d',    label: '7 dias',   shortLabel: '7d',     emoji: '📅' },
+  { value: '30d',   label: '30 dias',  shortLabel: '30d',    emoji: '🗓️' },
+  { value: '3m',    label: '3 meses',  shortLabel: '3m',     emoji: '📆' },
+  { value: '1y',    label: '1 ano',    shortLabel: '1a',     emoji: '🏆' },
+];
+
+function getPeriodCutoff(period: TopPeriod): string {
+  const now = new Date();
+  if (period === 'today') {
+    // meia-noite de hoje em Brasília → UTC
+    const today = getTodayBrasilia();
+    return brasiliaLocalToUTC(`${today}T00:00:00`);
+  }
+  const daysMap: Record<TopPeriod, number> = { today: 0, '7d': 7, '30d': 30, '3m': 90, '1y': 365 };
+  const days = daysMap[period];
+  const cutoff = new Date(now);
+  cutoff.setDate(now.getDate() - days);
+  return cutoff.toISOString();
+}
+
+// ─────────────────────────────────────────────────────────────
+// loadTopArtistsForPeriod — busca artistas do período
+// ─────────────────────────────────────────────────────────────
+async function loadTopArtistsForPeriod(radio: string, period: TopPeriod): Promise<any[]> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return [];
+  const cutoff = getPeriodCutoff(period);
+  const { data: rows, error } = await supabase
+    .from('radio_airplay')
+    .select('artista, musica, capa, genero, tocou_em, bpm')
+    .eq('radio', radio)
+    .gte('tocou_em', cutoff)
+    .order('tocou_em', { ascending: false });
+  if (error) return [];
+  return (rows || [])
+    .map((t: any) => {
+      const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
+      return { artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', capa: t.capa, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, bpm: t.bpm, tocou_em: t.tocou_em };
+    })
+    .filter((t: any) => !isBlocked(t.artista, t.musica));
+}
+
+const topArtistsCache: Record<string, any[]> = {};
+
+// ─────────────────────────────────────────────────────────────
+// TOP ARTISTAS — com seletor de período próprio
 // ─────────────────────────────────────────────────────────────
 const TOP_PER_COL = 5;
 
-const TopArtistsCard = ({ filteredData, weeklyAllData }: { filteredData: any[]; weeklyAllData: any[] }) => {
+const TopArtistsCard = ({ radio }: { radio: string }) => {
+  const [period, setPeriod] = useState<TopPeriod>('today');
+  const [periodData, setPeriodData] = useState<any[]>([]);
+  const [loadingPeriod, setLoadingPeriod] = useState(false);
   const [photos, setPhotos] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
+  const [photosLoading, setPhotosLoading] = useState(false);
   const [modalArtist, setModalArtist] = useState<string | null>(null);
   const [visibleTop, setVisibleTop] = useState(TOP_PER_COL);
 
+  const fetchPeriodData = useCallback(async (r: string, p: TopPeriod) => {
+    const cacheKey = `${r}___${p}`;
+    // 'today' nunca usa cache (dados ao vivo)
+    if (p !== 'today' && topArtistsCache[cacheKey]) {
+      setPeriodData(topArtistsCache[cacheKey]);
+      return;
+    }
+    setLoadingPeriod(true);
+    try {
+      const rows = await loadTopArtistsForPeriod(r, p);
+      if (p !== 'today') topArtistsCache[cacheKey] = rows;
+      setPeriodData(rows);
+    } catch (err) { console.error('Erro loadTopArtistsForPeriod:', err); }
+    finally { setLoadingPeriod(false); }
+  }, []);
+
+  // Carrega ao montar e quando radio/period mudar
+  useEffect(() => {
+    setVisibleTop(TOP_PER_COL);
+    fetchPeriodData(radio, period);
+  }, [radio, period, fetchPeriodData]);
+
   const topArtists = useMemo(() => {
     const counts: Record<string, { count: number; genero: string; capa: string; musica: string }> = {};
-    weeklyAllData.forEach(t => {
+    periodData.forEach(t => {
       if (!counts[t.artista]) counts[t.artista] = { count: 0, genero: t.genero, capa: t.capa || '', musica: t.musica };
       counts[t.artista].count++;
       if (!counts[t.artista].capa && t.capa) counts[t.artista].capa = t.capa;
@@ -431,12 +511,19 @@ const TopArtistsCard = ({ filteredData, weeklyAllData }: { filteredData: any[]; 
     return Object.entries(counts)
       .map(([artista, info]) => ({ artista, ...info }))
       .sort((a, b) => b.count - a.count);
-  }, [weeklyAllData]);
+  }, [periodData]);
 
   useEffect(() => {
     if (!topArtists.length) return;
     const toLoad = topArtists.slice(0, visibleTop);
-    setLoading(true);
+    const needLoad = toLoad.filter(a => artistPhotoCache[a.artista] === undefined);
+    if (!needLoad.length) {
+      const map: Record<string, string> = {};
+      toLoad.forEach(a => { map[a.artista] = artistPhotoCache[a.artista] || ''; });
+      setPhotos(prev => ({ ...prev, ...map }));
+      return;
+    }
+    setPhotosLoading(true);
     Promise.all(toLoad.map(async a => ({ artista: a.artista, photo: await fetchArtistPhoto(a.artista) })))
       .then(results => {
         setPhotos(prev => {
@@ -444,18 +531,18 @@ const TopArtistsCard = ({ filteredData, weeklyAllData }: { filteredData: any[]; 
           results.forEach(r => { map[r.artista] = r.photo; });
           return map;
         });
-        setLoading(false);
+        setPhotosLoading(false);
       });
   }, [topArtists, visibleTop]);
 
-  if (!topArtists.length) return null;
+  const periodLabel = TOP_PERIOD_OPTIONS.find(o => o.value === period)?.label || '';
+
+  const modalArtistData = modalArtist
+    ? { tracks: periodData.filter(t => t.artista === modalArtist), photo: photos[modalArtist] || topArtists.find(a => a.artista === modalArtist)?.capa || '' }
+    : null;
 
   const visible = topArtists.slice(0, visibleTop);
   const hasMore = visibleTop < topArtists.length;
-
-  const modalArtistData = modalArtist
-    ? { tracks: weeklyAllData.filter(t => t.artista === modalArtist), photo: photos[modalArtist] || topArtists.find(a => a.artista === modalArtist)?.capa || '' }
-    : null;
 
   return (
     <>
@@ -464,78 +551,121 @@ const TopArtistsCard = ({ filteredData, weeklyAllData }: { filteredData: any[]; 
           artist={modalArtist}
           tracks={modalArtistData.tracks}
           photo={modalArtistData.photo}
+          periodLabel={periodLabel}
           onClose={() => setModalArtist(null)}
         />
       )}
       <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-8 rounded-3xl shadow-xl mb-8 border border-amber-100">
-        <div className="flex items-center gap-4 mb-2">
-          <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg">
-            <Trophy className="text-white" size={28} />
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 mb-5">
+          <div className="flex items-center gap-4">
+            <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg">
+              <Trophy className="text-white" size={28} />
+            </div>
+            <div>
+              <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Top Artistas</h2>
+              <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">
+                {period === 'today' ? 'Hoje • desde a meia-noite' : `Últimos ${periodLabel}`} • Toque na foto para ver as músicas
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Top Artistas</h2>
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Últimos 7 dias • Toque na foto para ver as músicas</p>
-          </div>
+          {loadingPeriod && (
+            <Loader2 size={20} className="animate-spin text-amber-500 flex-shrink-0 mt-1" />
+          )}
         </div>
 
-        <div className="grid grid-cols-5 gap-3 mt-6">
-          {visible.map((artist, idx) => {
-            const photo = photos[artist.artista] || artist.capa || '';
-            const rank = idx + 1;
-            return (
-              <div key={artist.artista} className="flex flex-col items-center text-center group">
-                <div className="relative mb-3">
-                  <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${
-                    rank===1?'bg-yellow-400 text-yellow-900':rank===2?'bg-slate-300 text-slate-700':rank===3?'bg-amber-600 text-white':'bg-slate-200 text-slate-600'
-                  }`}>
-                    {rank <= 3 ? ['1°','2°','3°'][rank-1] : `${rank}°`}
-                  </div>
-                  <button
-                    onClick={() => setModalArtist(artist.artista)}
-                    className={`relative block w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 cursor-pointer ${
-                      rank===1?'ring-yellow-400':rank===2?'ring-slate-300':rank===3?'ring-amber-500':'ring-slate-200'
-                    }`}
-                    title={`Ver playlist de ${artist.artista}`}
-                  >
-                    {photo
-                      ? <img src={photo} alt={artist.artista} className="w-full h-full object-cover" onError={(e)=>{(e.target as HTMLImageElement).style.display='none';}}/>
-                      : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200"><Music size={24} className="text-blue-400" /></div>
-                    }
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1">
-                        <Music size={16} className="text-white drop-shadow-lg" />
-                        <span className="text-white text-[9px] font-black drop-shadow-lg">PLAYLIST</span>
+        {/* Seletor de período */}
+        <div className="flex gap-2 flex-wrap mb-6">
+          {TOP_PERIOD_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setPeriod(opt.value)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-wide transition-all ${
+                period === opt.value
+                  ? 'bg-amber-500 text-white shadow-lg scale-105'
+                  : 'bg-white text-slate-600 border border-amber-200 hover:border-amber-400 hover:text-amber-600'
+              }`}
+            >
+              <span>{opt.emoji}</span>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Grid de artistas */}
+        {loadingPeriod ? (
+          <div className="flex items-center justify-center gap-3 py-12 text-amber-500">
+            <Loader2 size={28} className="animate-spin" />
+            <span className="font-black uppercase text-sm">Carregando Top Artistas...</span>
+          </div>
+        ) : topArtists.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-5xl mb-3">🎵</div>
+            <p className="font-black text-slate-400 uppercase">Nenhum dado disponível</p>
+            <p className="text-slate-400 text-sm mt-1">Tente outro período</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-5 gap-3">
+              {visible.map((artist, idx) => {
+                const photo = photos[artist.artista] || artist.capa || '';
+                const rank = idx + 1;
+                return (
+                  <div key={artist.artista} className="flex flex-col items-center text-center group">
+                    <div className="relative mb-3">
+                      <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${
+                        rank===1?'bg-yellow-400 text-yellow-900':rank===2?'bg-slate-300 text-slate-700':rank===3?'bg-amber-600 text-white':'bg-slate-200 text-slate-600'
+                      }`}>
+                        {rank <= 3 ? ['1°','2°','3°'][rank-1] : `${rank}°`}
                       </div>
+                      <button
+                        onClick={() => setModalArtist(artist.artista)}
+                        className={`relative block w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 cursor-pointer ${
+                          rank===1?'ring-yellow-400':rank===2?'ring-slate-300':rank===3?'ring-amber-500':'ring-slate-200'
+                        }`}
+                        title={`Ver playlist de ${artist.artista} — ${periodLabel}`}
+                      >
+                        {photo
+                          ? <img src={photo} alt={artist.artista} className="w-full h-full object-cover" onError={(e)=>{(e.target as HTMLImageElement).style.display='none';}}/>
+                          : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200"><Music size={24} className="text-blue-400" /></div>
+                        }
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1">
+                            <Music size={16} className="text-white drop-shadow-lg" />
+                            <span className="text-white text-[9px] font-black drop-shadow-lg">PLAYLIST</span>
+                          </div>
+                        </div>
+                      </button>
+                      {photosLoading && !photo && (
+                        <div className="absolute inset-0 rounded-2xl bg-white/60 flex items-center justify-center">
+                          <Loader2 size={16} className="animate-spin text-blue-500" />
+                        </div>
+                      )}
                     </div>
-                  </button>
-                  {loading && !photo && (
-                    <div className="absolute inset-0 rounded-2xl bg-white/60 flex items-center justify-center">
-                      <Loader2 size={16} className="animate-spin text-blue-500" />
-                    </div>
-                  )}
-                </div>
-                <p className="font-black text-slate-800 text-xs leading-tight truncate w-full">{artist.artista}</p>
-                <p className="font-bold text-blue-600 text-[10px] mt-1 flex items-center gap-1 justify-center">
-                  <TrendingUp size={9} />
-                  {artist.count} execuções
-                </p>
-                {artist.genero && artist.genero !== 'Desconhecido' && (
-                  <span className="mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[artist.genero] || '#3B82F6' }}>
-                    {artist.genero}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                    <p className="font-black text-slate-800 text-xs leading-tight truncate w-full">{artist.artista}</p>
+                    <p className="font-bold text-blue-600 text-[10px] mt-1 flex items-center gap-1 justify-center">
+                      <TrendingUp size={9} />
+                      {artist.count} exec{artist.count !== 1 ? 'uções' : 'ução'}
+                    </p>
+                    {artist.genero && artist.genero !== 'Desconhecido' && (
+                      <span className="mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[artist.genero] || '#3B82F6' }}>
+                        {artist.genero}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
-        {hasMore && (
-          <button
-            onClick={() => setVisibleTop(v => v + TOP_PER_COL)}
-            className="mt-6 w-full py-3 bg-white border-2 border-amber-200 hover:border-amber-400 text-amber-600 rounded-2xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all hover:shadow-md"
-          >
-            <Plus size={14} /> Ver mais artistas ({topArtists.length - visibleTop} restantes)
-          </button>
+            {hasMore && (
+              <button
+                onClick={() => setVisibleTop(v => v + TOP_PER_COL)}
+                className="mt-6 w-full py-3 bg-white border-2 border-amber-200 hover:border-amber-400 text-amber-600 rounded-2xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all hover:shadow-md"
+              >
+                <Plus size={14} /> Ver mais artistas ({topArtists.length - visibleTop} restantes)
+              </button>
+            )}
+          </>
         )}
       </div>
     </>
@@ -596,8 +726,6 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
 
 // ─────────────────────────────────────────────────────────────
 // DATE PICKER
-// Mostra o dia atual pré-selecionado.
-// Ao abrir, carrega as datas disponíveis (lazy, com cache).
 // ─────────────────────────────────────────────────────────────
 const DatePicker = ({ value, availableDates, loadingDates, datesLoaded, onChange, onOpen }: {
   value: string;
@@ -821,10 +949,9 @@ const App = () => {
     finally { setLoadingDates(false); }
   }, [loadingDates]);
 
-  // ── Boot: aguarda Supabase estar pronto, depois carrega dia atual + dados semanais ──
   useEffect(() => {
     (async () => {
-      await waitForSupabase(); // ⭐ AGUARDA o AUTH GUARD terminar antes de qualquer query
+      await waitForSupabase();
       const radio = 'Metropolitana FM';
       const today = await loadLatestDate(radio);
       if (today) {
@@ -1048,7 +1175,8 @@ const App = () => {
           <>
             {filteredData.length > 0 && <NowPlayingCard track={filteredData[0]} />}
 
-            <TopArtistsCard filteredData={filteredData} weeklyAllData={weeklyLast7} />
+            {/* Top Artistas — seletor de período independente */}
+            <TopArtistsCard radio={filters.radio} />
 
             <GenreChart data={genreData} chartRef={chartRef} />
 
