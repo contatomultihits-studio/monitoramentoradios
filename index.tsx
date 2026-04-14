@@ -12,7 +12,6 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 const REFRESH_INTERVAL_MS = 30000;
 const LASTFM_API_KEY = '2a416b64ded1827a7e82e61d9a87b2e0';
 const REPEAT_THRESHOLD = 2;
-const PAGE_SIZE = 1000;
 const getSupabaseClient = () => (window as any)._supabaseClient;
 
 // ─────────────────────────────────────────────────────────────
@@ -342,7 +341,6 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Fecha ao clicar fora
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -353,7 +351,7 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
   }, [open]);
 
   const handleToggle = () => {
-    if (!open) onOpen(); // carrega datas ao abrir
+    if (!open) onOpen();
     setOpen(o => !o);
   };
 
@@ -364,7 +362,6 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
 
   return (
     <div ref={ref} className="relative">
-      {/* Botão principal */}
       <button
         type="button"
         onClick={handleToggle}
@@ -379,7 +376,6 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
         <ChevronDown size={16} className={`text-slate-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
           {loadingDates ? (
@@ -414,10 +410,8 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
 // FETCH DATA
 // Usa Intl.DateTimeFormat para calcular os limites do dia em
 // Brasília dinamicamente, sem offset fixo (-03:00).
-// Isso resolve corretamente o horário de verão (UTC-2 em SP).
 // ─────────────────────────────────────────────────────────────
 function getBrasiliaDateBounds(date: string): { dayStart: string; dayEnd: string } {
-  // Constrói início e fim do dia em Brasília de forma dinâmica
   const dayStart = brasiliaLocalToUTC(`${date}T00:00:00`);
   const dayEnd   = brasiliaLocalToUTC(`${date}T23:59:59`);
   return { dayStart, dayEnd };
@@ -452,24 +446,37 @@ async function loadLatestDate(radio: string): Promise<string> {
   return parseTocouEm(rows.tocou_em).data;
 }
 
+// ─────────────────────────────────────────────────────────────
+// loadAvailableDates — 1 única query (últimos 90 dias)
+// Antes: loop paginado que buscava TODOS os registros do banco.
+// Agora: busca somente tocou_em dos últimos 90 dias e extrai
+// datas únicas em memória. Muito mais rápido e sem loop.
+// ─────────────────────────────────────────────────────────────
 async function loadAvailableDates(radio: string): Promise<string[]> {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
-  const allDates = new Set<string>();
-  let from = 0;
-  while (true) {
-    const { data: rows, error } = await supabase
-      .from('radio_airplay')
-      .select('tocou_em')
-      .eq('radio', radio)
-      .order('tocou_em', { ascending: false })
-      .range(from, from + PAGE_SIZE - 1);
-    if (error || !rows || rows.length === 0) break;
-    rows.forEach((r: any) => allDates.add(parseTocouEm(r.tocou_em).data));
-    if (rows.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
+
+  // Limite de 90 dias atrás
+  const since = new Date();
+  since.setDate(since.getDate() - 90);
+
+  const { data: rows, error } = await supabase
+    .from('radio_airplay')
+    .select('tocou_em')
+    .eq('radio', radio)
+    .gte('tocou_em', since.toISOString())
+    .order('tocou_em', { ascending: false });
+
+  if (error || !rows) return [];
+
+  // Extrai datas únicas localmente
+  const seen = new Set<string>();
+  const dates: string[] = [];
+  for (const r of rows) {
+    const d = parseTocouEm(r.tocou_em).data;
+    if (!seen.has(d)) { seen.add(d); dates.push(d); }
   }
-  return [...allDates].sort().reverse();
+  return dates;
 }
 
 const datesCache: Record<string, string[]> = {};
@@ -598,7 +605,6 @@ const App = () => {
     doc.setFontSize(10); doc.setFont('helvetica', 'normal');
     const hourLabel = filters.hour === 'all' ? 'Todas as horas' : `${filters.hour}:00`;
     doc.text(`Data: ${filters.date} | Horario: ${hourLabel}`, 14, 28);
-    // Usa timeZone explícito para garantir horário de Brasília no PDF
     doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`, 14, 34);
     let y = 45;
     if (chartRef.current && genreData.length > 0) {
@@ -621,7 +627,6 @@ const App = () => {
             <div><h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1><p className="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Monitoramento Musical</p></div>
           </div>
           <div className="flex items-center gap-3">
-            {/* Botão Comercial — EM BREVE */}
             <span
               title="Monitoramento Comercial em breve"
               className="px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl font-black text-amber-600 text-xs uppercase tracking-wider flex items-center gap-2 cursor-default select-none opacity-75"
@@ -638,7 +643,6 @@ const App = () => {
         </div>
       </header>
 
-      {/* SELETOR DE RÁDIO */}
       <div className="bg-white border-b border-slate-100 shadow-sm">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex gap-2 flex-wrap">
@@ -653,10 +657,8 @@ const App = () => {
       </div>
 
       <main className="max-w-5xl mx-auto px-6 py-8">
-        {/* FILTROS */}
         <div className="bg-white rounded-3xl shadow-xl p-6 mb-8 border border-slate-100">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            {/* DATE PICKER */}
             <DatePicker
               value={filters.date}
               availableDates={availableDates}
@@ -664,7 +666,6 @@ const App = () => {
               onChange={d => { setFilters(f => ({ ...f, date: d })); setVisibleCount(9); }}
               onOpen={handleOpenDatePicker}
             />
-            {/* HORA */}
             <div className="relative">
               <select value={filters.hour} onChange={e => { setFilters(f => ({ ...f, hour: e.target.value })); setVisibleCount(9); }}
                 className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer text-sm">
@@ -673,7 +674,6 @@ const App = () => {
               </select>
               <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
-            {/* GÊNERO */}
             <div className="relative">
               <select value={filters.genero} onChange={e => { setFilters(f => ({ ...f, genero: e.target.value })); setVisibleCount(9); }}
                 className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer text-sm">
@@ -682,7 +682,6 @@ const App = () => {
               </select>
               <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
-            {/* BPM */}
             <div className="relative">
               <select value={filters.bpm} onChange={e => { setFilters(f => ({ ...f, bpm: e.target.value })); setVisibleCount(9); }}
                 className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer text-sm">
@@ -694,14 +693,12 @@ const App = () => {
               <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
           </div>
-          {/* BUSCA */}
           <div className="relative mb-4">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input type="text" placeholder="Buscar artista ou música..." value={filters.search}
               onChange={e => { setFilters(f => ({ ...f, search: e.target.value })); setVisibleCount(9); }}
               className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 focus:outline-none transition-all text-sm" />
           </div>
-          {/* EXPORT */}
           <button onClick={exportPDF}
             className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95">
             <Download size={18} />
@@ -716,16 +713,9 @@ const App = () => {
           </div>
         ) : (
           <>
-            {/* NOW PLAYING */}
             {filteredData.length > 0 && <NowPlayingCard track={filteredData[0]} />}
-
-            {/* TOP 5 */}
             <TopArtistsCard filteredData={filteredData} />
-
-            {/* GÊNEROS */}
             <GenreChart data={genreData} chartRef={chartRef} />
-
-            {/* CONTAGEM */}
             {filteredData.length > 0 && (
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
@@ -743,8 +733,6 @@ const App = () => {
                 ) : null}
               </div>
             )}
-
-            {/* LISTA */}
             {filteredData.length === 0 ? (
               <div className="text-center py-32">
                 <div className="text-6xl mb-4">🎵</div>
