@@ -4,7 +4,8 @@ import {
   Search, Clock, RefreshCw, Radio, 
   Music, Loader2, Plus, Download,
   TrendingUp, Sparkles, Filter, Megaphone, Activity,
-  Trophy, X, Youtube, CalendarDays, ChevronDown
+  Trophy, X, Youtube, CalendarDays, ChevronDown,
+  TrendingDown, Flame
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -19,18 +20,16 @@ const getSupabaseClient = () => (window as any)._supabaseClient;
 // (lida corretamente com horário de verão: UTC-3 ou UTC-2)
 // ─────────────────────────────────────────────────────────────
 function getBrasiliaOffsetMs(date: Date = new Date()): number {
-  // Usa Intl para obter o offset real no instante dado
   const utcStr = date.toLocaleString('en-US', { timeZone: 'UTC' });
   const brStr  = date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
   const utcDate = new Date(utcStr);
   const brDate  = new Date(brStr);
-  return brDate.getTime() - utcDate.getTime(); // negativo = atrás do UTC
+  return brDate.getTime() - utcDate.getTime();
 }
 
-// Converte uma data local de Brasília (sem offset) para ISO UTC
 function brasiliaLocalToUTC(isoLocal: string): string {
-  const local = new Date(isoLocal + 'Z'); // trata como se fosse UTC temporariamente
-  const offset = getBrasiliaOffsetMs(local); // offset em ms (normalmente -10800000 = -3h)
+  const local = new Date(isoLocal + 'Z');
+  const offset = getBrasiliaOffsetMs(local);
   return new Date(local.getTime() - offset).toISOString();
 }
 
@@ -39,7 +38,6 @@ function brasiliaLocalToUTC(isoLocal: string): string {
 // ─────────────────────────────────────────────────────────────
 const BLOCKED_TRACKS: { artista?: string; musica?: string }[] = [
   { musica: 'SP' },
-  // Breaks da MIX Rio FM
   { musica: 'O melhor Mix do Brasil' },
   { musica: 'Mix Rio FM' },
 ];
@@ -65,10 +63,9 @@ const ytURL = (artista: string, musica: string) =>
 // parseTocouEm — converte UTC → Brasília corretamente
 // ─────────────────────────────────────────────────────────────
 const parseTocouEm = (tocouEm: string) => {
-  // Garante que o valor é tratado como UTC mesmo sem sufixo Z
   const raw = tocouEm.endsWith('Z') || tocouEm.includes('+') || /[+-]\d{2}:\d{2}$/.test(tocouEm)
     ? tocouEm
-    : tocouEm + 'Z'; // adiciona Z se não tiver indicação de timezone
+    : tocouEm + 'Z';
   const utcDate = new Date(raw);
   const str = utcDate.toLocaleString('pt-BR', {
     timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit',
@@ -408,8 +405,6 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
 
 // ─────────────────────────────────────────────────────────────
 // FETCH DATA
-// Usa Intl.DateTimeFormat para calcular os limites do dia em
-// Brasília dinamicamente, sem offset fixo (-03:00).
 // ─────────────────────────────────────────────────────────────
 function getBrasiliaDateBounds(date: string): { dayStart: string; dayEnd: string } {
   const dayStart = brasiliaLocalToUTC(`${date}T00:00:00`);
@@ -448,28 +443,19 @@ async function loadLatestDate(radio: string): Promise<string> {
 
 // ─────────────────────────────────────────────────────────────
 // loadAvailableDates — 1 única query (últimos 90 dias)
-// Antes: loop paginado que buscava TODOS os registros do banco.
-// Agora: busca somente tocou_em dos últimos 90 dias e extrai
-// datas únicas em memória. Muito mais rápido e sem loop.
 // ─────────────────────────────────────────────────────────────
 async function loadAvailableDates(radio: string): Promise<string[]> {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
-
-  // Limite de 90 dias atrás
   const since = new Date();
   since.setDate(since.getDate() - 90);
-
   const { data: rows, error } = await supabase
     .from('radio_airplay')
     .select('tocou_em')
     .eq('radio', radio)
     .gte('tocou_em', since.toISOString())
     .order('tocou_em', { ascending: false });
-
   if (error || !rows) return [];
-
-  // Extrai datas únicas localmente
   const seen = new Set<string>();
   const dates: string[] = [];
   for (const r of rows) {
@@ -478,6 +464,185 @@ async function loadAvailableDates(radio: string): Promise<string[]> {
   }
   return dates;
 }
+
+// ─────────────────────────────────────────────────────────────
+// loadAlertasAltaQueda — compara últimos 3 dias vs 3 anteriores
+// Retorna músicas com +50% (em alta) ou -50% (em queda)
+// ─────────────────────────────────────────────────────────────
+interface AlertaMusica {
+  artista: string;
+  musica: string;
+  capa: string;
+  genero: string;
+  execucoesRecentes: number;
+  execucoesAnteriores: number;
+  ratio: number;
+  tipo: 'alta' | 'queda';
+}
+
+async function loadAlertasAltaQueda(radio: string): Promise<AlertaMusica[]> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return [];
+
+  const agora = new Date();
+  // Período recente: últimos 3 dias
+  const inicioRecente = new Date(agora);
+  inicioRecente.setDate(agora.getDate() - 3);
+  // Período anterior: 3 dias antes do recente (dias -6 a -4)
+  const inicioAnterior = new Date(agora);
+  inicioAnterior.setDate(agora.getDate() - 6);
+  const fimAnterior = new Date(inicioRecente);
+
+  const [resRecente, resAnterior] = await Promise.all([
+    supabase.from('radio_airplay')
+      .select('artista, musica, capa, genero')
+      .eq('radio', radio)
+      .gte('tocou_em', inicioRecente.toISOString()),
+    supabase.from('radio_airplay')
+      .select('artista, musica')
+      .eq('radio', radio)
+      .gte('tocou_em', inicioAnterior.toISOString())
+      .lt('tocou_em', fimAnterior.toISOString()),
+  ]);
+
+  if (!resRecente.data || !resAnterior.data) return [];
+
+  // Filtra bloqueadas e conta execuções recentes
+  const contagemRecente: Record<string, { artista: string; musica: string; capa: string; genero: string; count: number }> = {};
+  resRecente.data
+    .filter((t: any) => !isBlocked(t.artista || '', t.musica || ''))
+    .forEach((t: any) => {
+      const k = `${t.artista}|||${t.musica}`;
+      if (!contagemRecente[k]) contagemRecente[k] = { artista: t.artista, musica: t.musica, capa: t.capa || '', genero: t.genero || 'Desconhecido', count: 0 };
+      contagemRecente[k].count++;
+    });
+
+  // Conta execuções anteriores
+  const contagemAnterior: Record<string, number> = {};
+  resAnterior.data
+    .filter((t: any) => !isBlocked(t.artista || '', t.musica || ''))
+    .forEach((t: any) => {
+      const k = `${t.artista}|||${t.musica}`;
+      contagemAnterior[k] = (contagemAnterior[k] || 0) + 1;
+    });
+
+  const alertas: AlertaMusica[] = [];
+
+  for (const [k, info] of Object.entries(contagemRecente)) {
+    // Só considera músicas com ao menos 2 execuções recentes para evitar ruído
+    if (info.count < 2) continue;
+    const anterior = contagemAnterior[k] || 0;
+    const ratio = info.count / (anterior || 1);
+
+    if (ratio >= 1.5) {
+      alertas.push({ artista: info.artista, musica: info.musica, capa: info.capa, genero: info.genero, execucoesRecentes: info.count, execucoesAnteriores: anterior, ratio, tipo: 'alta' });
+    } else if (ratio <= 0.5 && anterior >= 2) {
+      alertas.push({ artista: info.artista, musica: info.musica, capa: info.capa, genero: info.genero, execucoesRecentes: info.count, execucoesAnteriores: anterior, ratio, tipo: 'queda' });
+    }
+  }
+
+  // Ordena: em alta pelo maior ratio, em queda pelo menor
+  return alertas.sort((a, b) => {
+    if (a.tipo === 'alta' && b.tipo === 'alta') return b.ratio - a.ratio;
+    if (a.tipo === 'queda' && b.tipo === 'queda') return a.ratio - b.ratio;
+    return a.tipo === 'alta' ? -1 : 1;
+  }).slice(0, 10); // máximo 10 alertas
+}
+
+// ─────────────────────────────────────────────────────────────
+// ALERTAS BLOCK — componente visual
+// ─────────────────────────────────────────────────────────────
+const AlertasBlock = ({ alertas, loading }: { alertas: AlertaMusica[]; loading: boolean }) => {
+  const emAlta  = alertas.filter(a => a.tipo === 'alta');
+  const emQueda = alertas.filter(a => a.tipo === 'queda');
+
+  if (!loading && alertas.length === 0) return null;
+
+  return (
+    <div className="bg-white rounded-3xl shadow-xl p-6 mb-8 border border-slate-100">
+      <div className="flex items-center gap-4 mb-6">
+        <div className="bg-gradient-to-br from-orange-400 to-red-500 p-4 rounded-2xl shadow-lg">
+          <Flame className="text-white" size={28} />
+        </div>
+        <div>
+          <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Alertas de Tendência</h2>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Comparativo: últimos 3 dias vs 3 anteriores</p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center gap-3 py-10 text-slate-400">
+          <Loader2 size={20} className="animate-spin" />
+          <span className="font-bold text-sm">Calculando tendências...</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* EM ALTA */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl">🔥</span>
+              <h3 className="font-black text-base text-orange-600 uppercase tracking-wide">Em Alta</h3>
+              <span className="ml-auto px-2.5 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[10px] font-black">{emAlta.length}</span>
+            </div>
+            {emAlta.length === 0 ? (
+              <p className="text-slate-400 text-sm font-bold text-center py-6">Nenhuma música em alta no momento</p>
+            ) : (
+              <div className="space-y-2">
+                {emAlta.map((a, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-orange-50 hover:bg-orange-100 rounded-2xl p-3 transition-all">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden bg-orange-100 shadow">
+                      {a.capa ? <img src={a.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-orange-300"><Music size={14} /></div>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-slate-800 text-xs truncate leading-tight">{a.musica}</p>
+                      <p className="font-bold text-orange-500 text-[10px] truncate">{a.artista}</p>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <p className="font-black text-orange-600 text-xs">+{Math.round((a.ratio - 1) * 100)}%</p>
+                      <p className="text-[9px] text-slate-400 font-bold">{a.execucoesAnteriores}→{a.execucoesRecentes}x</p>
+                    </div>
+                    <YTButton artista={a.artista} musica={a.musica} size="sm" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* EM QUEDA */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl">❄️</span>
+              <h3 className="font-black text-base text-blue-500 uppercase tracking-wide">Em Queda</h3>
+              <span className="ml-auto px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black">{emQueda.length}</span>
+            </div>
+            {emQueda.length === 0 ? (
+              <p className="text-slate-400 text-sm font-bold text-center py-6">Nenhuma música em queda no momento</p>
+            ) : (
+              <div className="space-y-2">
+                {emQueda.map((a, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-blue-50 hover:bg-blue-100 rounded-2xl p-3 transition-all">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden bg-blue-100 shadow">
+                      {a.capa ? <img src={a.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-blue-300"><Music size={14} /></div>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-slate-800 text-xs truncate leading-tight">{a.musica}</p>
+                      <p className="font-bold text-blue-500 text-[10px] truncate">{a.artista}</p>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <p className="font-black text-blue-600 text-xs">-{Math.round((1 - a.ratio) * 100)}%</p>
+                      <p className="text-[9px] text-slate-400 font-bold">{a.execucoesAnteriores}→{a.execucoesRecentes}x</p>
+                    </div>
+                    <YTButton artista={a.artista} musica={a.musica} size="sm" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const datesCache: Record<string, string[]> = {};
 
@@ -492,10 +657,22 @@ const App = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', bpm: 'all' });
   const [visibleCount, setVisibleCount] = useState(9);
+  const [alertas, setAlertas] = useState<AlertaMusica[]>([]);
+  const [loadingAlertas, setLoadingAlertas] = useState(false);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
   const filtersRef = useRef(filters);
   useEffect(() => { filtersRef.current = filters; }, [filters]);
+
+  // Carrega alertas quando a rádio muda
+  const fetchAlertas = useCallback(async (radio: string) => {
+    setLoadingAlertas(true);
+    try {
+      const result = await loadAlertasAltaQueda(radio);
+      setAlertas(result);
+    } catch (err) { console.error('Erro alertas:', err); setAlertas([]); }
+    finally { setLoadingAlertas(false); }
+  }, []);
 
   const doFetch = useCallback(async (radio: string, date: string, silent = false) => {
     if (!date) return;
@@ -531,7 +708,10 @@ const App = () => {
       setFilters(f => ({ ...f, date: firstDate }));
       if (firstDate) {
         setAvailableDates([firstDate]);
-        await doFetch(radio, firstDate);
+        await Promise.all([
+          doFetch(radio, firstDate),
+          fetchAlertas(radio),
+        ]);
       } else {
         setLoading(false);
       }
@@ -554,6 +734,7 @@ const App = () => {
 
   const handleRadioChange = useCallback(async (r: string) => {
     setData([]);
+    setAlertas([]);
     setAvailableDates([]);
     setVisibleCount(9);
     setFilters(f => ({ ...f, radio: r, date: '', search: '', genero: '', hour: 'all', bpm: 'all' }));
@@ -562,11 +743,14 @@ const App = () => {
     if (firstDate) {
       setAvailableDates(datesCache[r] ? datesCache[r] : [firstDate]);
       setFilters(f => ({ ...f, radio: r, date: firstDate }));
-      await doFetch(r, firstDate);
+      await Promise.all([
+        doFetch(r, firstDate),
+        fetchAlertas(r),
+      ]);
     } else {
       setLoading(false);
     }
-  }, [doFetch]);
+  }, [doFetch, fetchAlertas]);
 
   const filteredData = useMemo(() => data.filter(t => {
     const matchSearch = filters.search ? (t.artista + t.musica).toLowerCase().includes(filters.search.toLowerCase()) : true;
@@ -716,6 +900,10 @@ const App = () => {
             {filteredData.length > 0 && <NowPlayingCard track={filteredData[0]} />}
             <TopArtistsCard filteredData={filteredData} />
             <GenreChart data={genreData} chartRef={chartRef} />
+
+            {/* ALERTAS DE TENDÊNCIA */}
+            <AlertasBlock alertas={alertas} loading={loadingAlertas} />
+
             {filteredData.length > 0 && (
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
