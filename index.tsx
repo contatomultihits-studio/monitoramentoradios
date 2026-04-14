@@ -164,14 +164,12 @@ const TrackExecutionsModal = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Agrupa por dia
   const porDia = useMemo(() => {
     const map: Record<string, string[]> = {};
     execucoes.forEach(e => {
       if (!map[e.data]) map[e.data] = [];
       map[e.data].push(e.hora);
     });
-    // Ordena por data desc
     return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
   }, [execucoes]);
 
@@ -181,7 +179,6 @@ const TrackExecutionsModal = ({
       onClick={handleBackdrop}
     >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden">
-        {/* Header */}
         <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-t-3xl">
           <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 ring-2 ring-white/30 shadow-lg">
             {capa
@@ -204,7 +201,6 @@ const TrackExecutionsModal = ({
           </button>
         </div>
 
-        {/* Body */}
         <div className="overflow-y-auto flex-1 p-4 space-y-3">
           {porDia.length === 0 ? (
             <p className="text-center text-slate-400 font-bold py-8">Nenhuma execução encontrada</p>
@@ -234,7 +230,6 @@ const TrackExecutionsModal = ({
           )}
         </div>
 
-        {/* Footer */}
         <div className="p-4 border-t border-slate-100">
           <YTButton artista={artista} musica={musica} size="lg" />
         </div>
@@ -244,7 +239,7 @@ const TrackExecutionsModal = ({
 };
 
 // ─────────────────────────────────────────────────────────────
-// MODAL — playlist do artista (clique na foto do Top 5)
+// MODAL — playlist do artista (clique na foto do Top Artistas)
 // ─────────────────────────────────────────────────────────────
 const ArtistModal = ({ artist, tracks, photo, onClose }: { artist: string; tracks: any[]; photo: string; onClose: () => void }) => {
   const grouped = useMemo(() => {
@@ -346,7 +341,6 @@ const MusicCard = ({
     repeatCount && repeatCount >= REPEAT_THRESHOLD ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'
   }`}>
     <div className="flex items-center gap-4">
-      {/* CAPA CLICÁVEL */}
       <button
         onClick={onCapaClick}
         className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shadow-md relative group cursor-pointer"
@@ -356,11 +350,9 @@ const MusicCard = ({
           ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center text-slate-300"><Music size={20} /></div>
         }
-        {/* Overlay hover */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center">
           <Clock size={16} className="text-white opacity-0 group-hover:opacity-100 drop-shadow-lg transition-opacity" />
         </div>
-        {/* Badge de execuções semanais */}
         {weeklyExecs.length > 0 && (
           <div className="absolute -bottom-1 -right-1 min-w-[18px] h-[18px] px-1 bg-blue-600 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
             {weeklyExecs.length}
@@ -390,7 +382,6 @@ const MusicCard = ({
               <span className="font-black text-[10px] text-white">🔁 {repeatCount}x hoje</span>
             </div>
           )}
-          {/* Execuções semanais — ícone + número, sem % */}
           {weeklyExecs.length > 0 && (
             <div className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-full">
               <TrendingUp size={9} className="text-blue-500" />
@@ -405,7 +396,7 @@ const MusicCard = ({
 );
 
 // ─────────────────────────────────────────────────────────────
-// TOP 5 — com paginação 5 por coluna + carregar mais
+// TOP ARTISTAS — com paginação 5 por coluna + carregar mais
 // ─────────────────────────────────────────────────────────────
 const TOP_PER_COL = 5;
 
@@ -415,18 +406,7 @@ const TopArtistsCard = ({ filteredData, weeklyAllData }: { filteredData: any[]; 
   const [modalArtist, setModalArtist] = useState<string | null>(null);
   const [visibleTop, setVisibleTop] = useState(TOP_PER_COL);
 
-  // Contagem semanal (7 dias)
-  const weeklyCountMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    weeklyAllData.forEach(t => {
-      const k = t.artista;
-      map[k] = (map[k] || 0) + 1;
-    });
-    return map;
-  }, [weeklyAllData]);
-
   const topArtists = useMemo(() => {
-    // Ordena pelo total semanal
     const counts: Record<string, { count: number; genero: string; capa: string; musica: string }> = {};
     weeklyAllData.forEach(t => {
       if (!counts[t.artista]) counts[t.artista] = { count: 0, genero: t.genero, capa: t.capa || '', musica: t.musica };
@@ -483,7 +463,6 @@ const TopArtistsCard = ({ filteredData, weeklyAllData }: { filteredData: any[]; 
           </div>
         </div>
 
-        {/* Grade: 5 por coluna */}
         <div className="grid grid-cols-5 gap-3 mt-6">
           {visible.map((artist, idx) => {
             const photo = photos[artist.artista] || artist.capa || '';
@@ -521,7 +500,6 @@ const TopArtistsCard = ({ filteredData, weeklyAllData }: { filteredData: any[]; 
                   )}
                 </div>
                 <p className="font-black text-slate-800 text-xs leading-tight truncate w-full">{artist.artista}</p>
-                {/* Ícone + execuções, sem porcentagem */}
                 <p className="font-bold text-blue-600 text-[10px] mt-1 flex items-center gap-1 justify-center">
                   <TrendingUp size={9} />
                   {artist.count} execuções
@@ -536,7 +514,6 @@ const TopArtistsCard = ({ filteredData, weeklyAllData }: { filteredData: any[]; 
           })}
         </div>
 
-        {/* Botão carregar mais */}
         {hasMore && (
           <button
             onClick={() => setVisibleTop(v => v + TOP_PER_COL)}
@@ -604,16 +581,20 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
 
 // ─────────────────────────────────────────────────────────────
 // DATE PICKER
+// Mostra o dia atual pré-selecionado.
+// Ao abrir, carrega as datas disponíveis (lazy, com cache).
 // ─────────────────────────────────────────────────────────────
-const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
+const DatePicker = ({ value, availableDates, loadingDates, datesLoaded, onChange, onOpen }: {
   value: string;
   availableDates: string[];
   loadingDates: boolean;
+  datesLoaded: boolean;
   onChange: (d: string) => void;
   onOpen: () => void;
 }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -622,8 +603,19 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
-  const handleToggle = () => { if (!open) onOpen(); setOpen(o => !o); };
+
+  const handleToggle = () => {
+    // Só dispara onOpen se ainda não carregou as datas
+    if (!open && !datesLoaded) onOpen();
+    setOpen(o => !o);
+  };
+
   const handleSelect = (d: string) => { onChange(d); setOpen(false); };
+
+  // Constrói lista a exibir: se as datas completas ainda não foram carregadas,
+  // mostra apenas o dia atual; após carregamento, mostra a lista completa.
+  const displayDates = datesLoaded ? availableDates : (value ? [value] : []);
+
   return (
     <div ref={ref} className="relative">
       <button type="button" onClick={handleToggle}
@@ -634,21 +626,22 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
         <span className="flex-1 text-left text-sm">{value ? formatDateBR(value) : 'Selecionar data'}</span>
         <ChevronDown size={16} className={`text-slate-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
       </button>
+
       {open && (
         <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
           {loadingDates ? (
             <div className="flex items-center justify-center gap-2 py-8 text-slate-400">
               <Loader2 size={16} className="animate-spin" />
-              <span className="text-sm font-bold">Carregando datas...</span>
+              <span className="text-sm font-bold">Carregando datas disponíveis...</span>
             </div>
-          ) : availableDates.length === 0 ? (
+          ) : displayDates.length === 0 ? (
             <div className="py-8 text-center text-slate-400 text-sm font-bold">Nenhuma data disponível</div>
           ) : (
-            availableDates.map(d => (
+            displayDates.map((d, i) => (
               <button key={d} type="button" onClick={() => handleSelect(d)}
                 className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-blue-50 ${d === value ? 'bg-blue-100 text-blue-700' : 'text-slate-700'}`}>
                 📅 {formatDateBR(d)}
-                {d === availableDates[0] && <span className="ml-2 text-[10px] font-black text-emerald-600 uppercase">Mais recente</span>}
+                {i === 0 && <span className="ml-2 text-[10px] font-black text-emerald-600 uppercase">Hoje</span>}
               </button>
             ))
           )}
@@ -685,17 +678,13 @@ async function loadDayData(radio: string, date: string): Promise<any[]> {
     .filter((t: any) => !isBlocked(t.artista, t.musica));
 }
 
-// ── Carrega 7 dias de dados para o Top Artistas e execuções semanais ──
+// Carrega 7 dias de dados para o Top Artistas e execuções semanais
 async function loadWeeklyData(radio: string): Promise<any[]> {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
   const now = new Date();
-  const weekAgo = new Date(now);
-  weekAgo.setDate(now.getDate() - 7);
-  // Também pega os 7 dias anteriores para comparativo
   const twoWeeksAgo = new Date(now);
   twoWeeksAgo.setDate(now.getDate() - 14);
-
   const { data: tracks, error } = await supabase
     .from('radio_airplay')
     .select('artista, musica, capa, genero, tocou_em, bpm')
@@ -711,6 +700,7 @@ async function loadWeeklyData(radio: string): Promise<any[]> {
     .filter((t: any) => !isBlocked(t.artista, t.musica));
 }
 
+// Retorna apenas a data mais recente — usado no boot para saber o dia atual
 async function loadLatestDate(radio: string): Promise<string> {
   const supabase = getSupabaseClient();
   if (!supabase) return '';
@@ -725,6 +715,7 @@ async function loadLatestDate(radio: string): Promise<string> {
   return parseTocouEm(rows.tocou_em).data;
 }
 
+// Carrega TODAS as datas disponíveis — chamado apenas ao abrir o seletor (lazy)
 async function loadAvailableDates(radio: string): Promise<string[]> {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
@@ -745,6 +736,7 @@ async function loadAvailableDates(radio: string): Promise<string[]> {
   return [...allDates].sort().reverse();
 }
 
+// Caches em memória
 const datesCache: Record<string, string[]> = {};
 const weeklyCache: Record<string, any[]> = {};
 
@@ -755,26 +747,26 @@ const App = () => {
   const [data, setData] = useState<any[]>([]);
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
+  // true = lista completa de datas já foi carregada (lazy)
+  const [datesLoaded, setDatesLoaded] = useState(false);
   const [loadingDates, setLoadingDates] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', bpm: 'all' });
   const [visibleCount, setVisibleCount] = useState(9);
-  // Modal de execuções semanais
   const [execModal, setExecModal] = useState<{ artista: string; musica: string; capa: string; execucoes: ExecucaoItem[] } | null>(null);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
   const filtersRef = useRef(filters);
   useEffect(() => { filtersRef.current = filters; }, [filters]);
 
-  // ── Semana: apenas os últimos 7 dias ──
+  // Apenas os últimos 7 dias
   const weeklyLast7 = useMemo(() => {
-    const now = Date.now();
-    const cutoff = now - 7 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
     return weeklyData.filter(t => t.timestamp >= cutoff);
   }, [weeklyData]);
 
-  // ── Mapa de execuções semanais por música (artista|||musica) ──
+  // Mapa de execuções semanais por música
   const weeklyExecsMap = useMemo(() => {
     const map: Record<string, ExecucaoItem[]> = {};
     weeklyLast7.forEach(t => {
@@ -805,28 +797,36 @@ const App = () => {
     } catch (err) { console.error('Erro loadWeeklyData:', err); }
   }, []);
 
+  // ── Abre o seletor de datas: carrega a lista completa SOMENTE na 1ª vez ──
   const handleOpenDatePicker = useCallback(async () => {
     const radio = filtersRef.current.radio;
-    if (datesCache[radio]) { setAvailableDates(datesCache[radio]); return; }
+    // Se já há cache, apenas exibe
+    if (datesCache[radio]) {
+      setAvailableDates(datesCache[radio]);
+      setDatesLoaded(true);
+      return;
+    }
     if (loadingDates) return;
     setLoadingDates(true);
     try {
       const dates = await loadAvailableDates(radio);
       datesCache[radio] = dates;
       setAvailableDates(dates);
+      setDatesLoaded(true);
     } catch (err) { console.error('Erro loadAvailableDates:', err); }
     finally { setLoadingDates(false); }
   }, [loadingDates]);
 
+  // ── Boot: carrega só o dia atual + dados semanais em background ──
   useEffect(() => {
     (async () => {
       const radio = 'Metropolitana FM';
-      const firstDate = await loadLatestDate(radio);
-      setFilters(f => ({ ...f, date: firstDate }));
-      if (firstDate) {
-        setAvailableDates([firstDate]);
+      const today = await loadLatestDate(radio);
+      if (today) {
+        setFilters(f => ({ ...f, date: today }));
+        // Não setamos availableDates aqui — isso é feito ao abrir o seletor
         await Promise.all([
-          doFetch(radio, firstDate),
+          doFetch(radio, today),
           fetchWeekly(radio),
         ]);
       } else {
@@ -835,12 +835,14 @@ const App = () => {
     })();
   }, []);
 
+  // Recarrega quando muda a data ou a rádio (mas não na primeira renderização)
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
     if (filters.date) doFetch(filters.radio, filters.date);
   }, [filters.date, filters.radio]);
 
+  // Auto-refresh a cada 30s
   useEffect(() => {
     const interval = setInterval(() => {
       const { radio, date } = filtersRef.current;
@@ -849,19 +851,20 @@ const App = () => {
     return () => clearInterval(interval);
   }, [doFetch]);
 
+  // ── Troca de rádio: reseta estado e carrega o dia mais recente dessa rádio ──
   const handleRadioChange = useCallback(async (r: string) => {
     setData([]);
     setWeeklyData([]);
     setAvailableDates([]);
+    setDatesLoaded(false);
     setVisibleCount(9);
     setFilters(f => ({ ...f, radio: r, date: '', search: '', genero: '', hour: 'all', bpm: 'all' }));
     setLoading(true);
-    const firstDate = await loadLatestDate(r);
-    if (firstDate) {
-      setAvailableDates(datesCache[r] ? datesCache[r] : [firstDate]);
-      setFilters(f => ({ ...f, radio: r, date: firstDate }));
+    const today = await loadLatestDate(r);
+    if (today) {
+      setFilters(f => ({ ...f, radio: r, date: today }));
       await Promise.all([
-        doFetch(r, firstDate),
+        doFetch(r, today),
         fetchWeekly(r),
       ]);
     } else {
@@ -933,7 +936,6 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* MODAL DE EXECUÇÕES */}
       {execModal && (
         <TrackExecutionsModal
           artista={execModal.artista}
@@ -992,6 +994,7 @@ const App = () => {
               value={filters.date}
               availableDates={availableDates}
               loadingDates={loadingDates}
+              datesLoaded={datesLoaded}
               onChange={d => { setFilters(f => ({ ...f, date: d })); setVisibleCount(9); }}
               onOpen={handleOpenDatePicker}
             />
@@ -1044,7 +1047,6 @@ const App = () => {
           <>
             {filteredData.length > 0 && <NowPlayingCard track={filteredData[0]} />}
 
-            {/* TOP ARTISTAS — usa dados de 7 dias */}
             <TopArtistsCard filteredData={filteredData} weeklyAllData={weeklyLast7} />
 
             <GenreChart data={genreData} chartRef={chartRef} />
