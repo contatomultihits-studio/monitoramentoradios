@@ -404,7 +404,7 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
 };
 
 // ─────────────────────────────────────────────────────────────
-// FETCH DATA
+// FETCH DATA — otimizado
 // ─────────────────────────────────────────────────────────────
 function getBrasiliaDateBounds(date: string): { dayStart: string; dayEnd: string } {
   const dayStart = brasiliaLocalToUTC(`${date}T00:00:00`);
@@ -412,21 +412,28 @@ function getBrasiliaDateBounds(date: string): { dayStart: string; dayEnd: string
   return { dayStart, dayEnd };
 }
 
+// ── loadDayData: seleciona só colunas necessárias (sem *) ──────
 async function loadDayData(radio: string, date: string): Promise<any[]> {
   const supabase = getSupabaseClient();
   if (!supabase || !date) return [];
   const { dayStart, dayEnd } = getBrasiliaDateBounds(date);
   const { data: tracks, error } = await supabase
-    .from('radio_airplay').select('*')
+    .from('radio_airplay')
+    .select('id, artista, musica, radio, genero, tocou_em, capa, bpm')
     .eq('radio', radio)
-    .gte('tocou_em', dayStart).lte('tocou_em', dayEnd)
+    .gte('tocou_em', dayStart)
+    .lte('tocou_em', dayEnd)
     .order('tocou_em', { ascending: false });
   if (error) throw error;
   return (tracks || [])
-    .map((t: any) => { const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em); return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, capa: t.capa, bpm: t.bpm }; })
+    .map((t: any) => {
+      const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
+      return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, capa: t.capa, bpm: t.bpm };
+    })
     .filter((t: any) => !isBlocked(t.artista, t.musica));
 }
 
+// ── loadLatestDate: só busca tocou_em da última linha ──────────
 async function loadLatestDate(radio: string): Promise<string> {
   const supabase = getSupabaseClient();
   if (!supabase) return '';
@@ -441,27 +448,40 @@ async function loadLatestDate(radio: string): Promise<string> {
   return parseTocouEm(rows.tocou_em).data;
 }
 
-// ─────────────────────────────────────────────────────────────
-// loadAvailableDates — 1 única query (últimos 90 dias)
-// ─────────────────────────────────────────────────────────────
+// ── loadAvailableDates: usa range de 90 dias mas só traz tocou_em ──
+// Paginação em blocos de 1000 para evitar timeout em bases grandes
 async function loadAvailableDates(radio: string): Promise<string[]> {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
   const since = new Date();
   since.setDate(since.getDate() - 90);
-  const { data: rows, error } = await supabase
-    .from('radio_airplay')
-    .select('tocou_em')
-    .eq('radio', radio)
-    .gte('tocou_em', since.toISOString())
-    .order('tocou_em', { ascending: false });
-  if (error || !rows) return [];
+
+  const PAGE_SIZE = 1000;
   const seen = new Set<string>();
   const dates: string[] = [];
-  for (const r of rows) {
-    const d = parseTocouEm(r.tocou_em).data;
-    if (!seen.has(d)) { seen.add(d); dates.push(d); }
+  let from = 0;
+
+  while (true) {
+    const { data: rows, error } = await supabase
+      .from('radio_airplay')
+      .select('tocou_em')
+      .eq('radio', radio)
+      .gte('tocou_em', since.toISOString())
+      .order('tocou_em', { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error || !rows || rows.length === 0) break;
+
+    for (const r of rows) {
+      const d = parseTocouEm(r.tocou_em).data;
+      if (!seen.has(d)) { seen.add(d); dates.push(d); }
+    }
+
+    // Se já temos 90+ datas únicas ou retornou menos que o tamanho da página, para
+    if (dates.length >= 90 || rows.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
   }
+
   return dates;
 }
 
@@ -485,14 +505,13 @@ async function loadAlertasAltaQueda(radio: string): Promise<AlertaMusica[]> {
   if (!supabase) return [];
 
   const agora = new Date();
-  // Período recente: últimos 3 dias
   const inicioRecente = new Date(agora);
   inicioRecente.setDate(agora.getDate() - 3);
-  // Período anterior: 3 dias antes do recente (dias -6 a -4)
   const inicioAnterior = new Date(agora);
   inicioAnterior.setDate(agora.getDate() - 6);
   const fimAnterior = new Date(inicioRecente);
 
+  // Seleciona só colunas necessárias nas queries de alertas
   const [resRecente, resAnterior] = await Promise.all([
     supabase.from('radio_airplay')
       .select('artista, musica, capa, genero')
@@ -507,7 +526,6 @@ async function loadAlertasAltaQueda(radio: string): Promise<AlertaMusica[]> {
 
   if (!resRecente.data || !resAnterior.data) return [];
 
-  // Filtra bloqueadas e conta execuções recentes
   const contagemRecente: Record<string, { artista: string; musica: string; capa: string; genero: string; count: number }> = {};
   resRecente.data
     .filter((t: any) => !isBlocked(t.artista || '', t.musica || ''))
@@ -517,7 +535,6 @@ async function loadAlertasAltaQueda(radio: string): Promise<AlertaMusica[]> {
       contagemRecente[k].count++;
     });
 
-  // Conta execuções anteriores
   const contagemAnterior: Record<string, number> = {};
   resAnterior.data
     .filter((t: any) => !isBlocked(t.artista || '', t.musica || ''))
@@ -529,7 +546,6 @@ async function loadAlertasAltaQueda(radio: string): Promise<AlertaMusica[]> {
   const alertas: AlertaMusica[] = [];
 
   for (const [k, info] of Object.entries(contagemRecente)) {
-    // Só considera músicas com ao menos 2 execuções recentes para evitar ruído
     if (info.count < 2) continue;
     const anterior = contagemAnterior[k] || 0;
     const ratio = info.count / (anterior || 1);
@@ -541,12 +557,11 @@ async function loadAlertasAltaQueda(radio: string): Promise<AlertaMusica[]> {
     }
   }
 
-  // Ordena: em alta pelo maior ratio, em queda pelo menor
   return alertas.sort((a, b) => {
     if (a.tipo === 'alta' && b.tipo === 'alta') return b.ratio - a.ratio;
     if (a.tipo === 'queda' && b.tipo === 'queda') return a.ratio - b.ratio;
     return a.tipo === 'alta' ? -1 : 1;
-  }).slice(0, 10); // máximo 10 alertas
+  }).slice(0, 10);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -664,7 +679,6 @@ const App = () => {
   const filtersRef = useRef(filters);
   useEffect(() => { filtersRef.current = filters; }, [filters]);
 
-  // Carrega alertas quando a rádio muda
   const fetchAlertas = useCallback(async (radio: string) => {
     setLoadingAlertas(true);
     try {
