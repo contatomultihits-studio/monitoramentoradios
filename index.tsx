@@ -13,11 +13,11 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 const REFRESH_INTERVAL_MS = 30000;
 const LASTFM_API_KEY = '2a416b64ded1827a7e82e61d9a87b2e0';
 const REPEAT_THRESHOLD = 2;
+const PAGE_SIZE = 1000;
 const getSupabaseClient = () => (window as any)._supabaseClient;
 
 // ─────────────────────────────────────────────────────────────
-// TIMEZONE HELPER — retorna offset atual de Brasília em minutos
-// (lida corretamente com horário de verão: UTC-3 ou UTC-2)
+// TIMEZONE HELPER
 // ─────────────────────────────────────────────────────────────
 function getBrasiliaOffsetMs(date: Date = new Date()): number {
   const utcStr = date.toLocaleString('en-US', { timeZone: 'UTC' });
@@ -60,7 +60,7 @@ const ytURL = (artista: string, musica: string) =>
   `https://www.youtube.com/results?search_query=${encodeURIComponent(`"${artista}" "${musica}"`)}` ;
 
 // ─────────────────────────────────────────────────────────────
-// parseTocouEm — converte UTC → Brasília corretamente
+// parseTocouEm — UTC → Brasília
 // ─────────────────────────────────────────────────────────────
 const parseTocouEm = (tocouEm: string) => {
   const raw = tocouEm.endsWith('Z') || tocouEm.includes('+') || /[+-]\d{2}:\d{2}$/.test(tocouEm)
@@ -137,7 +137,114 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// MODAL — playlist do artista
+// MODAL DE EXECUÇÕES — ao clicar na capa, mostra dia + horário
+// de cada execução da música no período de 7 dias
+// ─────────────────────────────────────────────────────────────
+interface ExecucaoItem {
+  data: string;
+  hora: string;
+  tocou_em: string;
+}
+
+const TrackExecutionsModal = ({
+  artista, musica, capa, execucoes, onClose
+}: {
+  artista: string;
+  musica: string;
+  capa: string;
+  execucoes: ExecucaoItem[];
+  onClose: () => void;
+}) => {
+  const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  // Agrupa por dia
+  const porDia = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    execucoes.forEach(e => {
+      if (!map[e.data]) map[e.data] = [];
+      map[e.data].push(e.hora);
+    });
+    // Ordena por data desc
+    return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [execucoes]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={handleBackdrop}
+    >
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-t-3xl">
+          <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 ring-2 ring-white/30 shadow-lg">
+            {capa
+              ? <img src={capa} alt={musica} className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center bg-white/20"><Music size={24} className="text-white" /></div>
+            }
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-black text-base text-white leading-tight truncate">{musica}</h2>
+            <p className="text-blue-200 text-xs font-bold truncate">{artista}</p>
+            <p className="text-blue-100 text-[10px] font-bold mt-0.5">
+              {execucoes.length} execução{execucoes.length !== 1 ? 'ões' : ''} nos últimos 7 dias
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex-shrink-0 p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-all"
+          >
+            <X size={18} className="text-white" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto flex-1 p-4 space-y-3">
+          {porDia.length === 0 ? (
+            <p className="text-center text-slate-400 font-bold py-8">Nenhuma execução encontrada</p>
+          ) : (
+            porDia.map(([dia, horarios]) => (
+              <div key={dia} className="bg-slate-50 rounded-2xl p-4">
+                <p className="font-black text-slate-700 text-sm mb-2 flex items-center gap-2">
+                  <CalendarDays size={14} className="text-blue-500" />
+                  {formatDateBR(dia)}
+                  <span className="ml-auto px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black">
+                    {horarios.length}x
+                  </span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {horarios.sort().map((h, i) => (
+                    <span
+                      key={i}
+                      className="flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200 rounded-full text-[11px] font-bold text-slate-600 shadow-sm"
+                    >
+                      <Clock size={9} className="text-blue-400" />
+                      {h}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-slate-100">
+          <YTButton artista={artista} musica={musica} size="lg" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
+// MODAL — playlist do artista (clique na foto do Top 5)
 // ─────────────────────────────────────────────────────────────
 const ArtistModal = ({ artist, tracks, photo, onClose }: { artist: string; tracks: any[]; photo: string; onClose: () => void }) => {
   const grouped = useMemo(() => {
@@ -222,20 +329,74 @@ const NowPlayingCard = ({ track }: { track: any }) => (
 );
 
 // ─────────────────────────────────────────────────────────────
-// MUSIC CARD
+// MUSIC CARD — com capa clicável que abre modal de execuções
 // ─────────────────────────────────────────────────────────────
-const MusicCard = ({ track, repeatCount }: { track: any; repeatCount?: number }) => (
-  <div className={`bg-white border rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${repeatCount && repeatCount >= REPEAT_THRESHOLD ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'}`}>
+const MusicCard = ({
+  track,
+  repeatCount,
+  weeklyExecs,
+  onCapaClick
+}: {
+  track: any;
+  repeatCount?: number;
+  weeklyExecs: ExecucaoItem[];
+  onCapaClick: () => void;
+}) => (
+  <div className={`bg-white border rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${
+    repeatCount && repeatCount >= REPEAT_THRESHOLD ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'
+  }`}>
     <div className="flex items-center gap-4">
-      <div className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shadow-md">{track.capa ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Music size={20} /></div>}</div>
+      {/* CAPA CLICÁVEL */}
+      <button
+        onClick={onCapaClick}
+        className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shadow-md relative group cursor-pointer"
+        title="Ver execuções desta música nos últimos 7 dias"
+      >
+        {track.capa
+          ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" />
+          : <div className="w-full h-full flex items-center justify-center text-slate-300"><Music size={20} /></div>
+        }
+        {/* Overlay hover */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center">
+          <Clock size={16} className="text-white opacity-0 group-hover:opacity-100 drop-shadow-lg transition-opacity" />
+        </div>
+        {/* Badge de execuções semanais */}
+        {weeklyExecs.length > 0 && (
+          <div className="absolute -bottom-1 -right-1 min-w-[18px] h-[18px] px-1 bg-blue-600 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
+            {weeklyExecs.length}
+          </div>
+        )}
+      </button>
+
       <div className="flex-1 min-w-0">
         <h3 className="font-black text-slate-800 text-base truncate leading-tight mb-1">{track.musica}</h3>
         <p className="font-bold text-blue-600 text-sm truncate mb-2">{track.artista}</p>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-full"><Clock size={10} className="text-slate-500" /><span className="font-bold text-[10px] text-slate-600">{track.hora}</span></div>
-          {track.genero && track.genero !== 'Desconhecido' && <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>{track.genero}</span>}
-          {track.bpm && <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500 rounded-full"><Activity size={10} className="text-white" /><span className="font-black text-[10px] text-white">{track.bpm} BPM</span></div>}
-          {repeatCount && repeatCount >= REPEAT_THRESHOLD && <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-400 rounded-full"><span className="font-black text-[10px] text-white">🔁 {repeatCount}x tocada</span></div>}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-full">
+            <Clock size={10} className="text-slate-500" />
+            <span className="font-bold text-[10px] text-slate-600">{track.hora}</span>
+          </div>
+          {track.genero && track.genero !== 'Desconhecido' && (
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>{track.genero}</span>
+          )}
+          {track.bpm && (
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500 rounded-full">
+              <Activity size={10} className="text-white" />
+              <span className="font-black text-[10px] text-white">{track.bpm} BPM</span>
+            </div>
+          )}
+          {repeatCount && repeatCount >= REPEAT_THRESHOLD && (
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-400 rounded-full">
+              <span className="font-black text-[10px] text-white">🔁 {repeatCount}x hoje</span>
+            </div>
+          )}
+          {/* Execuções semanais — ícone + número, sem % */}
+          {weeklyExecs.length > 0 && (
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-full">
+              <TrendingUp size={9} className="text-blue-500" />
+              <span className="font-black text-[10px] text-blue-600">{weeklyExecs.length}x semana</span>
+            </div>
+          )}
         </div>
       </div>
       <YTButton artista={track.artista} musica={track.musica} size="md" />
@@ -244,57 +405,146 @@ const MusicCard = ({ track, repeatCount }: { track: any; repeatCount?: number })
 );
 
 // ─────────────────────────────────────────────────────────────
-// TOP 5
+// TOP 5 — com paginação 5 por coluna + carregar mais
 // ─────────────────────────────────────────────────────────────
-const TopArtistsCard = ({ filteredData }: { filteredData: any[] }) => {
+const TOP_PER_COL = 5;
+
+const TopArtistsCard = ({ filteredData, weeklyAllData }: { filteredData: any[]; weeklyAllData: any[] }) => {
   const [photos, setPhotos] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [modalArtist, setModalArtist] = useState<string | null>(null);
+  const [visibleTop, setVisibleTop] = useState(TOP_PER_COL);
+
+  // Contagem semanal (7 dias)
+  const weeklyCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    weeklyAllData.forEach(t => {
+      const k = t.artista;
+      map[k] = (map[k] || 0) + 1;
+    });
+    return map;
+  }, [weeklyAllData]);
+
   const topArtists = useMemo(() => {
+    // Ordena pelo total semanal
     const counts: Record<string, { count: number; genero: string; capa: string; musica: string }> = {};
-    filteredData.forEach(t => {
+    weeklyAllData.forEach(t => {
       if (!counts[t.artista]) counts[t.artista] = { count: 0, genero: t.genero, capa: t.capa || '', musica: t.musica };
       counts[t.artista].count++;
       if (!counts[t.artista].capa && t.capa) counts[t.artista].capa = t.capa;
     });
-    return Object.entries(counts).map(([artista, info]) => ({ artista, ...info })).sort((a, b) => b.count - a.count).slice(0, 5);
-  }, [filteredData]);
+    return Object.entries(counts)
+      .map(([artista, info]) => ({ artista, ...info }))
+      .sort((a, b) => b.count - a.count);
+  }, [weeklyAllData]);
+
   useEffect(() => {
     if (!topArtists.length) return;
+    const toLoad = topArtists.slice(0, visibleTop);
     setLoading(true);
-    Promise.all(topArtists.map(async a => ({ artista: a.artista, photo: await fetchArtistPhoto(a.artista) })))
-      .then(results => { const map: Record<string, string> = {}; results.forEach(r => { map[r.artista] = r.photo; }); setPhotos(map); setLoading(false); });
-  }, [topArtists]);
+    Promise.all(toLoad.map(async a => ({ artista: a.artista, photo: await fetchArtistPhoto(a.artista) })))
+      .then(results => {
+        setPhotos(prev => {
+          const map = { ...prev };
+          results.forEach(r => { map[r.artista] = r.photo; });
+          return map;
+        });
+        setLoading(false);
+      });
+  }, [topArtists, visibleTop]);
+
   if (!topArtists.length) return null;
-  const modalArtistData = modalArtist ? { tracks: filteredData.filter(t => t.artista === modalArtist), photo: photos[modalArtist] || topArtists.find(a => a.artista === modalArtist)?.capa || '' } : null;
+
+  const visible = topArtists.slice(0, visibleTop);
+  const hasMore = visibleTop < topArtists.length;
+
+  const modalArtistData = modalArtist
+    ? { tracks: weeklyAllData.filter(t => t.artista === modalArtist), photo: photos[modalArtist] || topArtists.find(a => a.artista === modalArtist)?.capa || '' }
+    : null;
+
   return (
     <>
-      {modalArtist && modalArtistData && <ArtistModal artist={modalArtist} tracks={modalArtistData.tracks} photo={modalArtistData.photo} onClose={() => setModalArtist(null)} />}
+      {modalArtist && modalArtistData && (
+        <ArtistModal
+          artist={modalArtist}
+          tracks={modalArtistData.tracks}
+          photo={modalArtistData.photo}
+          onClose={() => setModalArtist(null)}
+        />
+      )}
       <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-8 rounded-3xl shadow-xl mb-8 border border-amber-100">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg"><Trophy className="text-white" size={28} /></div>
-          <div><h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Top 5 Artistas</h2><p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Toque na foto para ver as músicas</p></div>
+        <div className="flex items-center gap-4 mb-2">
+          <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg">
+            <Trophy className="text-white" size={28} />
+          </div>
+          <div>
+            <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Top Artistas</h2>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Últimos 7 dias • Toque na foto para ver as músicas</p>
+          </div>
         </div>
-        <div className="grid grid-cols-5 gap-3">
-          {topArtists.map((artist, idx) => {
+
+        {/* Grade: 5 por coluna */}
+        <div className="grid grid-cols-5 gap-3 mt-6">
+          {visible.map((artist, idx) => {
             const photo = photos[artist.artista] || artist.capa || '';
+            const rank = idx + 1;
             return (
               <div key={artist.artista} className="flex flex-col items-center text-center group">
                 <div className="relative mb-3">
-                  <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${idx===0?'bg-yellow-400 text-yellow-900':idx===1?'bg-slate-300 text-slate-700':idx===2?'bg-amber-600 text-white':'bg-slate-200 text-slate-600'}`}>{idx<3?['1°','2°','3°'][idx]:`${idx+1}°`}</div>
-                  <button onClick={() => setModalArtist(artist.artista)} className={`relative block w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 cursor-pointer ${idx===0?'ring-yellow-400':idx===1?'ring-slate-300':idx===2?'ring-amber-500':'ring-slate-200'}`} title={`Ver playlist de ${artist.artista}`}>
-                    {photo?<img src={photo} alt={artist.artista} className="w-full h-full object-cover" onError={(e)=>{(e.target as HTMLImageElement).style.display='none';}}/>:<div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200"><Music size={24} className="text-blue-400" /></div>}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center"><div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1"><Music size={16} className="text-white drop-shadow-lg" /><span className="text-white text-[9px] font-black drop-shadow-lg">PLAYLIST</span></div></div>
+                  <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${
+                    rank===1?'bg-yellow-400 text-yellow-900':rank===2?'bg-slate-300 text-slate-700':rank===3?'bg-amber-600 text-white':'bg-slate-200 text-slate-600'
+                  }`}>
+                    {rank <= 3 ? ['1°','2°','3°'][rank-1] : `${rank}°`}
+                  </div>
+                  <button
+                    onClick={() => setModalArtist(artist.artista)}
+                    className={`relative block w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 cursor-pointer ${
+                      rank===1?'ring-yellow-400':rank===2?'ring-slate-300':rank===3?'ring-amber-500':'ring-slate-200'
+                    }`}
+                    title={`Ver playlist de ${artist.artista}`}
+                  >
+                    {photo
+                      ? <img src={photo} alt={artist.artista} className="w-full h-full object-cover" onError={(e)=>{(e.target as HTMLImageElement).style.display='none';}}/>
+                      : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200"><Music size={24} className="text-blue-400" /></div>
+                    }
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1">
+                        <Music size={16} className="text-white drop-shadow-lg" />
+                        <span className="text-white text-[9px] font-black drop-shadow-lg">PLAYLIST</span>
+                      </div>
+                    </div>
                   </button>
-                  {loading && !photo && <div className="absolute inset-0 rounded-2xl bg-white/60 flex items-center justify-center"><Loader2 size={16} className="animate-spin text-blue-500" /></div>}
+                  {loading && !photo && (
+                    <div className="absolute inset-0 rounded-2xl bg-white/60 flex items-center justify-center">
+                      <Loader2 size={16} className="animate-spin text-blue-500" />
+                    </div>
+                  )}
                 </div>
                 <p className="font-black text-slate-800 text-xs leading-tight truncate w-full">{artist.artista}</p>
-                <p className="font-bold text-blue-600 text-[10px] mt-1">{artist.count} execuções</p>
-                {artist.genero && artist.genero !== 'Desconhecido' && <span className="mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[artist.genero] || '#3B82F6' }}>{artist.genero}</span>}
+                {/* Ícone + execuções, sem porcentagem */}
+                <p className="font-bold text-blue-600 text-[10px] mt-1 flex items-center gap-1 justify-center">
+                  <TrendingUp size={9} />
+                  {artist.count} execuções
+                </p>
+                {artist.genero && artist.genero !== 'Desconhecido' && (
+                  <span className="mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[artist.genero] || '#3B82F6' }}>
+                    {artist.genero}
+                  </span>
+                )}
               </div>
             );
           })}
         </div>
+
+        {/* Botão carregar mais */}
+        {hasMore && (
+          <button
+            onClick={() => setVisibleTop(v => v + TOP_PER_COL)}
+            className="mt-6 w-full py-3 bg-white border-2 border-amber-200 hover:border-amber-400 text-amber-600 rounded-2xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all hover:shadow-md"
+          >
+            <Plus size={14} /> Ver mais artistas ({topArtists.length - visibleTop} restantes)
+          </button>
+        )}
       </div>
     </>
   );
@@ -310,23 +560,50 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
   const mainGenres = knownGenres.filter(g => parseFloat(g.percentage) >= 3);
   const smallGenres = knownGenres.filter(g => parseFloat(g.percentage) < 3);
   let chartData = [...mainGenres];
-  if (smallGenres.length > 0) { const ov = smallGenres.reduce((s,g)=>s+g.value,0); const tk = knownGenres.reduce((s,g)=>s+g.value,0); chartData.push({name:'Outros',value:ov,percentage:((ov/tk)*100).toFixed(1),subGenres:smallGenres.map(g=>g.name)}); }
+  if (smallGenres.length > 0) {
+    const ov = smallGenres.reduce((s,g)=>s+g.value,0);
+    const tk = knownGenres.reduce((s,g)=>s+g.value,0);
+    chartData.push({name:'Outros',value:ov,percentage:((ov/tk)*100).toFixed(1),subGenres:smallGenres.map(g=>g.name)});
+  }
   chartData = chartData.sort((a,b)=>b.value-a.value);
   return (
     <div ref={chartRef} className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-3xl shadow-xl mb-8 border border-blue-100">
-      <div className="flex items-center gap-4 mb-6"><div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-lg"><TrendingUp className="text-white" size={28} /></div><div><h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Análise de Gêneros</h2><p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical (Sem Desconhecidos)</p></div></div>
+      <div className="flex items-center gap-4 mb-6">
+        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-lg"><TrendingUp className="text-white" size={28} /></div>
+        <div>
+          <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Análise de Gêneros</h2>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical (Sem Desconhecidos)</p>
+        </div>
+      </div>
       <div className="bg-white p-6 rounded-2xl shadow-inner">
         <ResponsiveContainer width="100%" height={350}>
-          <PieChart><Pie data={chartData} cx="50%" cy="50%" labelLine={false} label={({name,percent})=>`${name} ${(percent*100).toFixed(0)}%`} outerRadius={120} innerRadius={60} fill="#3B82F6" dataKey="value" paddingAngle={2}>{chartData.map((_,i)=>(<Cell key={i} fill={GENRE_COLORS[chartData[i].name]||'#B8B8B8'} stroke="#fff" strokeWidth={2}/>))}</Pie><Tooltip content={<CustomTooltip/>}/></PieChart>
+          <PieChart>
+            <Pie data={chartData} cx="50%" cy="50%" labelLine={false}
+              label={({name,percent})=>`${name} ${(percent*100).toFixed(0)}%`}
+              outerRadius={120} innerRadius={60} fill="#3B82F6" dataKey="value" paddingAngle={2}>
+              {chartData.map((_,i)=>(<Cell key={i} fill={GENRE_COLORS[chartData[i].name]||'#B8B8B8'} stroke="#fff" strokeWidth={2}/>))}
+            </Pie>
+            <Tooltip content={<CustomTooltip/>}/>
+          </PieChart>
         </ResponsiveContainer>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">{chartData.map(genre=>(<div key={genre.name} className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow"><div className="w-5 h-5 rounded-full shadow-md flex-shrink-0" style={{backgroundColor:GENRE_COLORS[genre.name]||'#B8B8B8'}}/><div className="flex-1 min-w-0"><p className="font-black text-sm text-slate-700 uppercase truncate">{genre.name}</p><p className="text-xs text-slate-500 font-bold">{genre.value} músicas • {genre.percentage}%</p></div></div>))}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
+        {chartData.map(genre=>(
+          <div key={genre.name} className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-5 h-5 rounded-full shadow-md flex-shrink-0" style={{backgroundColor:GENRE_COLORS[genre.name]||'#B8B8B8'}}/>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-sm text-slate-700 uppercase truncate">{genre.name}</p>
+              <p className="text-xs text-slate-500 font-bold">{genre.value} músicas • {genre.percentage}%</p>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
 
 // ─────────────────────────────────────────────────────────────
-// DATE PICKER — dropdown customizado com datas disponíveis
+// DATE PICKER
 // ─────────────────────────────────────────────────────────────
 const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
   value: string;
@@ -337,7 +614,6 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
 }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -346,33 +622,18 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
-
-  const handleToggle = () => {
-    if (!open) onOpen();
-    setOpen(o => !o);
-  };
-
-  const handleSelect = (d: string) => {
-    onChange(d);
-    setOpen(false);
-  };
-
+  const handleToggle = () => { if (!open) onOpen(); setOpen(o => !o); };
+  const handleSelect = (d: string) => { onChange(d); setOpen(false); };
   return (
     <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={handleToggle}
-        className="w-full flex items-center gap-3 pl-4 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer"
-      >
+      <button type="button" onClick={handleToggle}
+        className="w-full flex items-center gap-3 pl-4 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer">
         {loadingDates
           ? <Loader2 size={16} className="text-blue-400 animate-spin flex-shrink-0" />
           : <CalendarDays size={16} className="text-blue-500 flex-shrink-0" />}
-        <span className="flex-1 text-left text-sm">
-          {value ? formatDateBR(value) : 'Selecionar data'}
-        </span>
+        <span className="flex-1 text-left text-sm">{value ? formatDateBR(value) : 'Selecionar data'}</span>
         <ChevronDown size={16} className={`text-slate-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
       </button>
-
       {open && (
         <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
           {loadingDates ? (
@@ -384,14 +645,8 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
             <div className="py-8 text-center text-slate-400 text-sm font-bold">Nenhuma data disponível</div>
           ) : (
             availableDates.map(d => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => handleSelect(d)}
-                className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-blue-50 ${
-                  d === value ? 'bg-blue-100 text-blue-700' : 'text-slate-700'
-                }`}
-              >
+              <button key={d} type="button" onClick={() => handleSelect(d)}
+                className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-blue-50 ${d === value ? 'bg-blue-100 text-blue-700' : 'text-slate-700'}`}>
                 📅 {formatDateBR(d)}
                 {d === availableDates[0] && <span className="ml-2 text-[10px] font-black text-emerald-600 uppercase">Mais recente</span>}
               </button>
@@ -404,7 +659,7 @@ const DatePicker = ({ value, availableDates, loadingDates, onChange, onOpen }: {
 };
 
 // ─────────────────────────────────────────────────────────────
-// FETCH DATA — otimizado
+// FETCH DATA
 // ─────────────────────────────────────────────────────────────
 function getBrasiliaDateBounds(date: string): { dayStart: string; dayEnd: string } {
   const dayStart = brasiliaLocalToUTC(`${date}T00:00:00`);
@@ -412,17 +667,14 @@ function getBrasiliaDateBounds(date: string): { dayStart: string; dayEnd: string
   return { dayStart, dayEnd };
 }
 
-// ── loadDayData: seleciona só colunas necessárias (sem *) ──────
 async function loadDayData(radio: string, date: string): Promise<any[]> {
   const supabase = getSupabaseClient();
   if (!supabase || !date) return [];
   const { dayStart, dayEnd } = getBrasiliaDateBounds(date);
   const { data: tracks, error } = await supabase
-    .from('radio_airplay')
-    .select('id, artista, musica, radio, genero, tocou_em, capa, bpm')
+    .from('radio_airplay').select('*')
     .eq('radio', radio)
-    .gte('tocou_em', dayStart)
-    .lte('tocou_em', dayEnd)
+    .gte('tocou_em', dayStart).lte('tocou_em', dayEnd)
     .order('tocou_em', { ascending: false });
   if (error) throw error;
   return (tracks || [])
@@ -433,7 +685,32 @@ async function loadDayData(radio: string, date: string): Promise<any[]> {
     .filter((t: any) => !isBlocked(t.artista, t.musica));
 }
 
-// ── loadLatestDate: só busca tocou_em da última linha ──────────
+// ── Carrega 7 dias de dados para o Top Artistas e execuções semanais ──
+async function loadWeeklyData(radio: string): Promise<any[]> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return [];
+  const now = new Date();
+  const weekAgo = new Date(now);
+  weekAgo.setDate(now.getDate() - 7);
+  // Também pega os 7 dias anteriores para comparativo
+  const twoWeeksAgo = new Date(now);
+  twoWeeksAgo.setDate(now.getDate() - 14);
+
+  const { data: tracks, error } = await supabase
+    .from('radio_airplay')
+    .select('artista, musica, capa, genero, tocou_em, bpm')
+    .eq('radio', radio)
+    .gte('tocou_em', twoWeeksAgo.toISOString())
+    .order('tocou_em', { ascending: false });
+  if (error) return [];
+  return (tracks || [])
+    .map((t: any) => {
+      const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
+      return { artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', capa: t.capa, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, bpm: t.bpm, tocou_em: t.tocou_em };
+    })
+    .filter((t: any) => !isBlocked(t.artista, t.musica));
+}
+
 async function loadLatestDate(radio: string): Promise<string> {
   const supabase = getSupabaseClient();
   if (!supabase) return '';
@@ -448,245 +725,65 @@ async function loadLatestDate(radio: string): Promise<string> {
   return parseTocouEm(rows.tocou_em).data;
 }
 
-// ── loadAvailableDates: usa range de 90 dias mas só traz tocou_em ──
-// Paginação em blocos de 1000 para evitar timeout em bases grandes
 async function loadAvailableDates(radio: string): Promise<string[]> {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
-  const since = new Date();
-  since.setDate(since.getDate() - 90);
-
-  const PAGE_SIZE = 1000;
-  const seen = new Set<string>();
-  const dates: string[] = [];
+  const allDates = new Set<string>();
   let from = 0;
-
   while (true) {
     const { data: rows, error } = await supabase
       .from('radio_airplay')
       .select('tocou_em')
       .eq('radio', radio)
-      .gte('tocou_em', since.toISOString())
       .order('tocou_em', { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
-
     if (error || !rows || rows.length === 0) break;
-
-    for (const r of rows) {
-      const d = parseTocouEm(r.tocou_em).data;
-      if (!seen.has(d)) { seen.add(d); dates.push(d); }
-    }
-
-    // Se já temos 90+ datas únicas ou retornou menos que o tamanho da página, para
-    if (dates.length >= 90 || rows.length < PAGE_SIZE) break;
+    rows.forEach((r: any) => allDates.add(parseTocouEm(r.tocou_em).data));
+    if (rows.length < PAGE_SIZE) break;
     from += PAGE_SIZE;
   }
-
-  return dates;
+  return [...allDates].sort().reverse();
 }
-
-// ─────────────────────────────────────────────────────────────
-// loadAlertasAltaQueda — compara últimos 3 dias vs 3 anteriores
-// Retorna músicas com +50% (em alta) ou -50% (em queda)
-// ─────────────────────────────────────────────────────────────
-interface AlertaMusica {
-  artista: string;
-  musica: string;
-  capa: string;
-  genero: string;
-  execucoesRecentes: number;
-  execucoesAnteriores: number;
-  ratio: number;
-  tipo: 'alta' | 'queda';
-}
-
-async function loadAlertasAltaQueda(radio: string): Promise<AlertaMusica[]> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return [];
-
-  const agora = new Date();
-  const inicioRecente = new Date(agora);
-  inicioRecente.setDate(agora.getDate() - 3);
-  const inicioAnterior = new Date(agora);
-  inicioAnterior.setDate(agora.getDate() - 6);
-  const fimAnterior = new Date(inicioRecente);
-
-  // Seleciona só colunas necessárias nas queries de alertas
-  const [resRecente, resAnterior] = await Promise.all([
-    supabase.from('radio_airplay')
-      .select('artista, musica, capa, genero')
-      .eq('radio', radio)
-      .gte('tocou_em', inicioRecente.toISOString()),
-    supabase.from('radio_airplay')
-      .select('artista, musica')
-      .eq('radio', radio)
-      .gte('tocou_em', inicioAnterior.toISOString())
-      .lt('tocou_em', fimAnterior.toISOString()),
-  ]);
-
-  if (!resRecente.data || !resAnterior.data) return [];
-
-  const contagemRecente: Record<string, { artista: string; musica: string; capa: string; genero: string; count: number }> = {};
-  resRecente.data
-    .filter((t: any) => !isBlocked(t.artista || '', t.musica || ''))
-    .forEach((t: any) => {
-      const k = `${t.artista}|||${t.musica}`;
-      if (!contagemRecente[k]) contagemRecente[k] = { artista: t.artista, musica: t.musica, capa: t.capa || '', genero: t.genero || 'Desconhecido', count: 0 };
-      contagemRecente[k].count++;
-    });
-
-  const contagemAnterior: Record<string, number> = {};
-  resAnterior.data
-    .filter((t: any) => !isBlocked(t.artista || '', t.musica || ''))
-    .forEach((t: any) => {
-      const k = `${t.artista}|||${t.musica}`;
-      contagemAnterior[k] = (contagemAnterior[k] || 0) + 1;
-    });
-
-  const alertas: AlertaMusica[] = [];
-
-  for (const [k, info] of Object.entries(contagemRecente)) {
-    if (info.count < 2) continue;
-    const anterior = contagemAnterior[k] || 0;
-    const ratio = info.count / (anterior || 1);
-
-    if (ratio >= 1.5) {
-      alertas.push({ artista: info.artista, musica: info.musica, capa: info.capa, genero: info.genero, execucoesRecentes: info.count, execucoesAnteriores: anterior, ratio, tipo: 'alta' });
-    } else if (ratio <= 0.5 && anterior >= 2) {
-      alertas.push({ artista: info.artista, musica: info.musica, capa: info.capa, genero: info.genero, execucoesRecentes: info.count, execucoesAnteriores: anterior, ratio, tipo: 'queda' });
-    }
-  }
-
-  return alertas.sort((a, b) => {
-    if (a.tipo === 'alta' && b.tipo === 'alta') return b.ratio - a.ratio;
-    if (a.tipo === 'queda' && b.tipo === 'queda') return a.ratio - b.ratio;
-    return a.tipo === 'alta' ? -1 : 1;
-  }).slice(0, 10);
-}
-
-// ─────────────────────────────────────────────────────────────
-// ALERTAS BLOCK — componente visual
-// ─────────────────────────────────────────────────────────────
-const AlertasBlock = ({ alertas, loading }: { alertas: AlertaMusica[]; loading: boolean }) => {
-  const emAlta  = alertas.filter(a => a.tipo === 'alta');
-  const emQueda = alertas.filter(a => a.tipo === 'queda');
-
-  if (!loading && alertas.length === 0) return null;
-
-  return (
-    <div className="bg-white rounded-3xl shadow-xl p-6 mb-8 border border-slate-100">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="bg-gradient-to-br from-orange-400 to-red-500 p-4 rounded-2xl shadow-lg">
-          <Flame className="text-white" size={28} />
-        </div>
-        <div>
-          <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Alertas de Tendência</h2>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Comparativo: últimos 3 dias vs 3 anteriores</p>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center gap-3 py-10 text-slate-400">
-          <Loader2 size={20} className="animate-spin" />
-          <span className="font-bold text-sm">Calculando tendências...</span>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* EM ALTA */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl">🔥</span>
-              <h3 className="font-black text-base text-orange-600 uppercase tracking-wide">Em Alta</h3>
-              <span className="ml-auto px-2.5 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[10px] font-black">{emAlta.length}</span>
-            </div>
-            {emAlta.length === 0 ? (
-              <p className="text-slate-400 text-sm font-bold text-center py-6">Nenhuma música em alta no momento</p>
-            ) : (
-              <div className="space-y-2">
-                {emAlta.map((a, i) => (
-                  <div key={i} className="flex items-center gap-3 bg-orange-50 hover:bg-orange-100 rounded-2xl p-3 transition-all">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden bg-orange-100 shadow">
-                      {a.capa ? <img src={a.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-orange-300"><Music size={14} /></div>}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-black text-slate-800 text-xs truncate leading-tight">{a.musica}</p>
-                      <p className="font-bold text-orange-500 text-[10px] truncate">{a.artista}</p>
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <p className="font-black text-orange-600 text-xs">+{Math.round((a.ratio - 1) * 100)}%</p>
-                      <p className="text-[9px] text-slate-400 font-bold">{a.execucoesAnteriores}→{a.execucoesRecentes}x</p>
-                    </div>
-                    <YTButton artista={a.artista} musica={a.musica} size="sm" />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* EM QUEDA */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl">❄️</span>
-              <h3 className="font-black text-base text-blue-500 uppercase tracking-wide">Em Queda</h3>
-              <span className="ml-auto px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black">{emQueda.length}</span>
-            </div>
-            {emQueda.length === 0 ? (
-              <p className="text-slate-400 text-sm font-bold text-center py-6">Nenhuma música em queda no momento</p>
-            ) : (
-              <div className="space-y-2">
-                {emQueda.map((a, i) => (
-                  <div key={i} className="flex items-center gap-3 bg-blue-50 hover:bg-blue-100 rounded-2xl p-3 transition-all">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden bg-blue-100 shadow">
-                      {a.capa ? <img src={a.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-blue-300"><Music size={14} /></div>}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-black text-slate-800 text-xs truncate leading-tight">{a.musica}</p>
-                      <p className="font-bold text-blue-500 text-[10px] truncate">{a.artista}</p>
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <p className="font-black text-blue-600 text-xs">-{Math.round((1 - a.ratio) * 100)}%</p>
-                      <p className="text-[9px] text-slate-400 font-bold">{a.execucoesAnteriores}→{a.execucoesRecentes}x</p>
-                    </div>
-                    <YTButton artista={a.artista} musica={a.musica} size="sm" />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 const datesCache: Record<string, string[]> = {};
+const weeklyCache: Record<string, any[]> = {};
 
 // ─────────────────────────────────────────────────────────────
 // APP
 // ─────────────────────────────────────────────────────────────
 const App = () => {
   const [data, setData] = useState<any[]>([]);
+  const [weeklyData, setWeeklyData] = useState<any[]>([]);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [loadingDates, setLoadingDates] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', bpm: 'all' });
   const [visibleCount, setVisibleCount] = useState(9);
-  const [alertas, setAlertas] = useState<AlertaMusica[]>([]);
-  const [loadingAlertas, setLoadingAlertas] = useState(false);
+  // Modal de execuções semanais
+  const [execModal, setExecModal] = useState<{ artista: string; musica: string; capa: string; execucoes: ExecucaoItem[] } | null>(null);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
   const filtersRef = useRef(filters);
   useEffect(() => { filtersRef.current = filters; }, [filters]);
 
-  const fetchAlertas = useCallback(async (radio: string) => {
-    setLoadingAlertas(true);
-    try {
-      const result = await loadAlertasAltaQueda(radio);
-      setAlertas(result);
-    } catch (err) { console.error('Erro alertas:', err); setAlertas([]); }
-    finally { setLoadingAlertas(false); }
-  }, []);
+  // ── Semana: apenas os últimos 7 dias ──
+  const weeklyLast7 = useMemo(() => {
+    const now = Date.now();
+    const cutoff = now - 7 * 24 * 60 * 60 * 1000;
+    return weeklyData.filter(t => t.timestamp >= cutoff);
+  }, [weeklyData]);
+
+  // ── Mapa de execuções semanais por música (artista|||musica) ──
+  const weeklyExecsMap = useMemo(() => {
+    const map: Record<string, ExecucaoItem[]> = {};
+    weeklyLast7.forEach(t => {
+      const k = `${t.artista}|||${t.musica}`;
+      if (!map[k]) map[k] = [];
+      map[k].push({ data: t.data, hora: t.hora, tocou_em: t.tocou_em });
+    });
+    return map;
+  }, [weeklyLast7]);
 
   const doFetch = useCallback(async (radio: string, date: string, silent = false) => {
     if (!date) return;
@@ -699,12 +796,18 @@ const App = () => {
     finally { setLoading(false); setRefreshing(false); }
   }, []);
 
+  const fetchWeekly = useCallback(async (radio: string) => {
+    if (weeklyCache[radio]) { setWeeklyData(weeklyCache[radio]); return; }
+    try {
+      const rows = await loadWeeklyData(radio);
+      weeklyCache[radio] = rows;
+      setWeeklyData(rows);
+    } catch (err) { console.error('Erro loadWeeklyData:', err); }
+  }, []);
+
   const handleOpenDatePicker = useCallback(async () => {
     const radio = filtersRef.current.radio;
-    if (datesCache[radio]) {
-      setAvailableDates(datesCache[radio]);
-      return;
-    }
+    if (datesCache[radio]) { setAvailableDates(datesCache[radio]); return; }
     if (loadingDates) return;
     setLoadingDates(true);
     try {
@@ -724,7 +827,7 @@ const App = () => {
         setAvailableDates([firstDate]);
         await Promise.all([
           doFetch(radio, firstDate),
-          fetchAlertas(radio),
+          fetchWeekly(radio),
         ]);
       } else {
         setLoading(false);
@@ -748,7 +851,7 @@ const App = () => {
 
   const handleRadioChange = useCallback(async (r: string) => {
     setData([]);
-    setAlertas([]);
+    setWeeklyData([]);
     setAvailableDates([]);
     setVisibleCount(9);
     setFilters(f => ({ ...f, radio: r, date: '', search: '', genero: '', hour: 'all', bpm: 'all' }));
@@ -759,12 +862,12 @@ const App = () => {
       setFilters(f => ({ ...f, radio: r, date: firstDate }));
       await Promise.all([
         doFetch(r, firstDate),
-        fetchAlertas(r),
+        fetchWeekly(r),
       ]);
     } else {
       setLoading(false);
     }
-  }, [doFetch, fetchAlertas]);
+  }, [doFetch, fetchWeekly]);
 
   const filteredData = useMemo(() => data.filter(t => {
     const matchSearch = filters.search ? (t.artista + t.musica).toLowerCase().includes(filters.search.toLowerCase()) : true;
@@ -806,23 +909,49 @@ const App = () => {
     doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`, 14, 34);
     let y = 45;
     if (chartRef.current && genreData.length > 0) {
-      try { const html2canvas = (await import('https://esm.sh/html2canvas@1.4.1')).default; const canvas = await html2canvas(chartRef.current, { backgroundColor: '#ffffff', scale: 2 }); doc.addImage(canvas.toDataURL('image/png'), 'PNG', 14, y, 180, 90); y += 100; } catch {}
+      try {
+        const html2canvas = (await import('https://esm.sh/html2canvas@1.4.1')).default;
+        const canvas = await html2canvas(chartRef.current, { backgroundColor: '#ffffff', scale: 2 });
+        doc.addImage(canvas.toDataURL('image/png'), 'PNG', 14, y, 180, 90); y += 100;
+      } catch {}
     }
     if (y > 240) { doc.addPage(); y = 20; }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('PLAYLIST', 14, y); y += 8;
-    const renderHeader = () => { doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.text('HORA',14,y); doc.text('ARTISTA',32,y); doc.text('MUSICA',95,y); doc.text('GENERO',158,y); doc.text('BPM',185,y); doc.line(14,y+1,196,y+1); doc.setFont('helvetica','normal'); doc.setFontSize(7); };
+    const renderHeader = () => {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
+      doc.text('HORA',14,y); doc.text('ARTISTA',32,y); doc.text('MUSICA',95,y); doc.text('GENERO',158,y); doc.text('BPM',185,y);
+      doc.line(14,y+1,196,y+1); doc.setFont('helvetica','normal'); doc.setFontSize(7);
+    };
     renderHeader(); y += 6;
-    filteredData.forEach(t => { if(y>280){doc.addPage();y=20;renderHeader();y+=6;} doc.text(t.hora,14,y); doc.text(t.artista.substring(0,30),32,y); doc.text(t.musica.substring(0,38),95,y); doc.text((t.genero==='Desconhecido'?'':t.genero).substring(0,18),158,y); doc.text(t.bpm?String(t.bpm):'',185,y); y+=6; });
+    filteredData.forEach(t => {
+      if(y>280){doc.addPage();y=20;renderHeader();y+=6;}
+      doc.text(t.hora,14,y); doc.text(t.artista.substring(0,30),32,y); doc.text(t.musica.substring(0,38),95,y);
+      doc.text((t.genero==='Desconhecido'?'':t.genero).substring(0,18),158,y); doc.text(t.bpm?String(t.bpm):'',185,y); y+=6;
+    });
     doc.save(`IAnoRadio_${filters.radio}_${filters.date}_${hourLabel}.pdf`);
   };
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* MODAL DE EXECUÇÕES */}
+      {execModal && (
+        <TrackExecutionsModal
+          artista={execModal.artista}
+          musica={execModal.musica}
+          capa={execModal.capa}
+          execucoes={execModal.execucoes}
+          onClose={() => setExecModal(null)}
+        />
+      )}
+
       <header className="bg-white border-b border-blue-100 sticky top-0 z-50 shadow-sm">
         <div className="max-w-5xl mx-auto px-6 h-24 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-lg"><Radio size={32} className="text-white" /></div>
-            <div><h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1><p className="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Monitoramento Musical</p></div>
+            <div>
+              <h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1>
+              <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Monitoramento Musical</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <span
@@ -832,11 +961,11 @@ const App = () => {
             >
               <Megaphone size={14} />
               Comercial
-              <span className="ml-1 px-2 py-0.5 bg-amber-400 text-white rounded-full text-[9px] font-black uppercase tracking-wider">
-                Em Breve
-              </span>
+              <span className="ml-1 px-2 py-0.5 bg-amber-400 text-white rounded-full text-[9px] font-black uppercase tracking-wider">Em Breve</span>
             </span>
-            <button onClick={() => doFetch(filters.radio, filters.date)} className="p-4 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-all hover:scale-105 active:scale-95"><RefreshCw className={`text-blue-600 ${refreshing ? 'animate-spin' : ''}`} size={20} /></button>
+            <button onClick={() => doFetch(filters.radio, filters.date)} className="p-4 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-all hover:scale-105 active:scale-95">
+              <RefreshCw className={`text-blue-600 ${refreshing ? 'animate-spin' : ''}`} size={20} />
+            </button>
           </div>
         </div>
       </header>
@@ -846,7 +975,9 @@ const App = () => {
           <div className="flex gap-2 flex-wrap">
             {['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
-                className={`px-5 py-2.5 rounded-2xl font-black text-sm uppercase tracking-wide transition-all ${filters.radio === r ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600'}`}>
+                className={`px-5 py-2.5 rounded-2xl font-black text-sm uppercase tracking-wide transition-all ${
+                  filters.radio === r ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600'
+                }`}>
                 {r}
               </button>
             ))}
@@ -912,11 +1043,11 @@ const App = () => {
         ) : (
           <>
             {filteredData.length > 0 && <NowPlayingCard track={filteredData[0]} />}
-            <TopArtistsCard filteredData={filteredData} />
-            <GenreChart data={genreData} chartRef={chartRef} />
 
-            {/* ALERTAS DE TENDÊNCIA */}
-            <AlertasBlock alertas={alertas} loading={loadingAlertas} />
+            {/* TOP ARTISTAS — usa dados de 7 dias */}
+            <TopArtistsCard filteredData={filteredData} weeklyAllData={weeklyLast7} />
+
+            <GenreChart data={genreData} chartRef={chartRef} />
 
             {filteredData.length > 0 && (
               <div className="flex items-center justify-between mb-6">
@@ -935,6 +1066,7 @@ const App = () => {
                 ) : null}
               </div>
             )}
+
             {filteredData.length === 0 ? (
               <div className="text-center py-32">
                 <div className="text-6xl mb-4">🎵</div>
@@ -946,7 +1078,21 @@ const App = () => {
                 <div className="grid grid-cols-1 gap-3">
                   {filteredData.slice(0, visibleCount).map(track => {
                     const key = `${track.artista}|||${track.musica}`;
-                    return <MusicCard key={track.id} track={track} repeatCount={repeatCountMap[key]} />;
+                    const execs = weeklyExecsMap[key] || [];
+                    return (
+                      <MusicCard
+                        key={track.id}
+                        track={track}
+                        repeatCount={repeatCountMap[key]}
+                        weeklyExecs={execs}
+                        onCapaClick={() => setExecModal({
+                          artista: track.artista,
+                          musica: track.musica,
+                          capa: track.capa || '',
+                          execucoes: execs
+                        })}
+                      />
+                    );
                   })}
                 </div>
                 {visibleCount < filteredData.length && (
