@@ -334,7 +334,18 @@ const NowPlayingCard = ({ track }: { track: any }) => (
             <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full"><Clock size={16} className="text-white/80" /><span className="font-bold text-white text-sm">{track.hora}</span></div>
             {track.genero && track.genero !== 'Desconhecido' && <span className="px-4 py-2 rounded-full text-sm font-black uppercase text-white shadow-lg" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>{track.genero}</span>}
             {track.bpm && <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500 rounded-full shadow-lg"><Activity size={16} className="text-white" /><span className="font-black text-white text-sm">{track.bpm} BPM</span></div>}
-            {track.ano_lancamento && <div className="flex items-center gap-2 px-4 py-2 bg-violet-500 rounded-full shadow-lg"><CalendarDays size={16} className="text-white" /><span className="font-black text-white text-sm">{track.ano_lancamento}</span></div>}
+            {track.ano_lancamento && (
+              <div
+                className="flex items-center gap-2 px-4 py-2 bg-violet-500 rounded-full shadow-lg relative group/ano cursor-default"
+                title="ANO DO LANÇAMENTO"
+              >
+                <CalendarDays size={16} className="text-white" />
+                <span className="font-black text-white text-sm">{track.ano_lancamento}</span>
+                <span className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-slate-900 text-white text-[10px] font-black uppercase px-2 py-1 rounded-lg shadow-lg opacity-0 group-hover/ano:opacity-100 transition-opacity duration-150 z-10">
+                  ANO DO LANÇAMENTO
+                </span>
+              </div>
+            )}
             <YTButton artista={track.artista} musica={track.musica} size="lg" />
           </div>
         </div>
@@ -398,9 +409,14 @@ const MusicCard = ({
             </div>
           )}
           {track.ano_lancamento && (
-            <div className="flex items-center gap-1 px-2.5 py-1 bg-violet-500 rounded-full">
+            <div
+              className="relative group/ano flex items-center gap-1 px-2.5 py-1 bg-violet-500 rounded-full cursor-default"
+            >
               <CalendarDays size={10} className="text-white" />
               <span className="font-black text-[10px] text-white">{track.ano_lancamento}</span>
+              <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap bg-slate-900 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-md shadow-lg opacity-0 group-hover/ano:opacity-100 transition-opacity duration-150 z-10">
+                ANO DO LANÇAMENTO
+              </span>
             </div>
           )}
           {repeatCount && repeatCount >= REPEAT_THRESHOLD && (
@@ -794,6 +810,66 @@ const DatePicker = ({ value, availableDates, loadingDates, datesLoaded, onChange
 };
 
 // ─────────────────────────────────────────────────────────────
+// YEAR PICKER — seletor de ano de lançamento
+// ─────────────────────────────────────────────────────────────
+const YearPicker = ({ value, availableYears, onChange }: {
+  value: string;
+  availableYears: number[];
+  onChange: (y: string) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const handleSelect = (y: string) => { onChange(y); setOpen(false); };
+
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center gap-3 pl-4 pr-4 py-4 rounded-2xl font-bold text-slate-700 border-2 transition-all cursor-pointer text-sm ${
+          value ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-slate-50 border-transparent hover:border-violet-300'
+        }`}>
+        <CalendarDays size={16} className={value ? 'text-violet-500 flex-shrink-0' : 'text-slate-400 flex-shrink-0'} />
+        <span className="flex-1 text-left">{value ? `Ano: ${value}` : 'Ano de lançamento'}</span>
+        {value && (
+          <span
+            onClick={e => { e.stopPropagation(); onChange(''); }}
+            className="text-violet-400 hover:text-violet-700 font-black text-xs cursor-pointer"
+          >✕</span>
+        )}
+        <ChevronDown size={16} className={`text-slate-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
+          <button type="button" onClick={() => handleSelect('')}
+            className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-violet-50 ${!value ? 'bg-violet-100 text-violet-700' : 'text-slate-500'}`}>
+            🗓️ Todos os anos
+          </button>
+          {availableYears.map(y => (
+            <button key={y} type="button" onClick={() => handleSelect(String(y))}
+              className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-violet-50 ${String(y) === value ? 'bg-violet-100 text-violet-700' : 'text-slate-700'}`}>
+              🎵 {y}
+            </button>
+          ))}
+          {availableYears.length === 0 && (
+            <div className="py-6 text-center text-slate-400 text-sm font-bold">Nenhum ano disponível</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
 // FETCH DATA
 // ─────────────────────────────────────────────────────────────
 function getBrasiliaDateBounds(date: string): { dayStart: string; dayEnd: string } {
@@ -889,7 +965,7 @@ const App = () => {
   const [loadingDates, setLoadingDates] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', bpm: 'all' });
+  const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', bpm: 'all', ano: '' });
   const [visibleCount, setVisibleCount] = useState(9);
   const [execModal, setExecModal] = useState<{ artista: string; musica: string; capa: string; execucoes: ExecucaoItem[] } | null>(null);
   const chartRef = React.useRef<HTMLDivElement>(null);
@@ -987,7 +1063,7 @@ const App = () => {
     setAvailableDates([]);
     setDatesLoaded(false);
     setVisibleCount(9);
-    setFilters(f => ({ ...f, radio: r, date: '', search: '', genero: '', hour: 'all', bpm: 'all' }));
+    setFilters(f => ({ ...f, radio: r, date: '', search: '', genero: '', hour: 'all', bpm: 'all', ano: '' }));
     setLoading(true);
     const today = await loadLatestDate(r);
     if (today) {
@@ -1001,17 +1077,25 @@ const App = () => {
     }
   }, [doFetch, fetchWeekly]);
 
+  // ── Anos disponíveis derivados dos dados carregados ──
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    data.forEach(t => { if (t.ano_lancamento) years.add(Number(t.ano_lancamento)); });
+    return [...years].filter(y => !isNaN(y) && y > 0).sort((a, b) => b - a);
+  }, [data]);
+
   const filteredData = useMemo(() => data.filter(t => {
     const matchSearch = filters.search ? (t.artista + t.musica).toLowerCase().includes(filters.search.toLowerCase()) : true;
     const matchGenero = filters.genero ? t.genero === filters.genero : true;
     const matchHour   = filters.hour !== 'all' ? t.hora.startsWith(`${filters.hour}:`) : true;
+    const matchAno    = filters.ano ? String(t.ano_lancamento) === filters.ano : true;
     let matchBpm = true;
     if (filters.bpm !== 'all' && t.bpm) {
       if (filters.bpm === 'slow') matchBpm = t.bpm < 100;
       else if (filters.bpm === 'moderate') matchBpm = t.bpm >= 100 && t.bpm <= 120;
       else if (filters.bpm === 'fast') matchBpm = t.bpm > 120;
     }
-    return matchSearch && matchGenero && matchHour && matchBpm;
+    return matchSearch && matchGenero && matchHour && matchBpm && matchAno;
   }), [data, filters]);
 
   const repeatCountMap = useMemo(() => {
@@ -1062,6 +1146,8 @@ const App = () => {
     });
     doc.save(`IAnoRadio_${filters.radio}_${filters.date}_${hourLabel}.pdf`);
   };
+
+  const hasActiveFilters = filters.search || filters.genero || filters.hour !== 'all' || filters.bpm !== 'all' || filters.ano;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -1121,7 +1207,7 @@ const App = () => {
 
       <main className="max-w-5xl mx-auto px-6 py-8">
         <div className="bg-white rounded-3xl shadow-xl p-6 mb-8 border border-slate-100">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <DatePicker
               value={filters.date}
               availableDates={availableDates}
@@ -1146,6 +1232,8 @@ const App = () => {
               </select>
               <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div className="relative">
               <select value={filters.bpm} onChange={e => { setFilters(f => ({ ...f, bpm: e.target.value })); setVisibleCount(9); }}
                 className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer text-sm">
@@ -1156,6 +1244,12 @@ const App = () => {
               </select>
               <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
+            {/* ── SELETOR DE ANO DE LANÇAMENTO ── */}
+            <YearPicker
+              value={filters.ano}
+              availableYears={availableYears}
+              onChange={y => { setFilters(f => ({ ...f, ano: y })); setVisibleCount(9); }}
+            />
           </div>
           <div className="relative mb-4">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1188,12 +1282,12 @@ const App = () => {
                 <div className="flex items-center gap-3">
                   <div className="bg-blue-100 p-2.5 rounded-xl"><Music size={20} className="text-blue-600" /></div>
                   <div>
-                    <p className="font-black text-slate-800 text-lg">{filteredData.length} execuções</p>
+                    <p className="font-black text-slate-800 text-lg">{filteredData.length} execuções{filters.ano ? ` • ${filters.ano}` : ''}</p>
                     <p className="text-xs font-bold text-slate-400 uppercase">{filters.radio} • {formatDateBR(filters.date)}</p>
                   </div>
                 </div>
-                {filters.search || filters.genero || filters.hour !== 'all' || filters.bpm !== 'all' ? (
-                  <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', bpm: 'all' }))}
+                {hasActiveFilters ? (
+                  <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', bpm: 'all', ano: '' }))}
                     className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 font-black text-xs uppercase transition-all">
                     <X size={14} /> Limpar filtros
                   </button>
