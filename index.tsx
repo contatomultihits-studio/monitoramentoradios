@@ -334,6 +334,7 @@ const NowPlayingCard = ({ track }: { track: any }) => (
             <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full"><Clock size={16} className="text-white/80" /><span className="font-bold text-white text-sm">{track.hora}</span></div>
             {track.genero && track.genero !== 'Desconhecido' && <span className="px-4 py-2 rounded-full text-sm font-black uppercase text-white shadow-lg" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>{track.genero}</span>}
             {track.bpm && <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500 rounded-full shadow-lg"><Activity size={16} className="text-white" /><span className="font-black text-white text-sm">{track.bpm} BPM</span></div>}
+            {track.ano_lancamento && <div className="flex items-center gap-2 px-4 py-2 bg-violet-500 rounded-full shadow-lg"><CalendarDays size={16} className="text-white" /><span className="font-black text-white text-sm">{track.ano_lancamento}</span></div>}
             <YTButton artista={track.artista} musica={track.musica} size="lg" />
           </div>
         </div>
@@ -394,6 +395,12 @@ const MusicCard = ({
             <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500 rounded-full">
               <Activity size={10} className="text-white" />
               <span className="font-black text-[10px] text-white">{track.bpm} BPM</span>
+            </div>
+          )}
+          {track.ano_lancamento && (
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-violet-500 rounded-full">
+              <CalendarDays size={10} className="text-white" />
+              <span className="font-black text-[10px] text-white">{track.ano_lancamento}</span>
             </div>
           )}
           {repeatCount && repeatCount >= REPEAT_THRESHOLD && (
@@ -808,7 +815,7 @@ async function loadDayData(radio: string, date: string): Promise<any[]> {
   return (tracks || [])
     .map((t: any) => {
       const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
-      return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, capa: t.capa, bpm: t.bpm };
+      return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, capa: t.capa, bpm: t.bpm, ano_lancamento: t.ano_lancamento ?? null };
     })
     .filter((t: any) => !isBlocked(t.artista, t.musica));
 }
