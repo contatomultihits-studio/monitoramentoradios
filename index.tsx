@@ -1193,7 +1193,7 @@ const App = () => {
       <div className="bg-white border-b border-slate-100 shadow-sm">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex gap-2 flex-wrap">
-            {['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM'].map(r => (
+            {['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM', 'Energia FM'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
                 className={`px-5 py-2.5 rounded-2xl font-black text-sm uppercase tracking-wide transition-all ${
                   filters.radio === r ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600'
