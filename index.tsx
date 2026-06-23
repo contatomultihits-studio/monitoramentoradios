@@ -318,15 +318,17 @@ const ArtistModal = ({ artist, tracks, photo, periodLabel, onClose }: { artist: 
 // NOW PLAYING CARD
 // ─────────────────────────────────────────────────────────────
 const NowPlayingCard = ({ track }: { track: any }) => (
-  <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-fuchsia-950 p-8 rounded-[2rem] shadow-2xl shadow-cyan-950/30 mb-8 border border-white/10">
+  <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-fuchsia-950 p-6 sm:p-8 rounded-[2rem] shadow-2xl shadow-cyan-950/30 mb-8 border border-white/10">
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.28),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(236,72,153,0.22),transparent_32%)] animate-pulse" />
+    <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-fuchsia-500/20 blur-3xl" />
+    <div className="absolute -left-16 bottom-0 h-48 w-48 rounded-full bg-cyan-400/20 blur-3xl" />
     <div className="relative z-10">
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-5">
         <span className="flex h-3 w-3"><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-sky-400 opacity-75" /><span className="relative inline-flex rounded-full h-3 w-3 bg-sky-300" /></span>
         <span className="text-cyan-100 font-black text-sm uppercase tracking-[0.25em] flex items-center gap-2"><Sparkles size={16} /> Tocando Agora</span>
       </div>
-      <div className="flex items-center gap-6">
-        <div className="flex-shrink-0"><div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/20">{track.capa ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-white/10"><Music size={48} className="text-white/40" /></div>}</div></div>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+        <div className="flex-shrink-0"><div className="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl overflow-hidden shadow-2xl ring-4 ring-white/20">{track.capa ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-white/10"><Music size={48} className="text-white/40" /></div>}</div></div>
         <div className="flex-1 min-w-0">
           <h2 className="font-black text-3xl sm:text-4xl text-white mb-2 leading-tight drop-shadow-lg">{track.musica}</h2>
           <p className="font-bold text-xl sm:text-2xl text-fuchsia-100 mb-4 drop-shadow-md">{track.artista}</p>
@@ -368,13 +370,13 @@ const MusicCard = ({
   weeklyExecs: ExecucaoItem[];
   onCapaClick: () => void;
 }) => (
-  <div className={`bg-white/95 backdrop-blur border rounded-2xl p-4 hover:shadow-xl hover:shadow-cyan-950/10 hover:-translate-y-1 transition-all duration-300 ${
+  <div className={`bg-white/95 backdrop-blur border rounded-3xl p-4 hover:shadow-xl hover:shadow-cyan-950/10 hover:-translate-y-1 transition-all duration-300 ${
     repeatCount && repeatCount >= REPEAT_THRESHOLD ? 'border-amber-300 bg-amber-50/80 shadow-amber-100/60' : 'border-slate-200/80'
   }`}>
     <div className="flex items-center gap-4">
       <button
         onClick={onCapaClick}
-        className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shadow-md relative group cursor-pointer"
+        className="flex-shrink-0 w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 shadow-md relative group cursor-pointer"
         title="Ver execuções desta música nos últimos 7 dias"
       >
         {track.capa
@@ -392,7 +394,7 @@ const MusicCard = ({
       </button>
 
       <div className="flex-1 min-w-0">
-        <h3 className="font-black text-slate-800 text-base truncate leading-tight mb-1">{track.musica}</h3>
+        <h3 className="font-black text-slate-900 text-base truncate leading-tight mb-1">{track.musica}</h3>
         <p className="font-bold text-fuchsia-600 text-sm truncate mb-2">{track.artista}</p>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-full">
@@ -1162,7 +1164,7 @@ const App = () => {
       )}
 
       <header className="bg-slate-950/95 border-b border-white/10 sticky top-0 z-50 shadow-2xl shadow-slate-950/20 backdrop-blur">
-        <div className="max-w-5xl mx-auto px-6 h-24 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-6 h-24 flex items-center justify-between">
           {/* Logo + título clicáveis → volta para a home */}
           <a href="/" className="flex items-center gap-4 group" title="Voltar para a home">
             <div className="bg-gradient-to-br from-cyan-400 via-blue-600 to-fuchsia-600 p-3 rounded-2xl shadow-lg shadow-cyan-950/40 group-hover:shadow-xl group-hover:scale-105 transition-all">
@@ -1191,13 +1193,14 @@ const App = () => {
       </header>
 
       <div className="bg-white/75 border-b border-white/70 shadow-sm backdrop-blur">
-        <div className="max-w-5xl mx-auto px-6 py-4">
+        <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex gap-2 flex-wrap">
             {['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
-                className={`px-5 py-2.5 rounded-2xl font-black text-sm uppercase tracking-wide transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-black text-sm uppercase tracking-wide transition-all ${
                   filters.radio === r ? 'bg-gradient-to-r from-cyan-500 to-fuchsia-600 text-white shadow-lg shadow-cyan-200/60 scale-105' : 'bg-white text-slate-600 border border-slate-200 hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-700'
                 }`}>
+                <span className={`h-2 w-2 rounded-full ${filters.radio === r ? 'bg-white' : 'bg-cyan-400'}`} />
                 {r}
               </button>
             ))}
@@ -1205,8 +1208,18 @@ const App = () => {
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="bg-white/85 backdrop-blur rounded-[2rem] shadow-xl shadow-slate-200/70 p-6 mb-8 border border-white/80">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-cyan-600">Controles</p>
+              <h2 className="font-black text-xl text-slate-900 uppercase tracking-tight">Filtros do monitoramento</h2>
+            </div>
+            <div className="inline-flex items-center gap-2 self-start sm:self-auto rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-cyan-700">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.16)]" />
+              Atualização automática
+            </div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <DatePicker
               value={filters.date}
@@ -1278,17 +1291,18 @@ const App = () => {
             <GenreChart data={genreData} chartRef={chartRef} />
 
             {filteredData.length > 0 && (
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 rounded-[1.75rem] border border-white/80 bg-white/80 p-5 shadow-lg shadow-slate-200/60 backdrop-blur">
                 <div className="flex items-center gap-3">
-                  <div className="bg-cyan-100 p-2.5 rounded-xl"><Music size={20} className="text-cyan-700" /></div>
+                  <div className="bg-gradient-to-br from-cyan-100 to-fuchsia-100 p-3 rounded-2xl"><Music size={20} className="text-cyan-700" /></div>
                   <div>
-                    <p className="font-black text-slate-800 text-lg">{filteredData.length} execuções{filters.ano ? ` • ${filters.ano}` : ''}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-fuchsia-500">Playlist monitorada</p>
+                    <p className="font-black text-slate-900 text-lg">{filteredData.length} execuções{filters.ano ? ` • ${filters.ano}` : ''}</p>
                     <p className="text-xs font-bold text-slate-400 uppercase">{filters.radio} • {formatDateBR(filters.date)}</p>
                   </div>
                 </div>
                 {hasActiveFilters ? (
                   <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', bpm: 'all', ano: '' }))}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 font-black text-xs uppercase transition-all">
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 font-black text-xs uppercase transition-all">
                     <X size={14} /> Limpar filtros
                   </button>
                 ) : null}
