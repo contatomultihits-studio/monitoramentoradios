@@ -318,25 +318,25 @@ const ArtistModal = ({ artist, tracks, photo, periodLabel, onClose }: { artist: 
 // NOW PLAYING CARD
 // ─────────────────────────────────────────────────────────────
 const NowPlayingCard = ({ track }: { track: any }) => (
-  <div className="relative overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-800 p-8 rounded-3xl shadow-2xl mb-8">
-    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent animate-pulse" />
+  <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-fuchsia-950 p-8 rounded-[2rem] shadow-2xl shadow-cyan-950/30 mb-8 border border-white/10">
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.28),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(236,72,153,0.22),transparent_32%)] animate-pulse" />
     <div className="relative z-10">
       <div className="flex items-center gap-3 mb-4">
         <span className="flex h-3 w-3"><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-sky-400 opacity-75" /><span className="relative inline-flex rounded-full h-3 w-3 bg-sky-300" /></span>
-        <span className="text-white/90 font-black text-sm uppercase tracking-wider flex items-center gap-2"><Sparkles size={16} /> Tocando Agora</span>
+        <span className="text-cyan-100 font-black text-sm uppercase tracking-[0.25em] flex items-center gap-2"><Sparkles size={16} /> Tocando Agora</span>
       </div>
       <div className="flex items-center gap-6">
         <div className="flex-shrink-0"><div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden shadow-2xl ring-4 ring-white/20">{track.capa ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-white/10"><Music size={48} className="text-white/40" /></div>}</div></div>
         <div className="flex-1 min-w-0">
           <h2 className="font-black text-3xl sm:text-4xl text-white mb-2 leading-tight drop-shadow-lg">{track.musica}</h2>
-          <p className="font-bold text-xl sm:text-2xl text-sky-200 mb-4 drop-shadow-md">{track.artista}</p>
+          <p className="font-bold text-xl sm:text-2xl text-fuchsia-100 mb-4 drop-shadow-md">{track.artista}</p>
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full"><Clock size={16} className="text-white/80" /><span className="font-bold text-white text-sm">{track.hora}</span></div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/15 backdrop-blur-sm rounded-full"><Clock size={16} className="text-cyan-100" /><span className="font-bold text-white text-sm">{track.hora}</span></div>
             {track.genero && track.genero !== 'Desconhecido' && <span className="px-4 py-2 rounded-full text-sm font-black uppercase text-white shadow-lg" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>{track.genero}</span>}
-            {track.bpm && <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500 rounded-full shadow-lg"><Activity size={16} className="text-white" /><span className="font-black text-white text-sm">{track.bpm} BPM</span></div>}
+            {track.bpm && <div className="flex items-center gap-2 px-4 py-2 bg-emerald-400/90 rounded-full shadow-lg shadow-emerald-950/30"><Activity size={16} className="text-white" /><span className="font-black text-white text-sm">{track.bpm} BPM</span></div>}
             {track.ano_lancamento && (
               <div
-                className="flex items-center gap-2 px-4 py-2 bg-violet-500 rounded-full shadow-lg relative group/ano cursor-default"
+                className="flex items-center gap-2 px-4 py-2 bg-fuchsia-500/90 rounded-full shadow-lg shadow-fuchsia-950/30 relative group/ano cursor-default"
                 title="ANO DO LANÇAMENTO"
               >
                 <CalendarDays size={16} className="text-white" />
@@ -368,8 +368,8 @@ const MusicCard = ({
   weeklyExecs: ExecucaoItem[];
   onCapaClick: () => void;
 }) => (
-  <div className={`bg-white border rounded-2xl p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${
-    repeatCount && repeatCount >= REPEAT_THRESHOLD ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'
+  <div className={`bg-white/95 backdrop-blur border rounded-2xl p-4 hover:shadow-xl hover:shadow-cyan-950/10 hover:-translate-y-1 transition-all duration-300 ${
+    repeatCount && repeatCount >= REPEAT_THRESHOLD ? 'border-amber-300 bg-amber-50/80 shadow-amber-100/60' : 'border-slate-200/80'
   }`}>
     <div className="flex items-center gap-4">
       <button
@@ -385,7 +385,7 @@ const MusicCard = ({
           <Clock size={16} className="text-white opacity-0 group-hover:opacity-100 drop-shadow-lg transition-opacity" />
         </div>
         {weeklyExecs.length > 0 && (
-          <div className="absolute -bottom-1 -right-1 min-w-[18px] h-[18px] px-1 bg-blue-600 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
+          <div className="absolute -bottom-1 -right-1 min-w-[18px] h-[18px] px-1 bg-cyan-500 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
             {weeklyExecs.length}
           </div>
         )}
@@ -393,7 +393,7 @@ const MusicCard = ({
 
       <div className="flex-1 min-w-0">
         <h3 className="font-black text-slate-800 text-base truncate leading-tight mb-1">{track.musica}</h3>
-        <p className="font-bold text-blue-600 text-sm truncate mb-2">{track.artista}</p>
+        <p className="font-bold text-fuchsia-600 text-sm truncate mb-2">{track.artista}</p>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-full">
             <Clock size={10} className="text-slate-500" />
@@ -403,14 +403,14 @@ const MusicCard = ({
             <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>{track.genero}</span>
           )}
           {track.bpm && (
-            <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500 rounded-full">
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500 rounded-full shadow-sm shadow-emerald-100">
               <Activity size={10} className="text-white" />
               <span className="font-black text-[10px] text-white">{track.bpm} BPM</span>
             </div>
           )}
           {track.ano_lancamento && (
             <div
-              className="relative group/ano flex items-center gap-1 px-2.5 py-1 bg-violet-500 rounded-full cursor-default"
+              className="relative group/ano flex items-center gap-1 px-2.5 py-1 bg-fuchsia-500 rounded-full cursor-default shadow-sm shadow-fuchsia-100"
             >
               <CalendarDays size={10} className="text-white" />
               <span className="font-black text-[10px] text-white">{track.ano_lancamento}</span>
@@ -425,9 +425,9 @@ const MusicCard = ({
             </div>
           )}
           {weeklyExecs.length > 0 && (
-            <div className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-full">
-              <TrendingUp size={9} className="text-blue-500" />
-              <span className="font-black text-[10px] text-blue-600">{weeklyExecs.length}x semana</span>
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-cyan-50 border border-cyan-200 rounded-full">
+              <TrendingUp size={9} className="text-cyan-500" />
+              <span className="font-black text-[10px] text-cyan-700">{weeklyExecs.length}x semana</span>
             </div>
           )}
         </div>
@@ -575,10 +575,10 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
           onClose={() => setModalArtist(null)}
         />
       )}
-      <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-8 rounded-3xl shadow-xl mb-8 border border-amber-100">
+      <div className="bg-gradient-to-br from-amber-50 via-white to-fuchsia-50 p-8 rounded-[2rem] shadow-xl shadow-amber-100/50 mb-8 border border-amber-100">
         <div className="flex items-start justify-between gap-4 mb-5">
           <div className="flex items-center gap-4">
-            <div className="bg-gradient-to-br from-amber-400 to-yellow-500 p-4 rounded-2xl shadow-lg">
+            <div className="bg-gradient-to-br from-amber-400 via-orange-400 to-fuchsia-500 p-4 rounded-2xl shadow-lg shadow-amber-200/70">
               <Trophy className="text-white" size={28} />
             </div>
             <div>
@@ -600,8 +600,8 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
               onClick={() => setPeriod(opt.value)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-wide transition-all ${
                 period === opt.value
-                  ? 'bg-amber-500 text-white shadow-lg scale-105'
-                  : 'bg-white text-slate-600 border border-amber-200 hover:border-amber-400 hover:text-amber-600'
+                  ? 'bg-gradient-to-r from-amber-400 to-fuchsia-500 text-white shadow-lg shadow-amber-200/60 scale-105'
+                  : 'bg-white/90 text-slate-600 border border-amber-200 hover:border-fuchsia-300 hover:text-fuchsia-600'
               }`}
             >
               <span>{opt.emoji}</span>
@@ -644,7 +644,7 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
                       >
                         {photo
                           ? <img src={photo} alt={artist.artista} className="w-full h-full object-cover" onError={(e)=>{(e.target as HTMLImageElement).style.display='none';}}/>
-                          : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-200"><Music size={24} className="text-blue-400" /></div>
+                          : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cyan-100 to-fuchsia-100"><Music size={24} className="text-cyan-500" /></div>
                         }
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center">
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1">
@@ -655,12 +655,12 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
                       </button>
                       {photosLoading && !photo && (
                         <div className="absolute inset-0 rounded-2xl bg-white/60 flex items-center justify-center">
-                          <Loader2 size={16} className="animate-spin text-blue-500" />
+                          <Loader2 size={16} className="animate-spin text-cyan-500" />
                         </div>
                       )}
                     </div>
                     <p className="font-black text-slate-800 text-xs leading-tight truncate w-full">{artist.artista}</p>
-                    <p className="font-bold text-blue-600 text-[10px] mt-1 flex items-center gap-1 justify-center">
+                    <p className="font-bold text-fuchsia-600 text-[10px] mt-1 flex items-center gap-1 justify-center">
                       <TrendingUp size={9} />
                       {artist.count} exec{artist.count !== 1 ? 'uções' : 'ução'}
                     </p>
@@ -677,7 +677,7 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
             {hasMore && (
               <button
                 onClick={() => setVisibleTop(v => v + TOP_PER_COL)}
-                className="mt-6 w-full py-3 bg-white border-2 border-amber-200 hover:border-amber-400 text-amber-600 rounded-2xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all hover:shadow-md"
+                className="mt-6 w-full py-3 bg-white/90 border-2 border-amber-200 hover:border-fuchsia-300 text-amber-700 rounded-2xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all hover:shadow-md"
               >
                 <Plus size={14} /> Ver mais artistas ({topArtists.length - visibleTop} restantes)
               </button>
@@ -706,15 +706,15 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
   }
   chartData = chartData.sort((a,b)=>b.value-a.value);
   return (
-    <div ref={chartRef} className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-3xl shadow-xl mb-8 border border-blue-100">
+    <div ref={chartRef} className="bg-gradient-to-br from-cyan-50 via-white to-indigo-50 p-8 rounded-[2rem] shadow-xl shadow-cyan-100/50 mb-8 border border-cyan-100">
       <div className="flex items-center gap-4 mb-6">
-        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-lg"><TrendingUp className="text-white" size={28} /></div>
+        <div className="bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 p-4 rounded-2xl shadow-lg shadow-cyan-200/70"><TrendingUp className="text-white" size={28} /></div>
         <div>
           <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Análise de Gêneros</h2>
           <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical (Sem Desconhecidos)</p>
         </div>
       </div>
-      <div className="bg-white p-6 rounded-2xl shadow-inner">
+      <div className="bg-white/90 p-6 rounded-2xl shadow-inner border border-slate-100">
         <ResponsiveContainer width="100%" height={350}>
           <PieChart>
             <Pie data={chartData} cx="50%" cy="50%" labelLine={false}
@@ -776,7 +776,7 @@ const DatePicker = ({ value, availableDates, loadingDates, datesLoaded, onChange
   return (
     <div ref={ref} className="relative">
       <button type="button" onClick={handleToggle}
-        className="w-full flex items-center gap-3 pl-4 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer">
+        className="w-full flex items-center gap-3 pl-4 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-cyan-300 focus:border-cyan-300 focus:outline-none transition-all cursor-pointer">
         {loadingDates
           ? <Loader2 size={16} className="text-blue-400 animate-spin flex-shrink-0" />
           : <CalendarDays size={16} className="text-blue-500 flex-shrink-0" />}
@@ -1150,7 +1150,7 @@ const App = () => {
   const hasActiveFilters = filters.search || filters.genero || filters.hour !== 'all' || filters.bpm !== 'all' || filters.ano;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_30%),radial-gradient(circle_at_top_right,rgba(168,85,247,0.14),transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_42%,#f8fafc_100%)]">
       {execModal && (
         <TrackExecutionsModal
           artista={execModal.artista}
@@ -1161,42 +1161,42 @@ const App = () => {
         />
       )}
 
-      <header className="bg-white border-b border-blue-100 sticky top-0 z-50 shadow-sm">
+      <header className="bg-slate-950/95 border-b border-white/10 sticky top-0 z-50 shadow-2xl shadow-slate-950/20 backdrop-blur">
         <div className="max-w-5xl mx-auto px-6 h-24 flex items-center justify-between">
           {/* Logo + título clicáveis → volta para a home */}
           <a href="/" className="flex items-center gap-4 group" title="Voltar para a home">
-            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all">
+            <div className="bg-gradient-to-br from-cyan-400 via-blue-600 to-fuchsia-600 p-3 rounded-2xl shadow-lg shadow-cyan-950/40 group-hover:shadow-xl group-hover:scale-105 transition-all">
               <Radio size={32} className="text-white" />
             </div>
             <div>
-              <h1 className="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none group-hover:text-blue-600 transition-colors">IA NO RÁDIO</h1>
-              <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Monitoramento Musical</p>
+              <h1 className="font-black text-2xl tracking-tight text-white uppercase leading-none group-hover:text-cyan-200 transition-colors">IA NO RÁDIO</h1>
+              <p className="text-xs font-bold text-cyan-300 uppercase tracking-[0.25em] mt-1">Monitoramento Musical</p>
             </div>
           </a>
           <div className="flex items-center gap-3">
             <span
               title="Monitoramento Comercial em breve"
-              className="px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl font-black text-amber-600 text-xs uppercase tracking-wider flex items-center gap-2 cursor-default select-none opacity-75"
+              className="px-4 py-2 bg-white/10 border border-white/15 rounded-xl font-black text-cyan-100 text-xs uppercase tracking-wider flex items-center gap-2 cursor-default select-none opacity-75"
               style={{ animation: 'none' }}
             >
               <Megaphone size={14} />
               Comercial
               <span className="ml-1 px-2 py-0.5 bg-amber-400 text-white rounded-full text-[9px] font-black uppercase tracking-wider">Em Breve</span>
             </span>
-            <button onClick={() => doFetch(filters.radio, filters.date)} className="p-4 bg-blue-50 rounded-2xl hover:bg-blue-100 transition-all hover:scale-105 active:scale-95">
-              <RefreshCw className={`text-blue-600 ${refreshing ? 'animate-spin' : ''}`} size={20} />
+            <button onClick={() => doFetch(filters.radio, filters.date)} className="p-4 bg-white/10 border border-white/15 rounded-2xl hover:bg-white/20 transition-all hover:scale-105 active:scale-95">
+              <RefreshCw className={`text-cyan-200 ${refreshing ? 'animate-spin' : ''}`} size={20} />
             </button>
           </div>
         </div>
       </header>
 
-      <div className="bg-white border-b border-slate-100 shadow-sm">
+      <div className="bg-white/75 border-b border-white/70 shadow-sm backdrop-blur">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex gap-2 flex-wrap">
             {['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
                 className={`px-5 py-2.5 rounded-2xl font-black text-sm uppercase tracking-wide transition-all ${
-                  filters.radio === r ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600'
+                  filters.radio === r ? 'bg-gradient-to-r from-cyan-500 to-fuchsia-600 text-white shadow-lg shadow-cyan-200/60 scale-105' : 'bg-white text-slate-600 border border-slate-200 hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-700'
                 }`}>
                 {r}
               </button>
@@ -1206,7 +1206,7 @@ const App = () => {
       </div>
 
       <main className="max-w-5xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-3xl shadow-xl p-6 mb-8 border border-slate-100">
+        <div className="bg-white/85 backdrop-blur rounded-[2rem] shadow-xl shadow-slate-200/70 p-6 mb-8 border border-white/80">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <DatePicker
               value={filters.date}
@@ -1218,7 +1218,7 @@ const App = () => {
             />
             <div className="relative">
               <select value={filters.hour} onChange={e => { setFilters(f => ({ ...f, hour: e.target.value })); setVisibleCount(9); }}
-                className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer text-sm">
+                className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-cyan-300 focus:border-cyan-300 focus:outline-none transition-all cursor-pointer text-sm">
                 <option value="all">Todas as horas</option>
                 {hourOptions.map(h => <option key={h} value={h}>{h}:00 – {h}:59</option>)}
               </select>
@@ -1226,7 +1226,7 @@ const App = () => {
             </div>
             <div className="relative">
               <select value={filters.genero} onChange={e => { setFilters(f => ({ ...f, genero: e.target.value })); setVisibleCount(9); }}
-                className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer text-sm">
+                className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-cyan-300 focus:border-cyan-300 focus:outline-none transition-all cursor-pointer text-sm">
                 <option value="">Todos os gêneros</option>
                 {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
@@ -1236,7 +1236,7 @@ const App = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div className="relative">
               <select value={filters.bpm} onChange={e => { setFilters(f => ({ ...f, bpm: e.target.value })); setVisibleCount(9); }}
-                className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-blue-300 focus:border-blue-300 focus:outline-none transition-all cursor-pointer text-sm">
+                className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-cyan-300 focus:border-cyan-300 focus:outline-none transition-all cursor-pointer text-sm">
                 <option value="all">Todos os BPMs</option>
                 <option value="slow">Lento (&lt; 100 BPM)</option>
                 <option value="moderate">Moderado (100–120 BPM)</option>
@@ -1255,10 +1255,10 @@ const App = () => {
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input type="text" placeholder="Buscar artista ou música..." value={filters.search}
               onChange={e => { setFilters(f => ({ ...f, search: e.target.value })); setVisibleCount(9); }}
-              className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 focus:outline-none transition-all text-sm" />
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-cyan-300 focus:outline-none transition-all text-sm" />
           </div>
           <button onClick={exportPDF}
-            className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95">
+            className="w-full py-4 bg-gradient-to-r from-cyan-500 via-blue-600 to-fuchsia-600 hover:from-cyan-400 hover:to-fuchsia-500 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-lg shadow-cyan-200/60 hover:shadow-xl transform hover:scale-[1.01] active:scale-95">
             <Download size={18} />
             Exportar Relatório PDF
           </button>
@@ -1266,7 +1266,7 @@ const App = () => {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
-            <Loader2 size={48} className="animate-spin text-blue-500" />
+            <Loader2 size={48} className="animate-spin text-cyan-500" />
             <p className="font-black text-slate-400 uppercase text-sm">Carregando playlist...</p>
           </div>
         ) : (
@@ -1280,7 +1280,7 @@ const App = () => {
             {filteredData.length > 0 && (
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 p-2.5 rounded-xl"><Music size={20} className="text-blue-600" /></div>
+                  <div className="bg-cyan-100 p-2.5 rounded-xl"><Music size={20} className="text-cyan-700" /></div>
                   <div>
                     <p className="font-black text-slate-800 text-lg">{filteredData.length} execuções{filters.ano ? ` • ${filters.ano}` : ''}</p>
                     <p className="text-xs font-bold text-slate-400 uppercase">{filters.radio} • {formatDateBR(filters.date)}</p>
@@ -1325,7 +1325,7 @@ const App = () => {
                 </div>
                 {visibleCount < filteredData.length && (
                   <button onClick={() => setVisibleCount(v => v + 9)}
-                    className="w-full mt-6 py-4 bg-white border-2 border-blue-200 hover:border-blue-400 text-blue-600 rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all hover:shadow-lg">
+                    className="w-full mt-6 py-4 bg-white/90 border-2 border-cyan-200 hover:border-fuchsia-300 text-cyan-700 rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all hover:shadow-lg">
                     <Plus size={18} /> Carregar mais ({filteredData.length - visibleCount} restantes)
                   </button>
                 )}
