@@ -55,16 +55,18 @@ function getTodayBrasilia(): string {
 // ─────────────────────────────────────────────────────────────
 // BLOQUEIO
 // ─────────────────────────────────────────────────────────────
-const BLOCKED_TRACKS: { artista?: string; musica?: string }[] = [
+const BLOCKED_TRACKS: { artista?: string; musica?: string; radio?: string }[] = [
   { musica: 'SP' },
   { musica: 'O melhor Mix do Brasil' },
   { musica: 'Mix Rio FM' },
+  { radio: 'Dumont FM', artista: 'TUDO O QUE VOCE GOSTA', musica: '104.3 MHz' },
 ];
-const isBlocked = (artista: string, musica: string): boolean =>
+const isBlocked = (artista: string, musica: string, radio?: string): boolean =>
   BLOCKED_TRACKS.some(b => {
+    const matchRadio = !b.radio || (!!radio && b.radio.trim().toLowerCase() === radio.trim().toLowerCase());
     const matchArtista = !b.artista || b.artista === '*' || b.artista.trim().toLowerCase() === artista.trim().toLowerCase();
     const matchMusica  = !b.musica  || b.musica  === '*' || b.musica.trim().toLowerCase()  === musica.trim().toLowerCase();
-    return matchArtista && matchMusica;
+    return matchRadio && matchArtista && matchMusica;
   });
 
 const GENRE_COLORS: Record<string, string> = {
@@ -484,7 +486,7 @@ async function loadTopArtistsForPeriod(radio: string, period: TopPeriod): Promis
       const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
       return { artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', capa: t.capa, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, bpm: t.bpm, tocou_em: t.tocou_em };
     })
-    .filter((t: any) => !isBlocked(t.artista, t.musica));
+    .filter((t: any) => !isBlocked(t.artista, t.musica, radio));
 }
 
 const topArtistsCache: Record<string, any[]> = {};
@@ -895,7 +897,7 @@ async function loadDayData(radio: string, date: string): Promise<any[]> {
       const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
       return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, capa: t.capa, bpm: t.bpm, ano_lancamento: t.ano_lancamento ?? null };
     })
-    .filter((t: any) => !isBlocked(t.artista, t.musica));
+    .filter((t: any) => !isBlocked(t.artista, t.musica, t.radio));
 }
 
 async function loadWeeklyData(radio: string): Promise<any[]> {
@@ -916,7 +918,7 @@ async function loadWeeklyData(radio: string): Promise<any[]> {
       const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
       return { artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', capa: t.capa, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, bpm: t.bpm, tocou_em: t.tocou_em };
     })
-    .filter((t: any) => !isBlocked(t.artista, t.musica));
+    .filter((t: any) => !isBlocked(t.artista, t.musica, radio));
 }
 
 async function loadLatestDate(radio: string): Promise<string> {
@@ -1195,7 +1197,7 @@ const App = () => {
       <div className="bg-white/75 border-b border-white/70 shadow-sm backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex gap-2 flex-wrap">
-            {['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM'].map(r => (
+            {['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM', 'Dumont FM'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-black text-sm uppercase tracking-wide transition-all ${
                   filters.radio === r ? 'bg-gradient-to-r from-cyan-500 to-fuchsia-600 text-white shadow-lg shadow-cyan-200/60 scale-105' : 'bg-white text-slate-600 border border-slate-200 hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-700'
