@@ -789,7 +789,7 @@ const DatePicker = ({ value, availableDates, loadingDates, datesLoaded, onChange
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
+        <div className="absolute left-0 right-0 top-full mt-2 z-[80] bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
           {loadingDates ? (
             <div className="flex items-center justify-center gap-2 py-8 text-slate-400">
               <Loader2 size={16} className="animate-spin" />
@@ -853,7 +853,7 @@ const YearPicker = ({ value, availableYears, onChange }: {
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
+        <div className="absolute left-0 right-0 top-full mt-2 z-[80] bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
           <button type="button" onClick={() => handleSelect('')}
             className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-violet-50 ${!value ? 'bg-violet-100 text-violet-700' : 'text-slate-500'}`}>
             🗓️ Todos os anos
@@ -1211,7 +1211,7 @@ const App = () => {
       </div>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="bg-white/90 backdrop-blur rounded-[2rem] shadow-xl shadow-slate-200/70 p-5 mb-8 border border-white/80">
+        <div className="relative z-30 overflow-visible bg-white/90 backdrop-blur rounded-[2rem] shadow-xl shadow-slate-200/70 p-5 mb-8 border border-white/80">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.28em] text-cyan-600">Controles</p>
