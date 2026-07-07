@@ -780,7 +780,7 @@ const DatePicker = ({ value, availableDates, loadingDates, datesLoaded, onChange
   return (
     <div ref={ref} className="relative">
       <button type="button" onClick={handleToggle}
-        className="w-full flex items-center gap-3 pl-4 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-cyan-300 focus:border-cyan-300 focus:outline-none transition-all cursor-pointer">
+        className="w-full flex items-center gap-3 pl-4 pr-4 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-cyan-300 focus:border-cyan-300 focus:outline-none transition-all cursor-pointer">
         {loadingDates
           ? <Loader2 size={16} className="text-blue-400 animate-spin flex-shrink-0" />
           : <CalendarDays size={16} className="text-blue-500 flex-shrink-0" />}
@@ -838,7 +838,7 @@ const YearPicker = ({ value, availableYears, onChange }: {
   return (
     <div ref={ref} className="relative">
       <button type="button" onClick={() => setOpen(o => !o)}
-        className={`w-full flex items-center gap-3 pl-4 pr-4 py-4 rounded-2xl font-bold text-slate-700 border-2 transition-all cursor-pointer text-sm ${
+        className={`w-full flex items-center gap-3 pl-4 pr-4 py-3 rounded-2xl font-bold text-slate-700 border-2 transition-all cursor-pointer text-sm ${
           value ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-slate-50 border-transparent hover:border-violet-300'
         }`}>
         <CalendarDays size={16} className={value ? 'text-violet-500 flex-shrink-0' : 'text-slate-400 flex-shrink-0'} />
@@ -1211,18 +1211,49 @@ const App = () => {
       </div>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="bg-white/85 backdrop-blur rounded-[2rem] shadow-xl shadow-slate-200/70 p-6 mb-8 border border-white/80">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+        <div className="bg-white/90 backdrop-blur rounded-[2rem] shadow-xl shadow-slate-200/70 p-5 mb-8 border border-white/80">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.28em] text-cyan-600">Controles</p>
               <h2 className="font-black text-xl text-slate-900 uppercase tracking-tight">Filtros do monitoramento</h2>
             </div>
-            <div className="inline-flex items-center gap-2 self-start sm:self-auto rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-cyan-700">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.16)]" />
-              Atualização automática
+            <div className="flex flex-wrap items-center gap-2">
+              {hasActiveFilters && (
+                <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', bpm: 'all', ano: '' }))}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-2xl text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-slate-200">
+                  <X size={14} /> Limpar filtros
+                </button>
+              )}
+              <button onClick={exportPDF}
+                className="px-4 py-2 bg-gradient-to-r from-cyan-500 via-blue-600 to-fuchsia-600 hover:from-cyan-400 hover:to-fuchsia-500 text-white rounded-2xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-cyan-200/60 hover:shadow-xl active:scale-95">
+                <Download size={15} />
+                PDF
+              </button>
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-cyan-700">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.16)]" />
+                Auto 30s
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+
+          <div className="relative mb-4">
+            <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-500" />
+            <input type="text" placeholder="Buscar artista ou música..." value={filters.search}
+              onChange={e => { setFilters(f => ({ ...f, search: e.target.value })); setVisibleCount(9); }}
+              className="w-full pl-12 pr-4 py-3.5 bg-white rounded-2xl font-bold text-slate-800 border-2 border-cyan-100 shadow-sm shadow-cyan-100/50 placeholder:text-slate-400 focus:border-cyan-300 focus:outline-none focus:ring-4 focus:ring-cyan-100 transition-all text-sm" />
+          </div>
+
+          {hasActiveFilters && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {filters.search && <span className="px-3 py-1.5 rounded-full bg-fuchsia-50 border border-fuchsia-100 text-fuchsia-700 text-[10px] font-black uppercase tracking-wider">Busca: {filters.search}</span>}
+              {filters.genero && <span className="px-3 py-1.5 rounded-full bg-cyan-50 border border-cyan-100 text-cyan-700 text-[10px] font-black uppercase tracking-wider">Gênero: {filters.genero}</span>}
+              {filters.hour !== 'all' && <span className="px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-wider">Hora: {filters.hour}:00</span>}
+              {filters.bpm !== 'all' && <span className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-wider">BPM: {filters.bpm === 'slow' ? 'Lento' : filters.bpm === 'moderate' ? 'Moderado' : 'Rápido'}</span>}
+              {filters.ano && <span className="px-3 py-1.5 rounded-full bg-violet-50 border border-violet-100 text-violet-700 text-[10px] font-black uppercase tracking-wider">Ano: {filters.ano}</span>}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <DatePicker
               value={filters.date}
               availableDates={availableDates}
@@ -1233,7 +1264,7 @@ const App = () => {
             />
             <div className="relative">
               <select value={filters.hour} onChange={e => { setFilters(f => ({ ...f, hour: e.target.value })); setVisibleCount(9); }}
-                className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-cyan-300 focus:border-cyan-300 focus:outline-none transition-all cursor-pointer text-sm">
+                className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-cyan-300 focus:border-cyan-300 focus:outline-none transition-all cursor-pointer text-sm">
                 <option value="all">Todas as horas</option>
                 {hourOptions.map(h => <option key={h} value={h}>{h}:00 – {h}:59</option>)}
               </select>
@@ -1241,17 +1272,15 @@ const App = () => {
             </div>
             <div className="relative">
               <select value={filters.genero} onChange={e => { setFilters(f => ({ ...f, genero: e.target.value })); setVisibleCount(9); }}
-                className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-cyan-300 focus:border-cyan-300 focus:outline-none transition-all cursor-pointer text-sm">
+                className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-cyan-300 focus:border-cyan-300 focus:outline-none transition-all cursor-pointer text-sm">
                 <option value="">Todos os gêneros</option>
                 {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
               <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div className="relative">
               <select value={filters.bpm} onChange={e => { setFilters(f => ({ ...f, bpm: e.target.value })); setVisibleCount(9); }}
-                className="w-full appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-cyan-300 focus:border-cyan-300 focus:outline-none transition-all cursor-pointer text-sm">
+                className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-cyan-300 focus:border-cyan-300 focus:outline-none transition-all cursor-pointer text-sm">
                 <option value="all">Todos os BPMs</option>
                 <option value="slow">Lento (&lt; 100 BPM)</option>
                 <option value="moderate">Moderado (100–120 BPM)</option>
@@ -1266,17 +1295,6 @@ const App = () => {
               onChange={y => { setFilters(f => ({ ...f, ano: y })); setVisibleCount(9); }}
             />
           </div>
-          <div className="relative mb-4">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input type="text" placeholder="Buscar artista ou música..." value={filters.search}
-              onChange={e => { setFilters(f => ({ ...f, search: e.target.value })); setVisibleCount(9); }}
-              className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-cyan-300 focus:outline-none transition-all text-sm" />
-          </div>
-          <button onClick={exportPDF}
-            className="w-full py-4 bg-gradient-to-r from-cyan-500 via-blue-600 to-fuchsia-600 hover:from-cyan-400 hover:to-fuchsia-500 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-lg shadow-cyan-200/60 hover:shadow-xl transform hover:scale-[1.01] active:scale-95">
-            <Download size={18} />
-            Exportar Relatório PDF
-          </button>
         </div>
 
         {loading ? (
@@ -1302,12 +1320,6 @@ const App = () => {
                     <p className="text-xs font-bold text-slate-400 uppercase">{filters.radio} • {formatDateBR(filters.date)}</p>
                   </div>
                 </div>
-                {hasActiveFilters ? (
-                  <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', bpm: 'all', ano: '' }))}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 font-black text-xs uppercase transition-all">
-                    <X size={14} /> Limpar filtros
-                  </button>
-                ) : null}
               </div>
             )}
 
