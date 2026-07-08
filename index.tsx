@@ -81,6 +81,7 @@ const ytURL = (artista: string, musica: string) =>
   `https://www.youtube.com/results?search_query=${encodeURIComponent(`"${artista}" "${musica}"`)}` ;
 
 const RADIO_STREAM_URLS: Record<string, string> = {
+  'Metropolitana FM': 'https://ice.fabricahost.com.br/metropolitana985sp',
   'Dumont FM': 'https://8402.brasilstream.com.br/stream?origem=cadenaandroid',
   'Forbes Radio': 'https://9176.brasilstream.com.br/stream',
   'MIX Rio FM': 'https://playerservices.streamtheworld.com/api/livestream-redirect/MIXRIOAAC.aac',
