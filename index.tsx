@@ -683,7 +683,7 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
             <div>
               <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">OS ARTISTAS MAIS EXECUTADOS DA RÁDIO</h2>
               <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">
-                {period === 'today' ? 'ATUALIZADO HOJE • DESDE A MEIA-NOITE' : `ATUALIZADO ÚLTIMOS ${periodLabel.toUpperCase()}`} • TOQUE NA FOTO DO ARTISTA PARA VER AS MÚSICAS EXECUTADAS DE CADA UM
+                {period === 'today' ? 'ATUALIZADO HOJE • DESDE A MEIA-NOITE' : `ATUALIZADO ÚLTIMOS ${periodLabel.toUpperCase()}`} • TOQUE NA FOTO DO ARTISTA PARA VER AS MÚSICAS
               </p>
             </div>
           </div>
