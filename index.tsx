@@ -422,7 +422,7 @@ const NowPlayingCard = ({ track }: { track: any }) => (
     <div className="relative z-10">
       <div className="flex items-center gap-3 mb-5">
         <span className="flex h-3 w-3"><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-sky-400 opacity-75" /><span className="relative inline-flex rounded-full h-3 w-3 bg-sky-300" /></span>
-        <span className="text-cyan-100 font-black text-sm uppercase tracking-[0.25em] flex items-center gap-2"><Sparkles size={16} /> Tocando Agora</span>
+        <span className="text-cyan-100 font-black text-sm uppercase tracking-[0.25em] flex items-center gap-2"><Sparkles size={16} /> ÚLTIMA EXECUÇÃO</span>
       </div>
       <div className="flex flex-col sm:flex-row sm:items-center gap-6">
         <div className="flex-shrink-0"><div className="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl overflow-hidden shadow-2xl ring-4 ring-white/20">{track.capa ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-white/10"><Music size={48} className="text-white/40" /></div>}</div></div>
@@ -537,7 +537,7 @@ const MusicCard = ({
 );
 
 // ─────────────────────────────────────────────────────────────
-// TIPOS DO SELETOR DE PERÍODO — Top Artistas
+// TIPOS DO SELETOR DE PERÍODO — ARTISTAS MAIS EXECUTADOS
 // ─────────────────────────────────────────────────────────────
 type TopPeriod = 'today' | '7d' | '30d' | '3m' | '1y';
 
@@ -587,7 +587,7 @@ async function loadTopArtistsForPeriod(radio: string, period: TopPeriod): Promis
 const topArtistsCache: Record<string, any[]> = {};
 
 // ─────────────────────────────────────────────────────────────
-// TOP ARTISTAS — com seletor de período próprio
+// ARTISTAS MAIS EXECUTADOS — com seletor de período próprio
 // ─────────────────────────────────────────────────────────────
 const TOP_PER_COL = 5;
 
@@ -681,9 +681,9 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
               <Trophy className="text-white" size={28} />
             </div>
             <div>
-              <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Top Artistas</h2>
+              <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">OS ARTISTAS MAIS EXECUTADOS DA RÁDIO</h2>
               <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">
-                {period === 'today' ? 'Hoje • desde a meia-noite' : `Últimos ${periodLabel}`} • Toque na foto para ver as músicas
+                {period === 'today' ? 'ATUALIZADO HOJE • DESDE A MEIA-NOITE' : `ATUALIZADO ÚLTIMOS ${periodLabel.toUpperCase()}`} • TOQUE NA FOTO DO ARTISTA PARA VER AS MÚSICAS EXECUTADAS DE CADA UM
               </p>
             </div>
           </div>
@@ -712,7 +712,7 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
         {loadingPeriod ? (
           <div className="flex items-center justify-center gap-3 py-12 text-amber-500">
             <Loader2 size={28} className="animate-spin" />
-            <span className="font-black uppercase text-sm">Carregando Top Artistas...</span>
+            <span className="font-black uppercase text-sm">CARREGANDO OS ARTISTAS MAIS EXECUTADOS DA RÁDIO...</span>
           </div>
         ) : topArtists.length === 0 ? (
           <div className="text-center py-12">
