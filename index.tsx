@@ -5,7 +5,7 @@ import {
   Music, Loader2, Plus, Download,
   TrendingUp, Sparkles, Filter, Megaphone, Activity,
   Trophy, X, Youtube, CalendarDays, ChevronDown,
-  TrendingDown, Flame
+  TrendingDown, Flame, Volume2
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -122,40 +122,93 @@ const YTButton = ({ artista, musica, size = 'sm' }: { artista: string; musica: s
   );
 };
 
-const RadioStreamPlayer = ({ radio, streamUrl }: { radio: string; streamUrl: string }) => (
-  <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 p-6 shadow-2xl shadow-cyan-950/20">
-    <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-cyan-400/20 blur-3xl" />
-    <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-fuchsia-500/20 blur-3xl" />
-    <div className="relative z-10 flex h-full flex-col justify-between gap-6">
-      <div>
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100">
-          <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_5px_rgba(52,211,153,0.16)]" />
-          Ao vivo
-        </div>
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
-            <Radio size={24} className="text-cyan-100" />
+const formatAudioTime = (seconds: number): string => {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  const min = Math.floor(seconds / 60);
+  const sec = Math.floor(seconds % 60).toString().padStart(2, '0');
+  return `${min}:${sec}`;
+};
+
+const RadioStreamPlayer = ({ radio, streamUrl }: { radio: string; streamUrl: string }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const togglePlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (isPlaying) {
+      audio.pause();
+      return;
+    }
+    setIsBuffering(true);
+    audio.play().catch(err => {
+      console.error('Erro ao reproduzir stream:', err);
+      setIsBuffering(false);
+      setIsPlaying(false);
+    });
+  };
+
+  return (
+    <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 p-6 shadow-2xl shadow-cyan-950/20">
+      <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-cyan-400/20 blur-3xl" />
+      <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-fuchsia-500/20 blur-3xl" />
+      <div className="relative z-10 flex h-full flex-col justify-between gap-6">
+        <div>
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100">
+            <span className={`h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_5px_rgba(52,211,153,0.16)] ${isPlaying ? 'animate-pulse' : ''}`} />
+            Ao vivo
           </div>
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.28em] text-cyan-200">Ouça agora</p>
-            <h3 className="text-xl font-black uppercase leading-tight text-white">{radio}</h3>
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
+              <Radio size={24} className="text-cyan-100" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-cyan-200">Ouça agora</p>
+              <h3 className="text-xl font-black uppercase leading-tight text-white">{radio}</h3>
+            </div>
+          </div>
+          <p className="text-xs font-bold leading-relaxed text-slate-300">
+            Aperte o play para acompanhar a transmissão da rádio enquanto monitora a programação.
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white/95 p-3 shadow-xl shadow-slate-950/20">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={togglePlay}
+              className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border-2 border-slate-900 bg-white text-lg font-black text-slate-900 transition-all hover:scale-105 active:scale-95"
+              aria-label={isPlaying ? 'Pausar transmissão' : 'Ouvir transmissão'}
+            >
+              {isBuffering ? <Loader2 size={19} className="animate-spin" /> : isPlaying ? 'Ⅱ' : '▶'}
+            </button>
+            <div className="min-w-[38px] text-xs font-bold text-slate-700">{formatAudioTime(currentTime)}</div>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+              <div className={`h-full rounded-full bg-slate-900 transition-all duration-500 ${isPlaying ? 'w-2/3 animate-pulse' : currentTime > 0 ? 'w-1/3' : 'w-0'}`} />
+            </div>
+            <Volume2 size={19} className="flex-shrink-0 text-slate-900" />
           </div>
         </div>
-        <p className="text-xs font-bold leading-relaxed text-slate-300">
-          Aperte o play para acompanhar a transmissão da rádio enquanto monitora a programação.
-        </p>
+
+        <audio
+          ref={audioRef}
+          preload="none"
+          src={streamUrl}
+          className="hidden"
+          onPlay={() => { setIsPlaying(true); setIsBuffering(false); }}
+          onPause={() => setIsPlaying(false)}
+          onWaiting={() => setIsBuffering(true)}
+          onPlaying={() => setIsBuffering(false)}
+          onTimeUpdate={e => setCurrentTime(e.currentTarget.currentTime || 0)}
+        >
+          Seu navegador não suporta reprodução de áudio.
+        </audio>
       </div>
-      <audio
-        controls
-        preload="none"
-        src={streamUrl}
-        className="w-full rounded-2xl bg-white/95 p-2 shadow-lg shadow-slate-950/20"
-      >
-        Seu navegador não suporta reprodução de áudio.
-      </audio>
     </div>
-  </div>
-);
+  );
+};
 
 // ─────────────────────────────────────────────────────────────
 // LAST.FM CACHE
