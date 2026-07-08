@@ -80,6 +80,10 @@ const GENRE_COLORS: Record<string, string> = {
 const ytURL = (artista: string, musica: string) =>
   `https://www.youtube.com/results?search_query=${encodeURIComponent(`"${artista}" "${musica}"`)}` ;
 
+const RADIO_STREAM_URLS: Record<string, string> = {
+  'Dumont FM': 'https://8402.brasilstream.com.br/stream?origem=cadenaandroid',
+};
+
 // ─────────────────────────────────────────────────────────────
 // parseTocouEm — UTC → Brasília
 // ─────────────────────────────────────────────────────────────
@@ -117,6 +121,41 @@ const YTButton = ({ artista, musica, size = 'sm' }: { artista: string; musica: s
     </a>
   );
 };
+
+const RadioStreamPlayer = ({ radio, streamUrl }: { radio: string; streamUrl: string }) => (
+  <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 p-6 shadow-2xl shadow-cyan-950/20">
+    <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-cyan-400/20 blur-3xl" />
+    <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-fuchsia-500/20 blur-3xl" />
+    <div className="relative z-10 flex h-full flex-col justify-between gap-6">
+      <div>
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-100">
+          <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_5px_rgba(52,211,153,0.16)]" />
+          Ao vivo
+        </div>
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
+            <Radio size={24} className="text-cyan-100" />
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.28em] text-cyan-200">Ouça agora</p>
+            <h3 className="text-xl font-black uppercase leading-tight text-white">{radio}</h3>
+          </div>
+        </div>
+        <p className="text-xs font-bold leading-relaxed text-slate-300">
+          Aperte o play para acompanhar a transmissão da rádio enquanto monitora a programação.
+        </p>
+      </div>
+      <audio
+        controls
+        preload="none"
+        src={streamUrl}
+        className="w-full rounded-2xl bg-white/95 p-2 shadow-lg shadow-slate-950/20"
+      >
+        Seu navegador não suporta reprodução de áudio.
+      </audio>
+    </div>
+  </div>
+);
 
 // ─────────────────────────────────────────────────────────────
 // LAST.FM CACHE
@@ -320,7 +359,7 @@ const ArtistModal = ({ artist, tracks, photo, periodLabel, onClose }: { artist: 
 // NOW PLAYING CARD
 // ─────────────────────────────────────────────────────────────
 const NowPlayingCard = ({ track }: { track: any }) => (
-  <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-fuchsia-950 p-6 sm:p-8 rounded-[2rem] shadow-2xl shadow-cyan-950/30 mb-8 border border-white/10">
+  <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-fuchsia-950 p-6 sm:p-8 rounded-[2rem] shadow-2xl shadow-cyan-950/30 border border-white/10">
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.28),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(236,72,153,0.22),transparent_32%)] animate-pulse" />
     <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-fuchsia-500/20 blur-3xl" />
     <div className="absolute -left-16 bottom-0 h-48 w-48 rounded-full bg-cyan-400/20 blur-3xl" />
@@ -1152,6 +1191,7 @@ const App = () => {
   };
 
   const hasActiveFilters = filters.search || filters.genero || filters.hour !== 'all' || filters.bpm !== 'all' || filters.ano;
+  const activeStreamUrl = RADIO_STREAM_URLS[filters.radio];
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_30%),radial-gradient(circle_at_top_right,rgba(168,85,247,0.14),transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_42%,#f8fafc_100%)]">
@@ -1304,7 +1344,18 @@ const App = () => {
           </div>
         ) : (
           <>
-            {filteredData.length > 0 && <NowPlayingCard track={filteredData[0]} />}
+            {filteredData.length > 0 && (
+              activeStreamUrl ? (
+                <div className="mb-8 grid grid-cols-1 items-stretch gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+                  <NowPlayingCard track={filteredData[0]} />
+                  <RadioStreamPlayer radio={filters.radio} streamUrl={activeStreamUrl} />
+                </div>
+              ) : (
+                <div className="mb-8">
+                  <NowPlayingCard track={filteredData[0]} />
+                </div>
+              )
+            )}
 
             <TopArtistsCard radio={filters.radio} />
 
