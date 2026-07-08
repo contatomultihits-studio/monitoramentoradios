@@ -82,6 +82,8 @@ const ytURL = (artista: string, musica: string) =>
 
 const RADIO_STREAM_URLS: Record<string, string> = {
   'Dumont FM': 'https://8402.brasilstream.com.br/stream?origem=cadenaandroid',
+  'Forbes Radio': 'https://9176.brasilstream.com.br/stream',
+  'MIX Rio FM': 'https://playerservices.streamtheworld.com/api/livestream-redirect/MIXRIOAAC.aac',
 };
 
 // ─────────────────────────────────────────────────────────────
