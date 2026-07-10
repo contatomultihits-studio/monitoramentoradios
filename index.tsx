@@ -5,7 +5,7 @@ import {
   Music, Loader2, Plus, Download,
   TrendingUp, Sparkles, Filter, Megaphone, Activity,
   Trophy, X, Youtube, CalendarDays, ChevronDown,
-  TrendingDown, Flame, Volume2
+  TrendingDown, Flame, Volume2, Headphones
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -534,6 +534,77 @@ const MusicCard = ({
       <YTButton artista={track.artista} musica={track.musica} size="md" />
     </div>
   </div>
+);
+
+
+const MetricCard = ({ icon: Icon, label, value, detail, accent = 'cyan' }: { icon: any; label: string; value: string | number; detail: string; accent?: 'cyan' | 'fuchsia' | 'emerald' | 'amber' | 'violet' | 'blue' }) => {
+  const styles: Record<string, { shell: string; icon: string; text: string; glow: string }> = {
+    cyan: { shell: 'from-cyan-50 to-white border-cyan-100', icon: 'from-cyan-400 to-blue-600', text: 'text-cyan-600', glow: 'shadow-cyan-100/70' },
+    fuchsia: { shell: 'from-fuchsia-50 to-white border-fuchsia-100', icon: 'from-fuchsia-500 to-purple-600', text: 'text-fuchsia-600', glow: 'shadow-fuchsia-100/70' },
+    emerald: { shell: 'from-emerald-50 to-white border-emerald-100', icon: 'from-emerald-400 to-teal-600', text: 'text-emerald-600', glow: 'shadow-emerald-100/70' },
+    amber: { shell: 'from-amber-50 to-white border-amber-100', icon: 'from-amber-400 to-orange-500', text: 'text-amber-600', glow: 'shadow-amber-100/70' },
+    violet: { shell: 'from-violet-50 to-white border-violet-100', icon: 'from-violet-500 to-indigo-600', text: 'text-violet-600', glow: 'shadow-violet-100/70' },
+    blue: { shell: 'from-blue-50 to-white border-blue-100', icon: 'from-blue-500 to-cyan-500', text: 'text-blue-600', glow: 'shadow-blue-100/70' },
+  };
+  const current = styles[accent];
+
+  return (
+    <div className={`relative overflow-hidden rounded-[1.6rem] border bg-gradient-to-br ${current.shell} p-4 shadow-lg ${current.glow}`}>
+      <div className="absolute -right-6 -top-8 h-20 w-20 rounded-full bg-white/70 blur-2xl" />
+      <div className="relative flex items-start justify-between gap-3">
+        <div>
+          <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${current.text}`}>{label}</p>
+          <p className="mt-2 text-2xl font-black leading-none text-slate-950">{value}</p>
+          <p className="mt-2 text-[11px] font-bold uppercase leading-snug text-slate-400">{detail}</p>
+        </div>
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${current.icon} text-white shadow-lg`}>
+          <Icon size={20} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MusicMetricsPanel = ({ metrics }: { metrics: {
+  totalExecutions: number;
+  uniqueSongs: number;
+  uniqueArtists: number;
+  dominantGenre: string;
+  averageBpm: number | null;
+  repeatedSongs: number;
+  topTrack: string;
+} }) => (
+  <section className="mb-8 rounded-[2rem] border border-white/80 bg-white/85 p-5 shadow-xl shadow-slate-200/70 backdrop-blur">
+    <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-fuchsia-500">Resumo musical</p>
+        <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">RAIO-X DA PROGRAMAÇÃO</h2>
+      </div>
+      <p className="max-w-xl text-xs font-bold uppercase leading-relaxed text-slate-400">Métricas calculadas com os filtros atuais, sem alterar consultas, banco ou funcionamento existente.</p>
+    </div>
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <MetricCard icon={Activity} label="Execuções" value={metrics.totalExecutions} detail="Registros no filtro atual" accent="cyan" />
+      <MetricCard icon={Music} label="Músicas únicas" value={metrics.uniqueSongs} detail="Faixas diferentes tocadas" accent="fuchsia" />
+      <MetricCard icon={Headphones} label="Artistas únicos" value={metrics.uniqueArtists} detail="Vozes diferentes na rádio" accent="blue" />
+      <MetricCard icon={Trophy} label="Gênero dominante" value={metrics.dominantGenre} detail="Maior presença na seleção" accent="amber" />
+      <MetricCard icon={Flame} label="BPM médio" value={metrics.averageBpm ? `${metrics.averageBpm}` : '—'} detail="Energia média das músicas" accent="emerald" />
+      <MetricCard icon={RefreshCw} label="Repetidas" value={metrics.repeatedSongs} detail="Músicas com mais de 1 execução" accent="violet" />
+      <div className="relative overflow-hidden rounded-[1.6rem] border border-slate-200 bg-slate-950 p-4 text-white shadow-lg shadow-slate-300/70 sm:col-span-2">
+        <div className="absolute -right-10 -top-14 h-32 w-32 rounded-full bg-cyan-400/30 blur-3xl" />
+        <div className="absolute -bottom-16 left-8 h-28 w-28 rounded-full bg-fuchsia-500/30 blur-3xl" />
+        <div className="relative flex h-full items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-300">Faixa mais executada</p>
+            <p className="mt-2 text-xl font-black uppercase leading-tight text-white">{metrics.topTrack}</p>
+            <p className="mt-2 text-[11px] font-bold uppercase text-slate-400">Maior recorrência dentro da seleção atual</p>
+          </div>
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-cyan-200 ring-1 ring-white/10">
+            <TrendingUp size={22} />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 );
 
 // ─────────────────────────────────────────────────────────────
@@ -1211,6 +1282,46 @@ const App = () => {
     return Object.entries(counts).map(([name, value]) => ({ name, value, percentage: ((value / total) * 100).toFixed(1) })).sort((a, b) => b.value - a.value);
   }, [data, filters.hour]);
 
+  const musicMetrics = useMemo(() => {
+    const songKeys = new Set<string>();
+    const artists = new Set<string>();
+    const genreCounts: Record<string, number> = {};
+    const bpmValues: number[] = [];
+    let topTrack = 'SEM DADOS';
+    let topTrackCount = 0;
+
+    filteredData.forEach(t => {
+      const songKey = `${t.artista}|||${t.musica}`;
+      songKeys.add(songKey);
+      if (t.artista) artists.add(t.artista);
+      const genre = t.genero || 'Desconhecido';
+      genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+      const bpm = Number(t.bpm);
+      if (Number.isFinite(bpm) && bpm > 0) bpmValues.push(bpm);
+    });
+
+    Object.entries(repeatCountMap).forEach(([key, count]) => {
+      if (count > topTrackCount) {
+        topTrackCount = count;
+        const [artista, musica] = key.split('|||');
+        topTrack = `${musica} • ${artista}`;
+      }
+    });
+
+    const dominantGenre = Object.entries(genreCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
+    const averageBpm = bpmValues.length ? Math.round(bpmValues.reduce((sum, bpm) => sum + bpm, 0) / bpmValues.length) : null;
+
+    return {
+      totalExecutions: filteredData.length,
+      uniqueSongs: songKeys.size,
+      uniqueArtists: artists.size,
+      dominantGenre,
+      averageBpm,
+      repeatedSongs: Object.values(repeatCountMap).filter(count => count > 1).length,
+      topTrack,
+    };
+  }, [filteredData, repeatCountMap]);
+
   const uniqueGenres = useMemo(() => [...new Set(data.map(d => d.genero).filter(g => g && g !== 'Desconhecido'))].sort(), [data]);
   const hourOptions  = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')), []);
 
@@ -1412,6 +1523,8 @@ const App = () => {
                 </div>
               )
             )}
+
+            {filteredData.length > 0 && <MusicMetricsPanel metrics={musicMetrics} />}
 
             <TopArtistsCard radio={filters.radio} />
 
