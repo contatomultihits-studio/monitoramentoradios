@@ -602,6 +602,7 @@ const MusicMetricsPanel = ({ metrics, onOpenRepeated }: { metrics: {
   dominantGenre: string;
   averageBpm: number | null;
   repeatedSongs: number;
+  topArtist: string;
   topTrack: string;
 }; onOpenRepeated: () => void }) => (
   <section className="mb-8 rounded-[2rem] border border-white/80 bg-white/85 p-5 shadow-xl shadow-slate-200/70 backdrop-blur">
@@ -624,11 +625,25 @@ const MusicMetricsPanel = ({ metrics, onOpenRepeated }: { metrics: {
         <div className="absolute -bottom-16 left-8 h-28 w-28 rounded-full bg-fuchsia-500/30 blur-3xl" />
         <div className="relative flex h-full items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-300">Faixa mais executada</p>
-            <p className="mt-2 text-xl font-black uppercase leading-tight text-white">{metrics.topTrack}</p>
-            <p className="mt-2 text-[11px] font-bold uppercase text-slate-400">Maior recorrência dentro da seleção atual</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-300">Artista mais executado</p>
+            <p className="mt-2 text-xl font-black uppercase leading-tight text-white">{metrics.topArtist}</p>
+            <p className="mt-2 text-[11px] font-bold uppercase text-slate-400">Mesmo tipo de conta do ranking de artistas</p>
           </div>
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-cyan-200 ring-1 ring-white/10">
+            <Trophy size={22} />
+          </div>
+        </div>
+      </div>
+      <div className="relative overflow-hidden rounded-[1.6rem] border border-slate-200 bg-slate-950 p-4 text-white shadow-lg shadow-slate-300/70 sm:col-span-2">
+        <div className="absolute -right-10 -top-14 h-32 w-32 rounded-full bg-amber-400/25 blur-3xl" />
+        <div className="absolute -bottom-16 left-8 h-28 w-28 rounded-full bg-violet-500/30 blur-3xl" />
+        <div className="relative flex h-full items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-300">Música mais executada</p>
+            <p className="mt-2 text-xl font-black uppercase leading-tight text-white">{metrics.topTrack}</p>
+            <p className="mt-2 text-[11px] font-bold uppercase text-slate-400">Faixa individual com maior repetição</p>
+          </div>
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-amber-200 ring-1 ring-white/10">
             <TrendingUp size={22} />
           </div>
         </div>
@@ -1368,18 +1383,31 @@ const App = () => {
     const songKeys = new Set<string>();
     const artists = new Set<string>();
     const genreCounts: Record<string, number> = {};
+    const artistCounts: Record<string, number> = {};
     const bpmValues: number[] = [];
+    let topArtist = 'SEM DADOS';
+    let topArtistCount = 0;
     let topTrack = 'SEM DADOS';
     let topTrackCount = 0;
 
     filteredData.forEach(t => {
       const songKey = `${t.artista}|||${t.musica}`;
       songKeys.add(songKey);
-      if (t.artista) artists.add(t.artista);
+      if (t.artista) {
+        artists.add(t.artista);
+        artistCounts[t.artista] = (artistCounts[t.artista] || 0) + 1;
+      }
       const genre = t.genero || 'Desconhecido';
       genreCounts[genre] = (genreCounts[genre] || 0) + 1;
       const bpm = Number(t.bpm);
       if (Number.isFinite(bpm) && bpm > 0) bpmValues.push(bpm);
+    });
+
+    Object.entries(artistCounts).forEach(([artista, count]) => {
+      if (count > topArtistCount) {
+        topArtistCount = count;
+        topArtist = `${artista} • ${count}X`;
+      }
     });
 
     Object.entries(repeatCountMap).forEach(([key, count]) => {
@@ -1400,6 +1428,7 @@ const App = () => {
       dominantGenre,
       averageBpm,
       repeatedSongs: Object.values(repeatCountMap).filter(count => count > 1).length,
+      topArtist,
       topTrack,
     };
   }, [filteredData, repeatCountMap]);
