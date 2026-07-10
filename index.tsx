@@ -1355,6 +1355,7 @@ const App = () => {
     return Object.entries(counts).map(([name, value]) => ({ name, value, percentage: ((value / total) * 100).toFixed(1) })).sort((a, b) => b.value - a.value);
   }, [data, filters.hour, filters.shift]);
 
+  // Mantém a lista de repetidas 100% sincronizada com os filtros ativos da playlist.
   const repeatedTracks = useMemo(() => Object.entries(repeatCountMap)
     .filter(([, count]) => count > 1)
     .map(([key, count]) => {
