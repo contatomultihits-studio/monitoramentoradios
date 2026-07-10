@@ -11,6 +11,30 @@ import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 const REFRESH_INTERVAL_MS = 30000;
+
+const SHIFT_FILTER_OPTIONS = [
+  { value: 'all', label: 'Todos os períodos', shortLabel: 'Todos' },
+  { value: '06-10', label: '06h às 10h', shortLabel: '06h–10h', start: 6, end: 10 },
+  { value: '10-14', label: '10h às 14h', shortLabel: '10h–14h', start: 10, end: 14 },
+  { value: '14-18', label: '14h às 18h', shortLabel: '14h–18h', start: 14, end: 18 },
+  { value: '18-22', label: '18h às 22h', shortLabel: '18h–22h', start: 18, end: 22 },
+  { value: '22-02', label: '22h às 02h', shortLabel: '22h–02h', start: 22, end: 2 },
+  { value: '02-06', label: '02h às 06h', shortLabel: '02h–06h', start: 2, end: 6 },
+];
+
+const isHourInShift = (time: string, shift: string): boolean => {
+  if (shift === 'all') return true;
+  const option = SHIFT_FILTER_OPTIONS.find(o => o.value === shift);
+  if (!option || option.start === undefined || option.end === undefined) return true;
+  const hour = Number(time.slice(0, 2));
+  if (!Number.isFinite(hour)) return true;
+  return option.start < option.end
+    ? hour >= option.start && hour < option.end
+    : hour >= option.start || hour < option.end;
+};
+
+const getShiftLabel = (shift: string): string => SHIFT_FILTER_OPTIONS.find(o => o.value === shift)?.label || 'Todos os períodos';
+
 const LASTFM_API_KEY = '2a416b64ded1827a7e82e61d9a87b2e0';
 const REPEAT_THRESHOLD = 2;
 const PAGE_SIZE = 1000;
@@ -1135,7 +1159,7 @@ const App = () => {
   const [loadingDates, setLoadingDates] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', bpm: 'all', ano: '' });
+  const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '' });
   const [visibleCount, setVisibleCount] = useState(9);
   const [execModal, setExecModal] = useState<{ artista: string; musica: string; capa: string; execucoes: ExecucaoItem[] } | null>(null);
   const chartRef = React.useRef<HTMLDivElement>(null);
@@ -1258,6 +1282,7 @@ const App = () => {
     const matchSearch = filters.search ? (t.artista + t.musica).toLowerCase().includes(filters.search.toLowerCase()) : true;
     const matchGenero = filters.genero ? t.genero === filters.genero : true;
     const matchHour   = filters.hour !== 'all' ? t.hora.startsWith(`${filters.hour}:`) : true;
+    const matchShift  = isHourInShift(t.hora, filters.shift);
     const matchAno    = filters.ano ? String(t.ano_lancamento) === filters.ano : true;
     let matchBpm = true;
     if (filters.bpm !== 'all' && t.bpm) {
@@ -1265,7 +1290,7 @@ const App = () => {
       else if (filters.bpm === 'moderate') matchBpm = t.bpm >= 100 && t.bpm <= 120;
       else if (filters.bpm === 'fast') matchBpm = t.bpm > 120;
     }
-    return matchSearch && matchGenero && matchHour && matchBpm && matchAno;
+    return matchSearch && matchGenero && matchHour && matchShift && matchBpm && matchAno;
   }), [data, filters]);
 
   const repeatCountMap = useMemo(() => {
@@ -1275,12 +1300,13 @@ const App = () => {
   }, [filteredData]);
 
   const genreData = useMemo(() => {
-    const filtered = data.filter(t => filters.hour !== 'all' ? t.hora.startsWith(`${filters.hour}:`) : true);
+    const filtered = data.filter(t => (filters.hour !== 'all' ? t.hora.startsWith(`${filters.hour}:`) : true) && isHourInShift(t.hora, filters.shift));
     const counts: Record<string, number> = {};
     filtered.forEach(t => { const g = t.genero || 'Desconhecido'; counts[g] = (counts[g] || 0) + 1; });
     const total = filtered.length;
+    if (!total) return [];
     return Object.entries(counts).map(([name, value]) => ({ name, value, percentage: ((value / total) * 100).toFixed(1) })).sort((a, b) => b.value - a.value);
-  }, [data, filters.hour]);
+  }, [data, filters.hour, filters.shift]);
 
   const musicMetrics = useMemo(() => {
     const songKeys = new Set<string>();
@@ -1330,7 +1356,7 @@ const App = () => {
     const doc = new jsPDF();
     doc.setFontSize(20); doc.setFont('helvetica', 'bold'); doc.text(`IA NO RADIO - ${filters.radio}`, 14, 20);
     doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-    const hourLabel = filters.hour === 'all' ? 'Todas as horas' : `${filters.hour}:00`;
+    const hourLabel = filters.hour === 'all' ? getShiftLabel(filters.shift) : `${filters.hour}:00`;
     doc.text(`Data: ${filters.date} | Horario: ${hourLabel}`, 14, 28);
     doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`, 14, 34);
     let y = 45;
@@ -1357,7 +1383,7 @@ const App = () => {
     doc.save(`IAnoRadio_${filters.radio}_${filters.date}_${hourLabel}.pdf`);
   };
 
-  const hasActiveFilters = filters.search || filters.genero || filters.hour !== 'all' || filters.bpm !== 'all' || filters.ano;
+  const hasActiveFilters = filters.search || filters.genero || filters.hour !== 'all' || filters.shift !== 'all' || filters.bpm !== 'all' || filters.ano;
   const activeStreamUrl = RADIO_STREAM_URLS[filters.radio];
 
   return (
@@ -1426,7 +1452,7 @@ const App = () => {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {hasActiveFilters && (
-                <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', bpm: 'all', ano: '' }))}
+                <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '' }))}
                   className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-2xl text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-slate-200">
                   <X size={14} /> Limpar filtros
                 </button>
@@ -1455,6 +1481,7 @@ const App = () => {
               {filters.search && <span className="px-3 py-1.5 rounded-full bg-fuchsia-50 border border-fuchsia-100 text-fuchsia-700 text-[10px] font-black uppercase tracking-wider">Busca: {filters.search}</span>}
               {filters.genero && <span className="px-3 py-1.5 rounded-full bg-cyan-50 border border-cyan-100 text-cyan-700 text-[10px] font-black uppercase tracking-wider">Gênero: {filters.genero}</span>}
               {filters.hour !== 'all' && <span className="px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-wider">Hora: {filters.hour}:00</span>}
+              {filters.shift !== 'all' && <span className="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-wider">Locutor: {getShiftLabel(filters.shift)}</span>}
               {filters.bpm !== 'all' && <span className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-wider">BPM: {filters.bpm === 'slow' ? 'Lento' : filters.bpm === 'moderate' ? 'Moderado' : 'Rápido'}</span>}
               {filters.ano && <span className="px-3 py-1.5 rounded-full bg-violet-50 border border-violet-100 text-violet-700 text-[10px] font-black uppercase tracking-wider">Ano: {filters.ano}</span>}
             </div>
@@ -1470,7 +1497,7 @@ const App = () => {
               onOpen={handleOpenDatePicker}
             />
             <div className="relative">
-              <select value={filters.hour} onChange={e => { setFilters(f => ({ ...f, hour: e.target.value })); setVisibleCount(9); }}
+              <select value={filters.hour} onChange={e => { setFilters(f => ({ ...f, hour: e.target.value, shift: 'all' })); setVisibleCount(9); }}
                 className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-cyan-300 focus:border-cyan-300 focus:outline-none transition-all cursor-pointer text-sm">
                 <option value="all">Todas as horas</option>
                 {hourOptions.map(h => <option key={h} value={h}>{h}:00 – {h}:59</option>)}
@@ -1501,6 +1528,39 @@ const App = () => {
               availableYears={availableYears}
               onChange={y => { setFilters(f => ({ ...f, ano: y })); setVisibleCount(9); }}
             />
+          </div>
+
+          <div className="mt-4 rounded-[1.5rem] border border-slate-100 bg-slate-50/80 p-3">
+            <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-500">Troca de locutor</p>
+                <p className="text-xs font-bold uppercase text-slate-400">Filtros rápidos por faixa de programação</p>
+              </div>
+              {filters.shift !== 'all' && (
+                <button onClick={() => { setFilters(f => ({ ...f, shift: 'all' })); setVisibleCount(9); }} className="text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-slate-700">
+                  Limpar período
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-7">
+              {SHIFT_FILTER_OPTIONS.map(option => {
+                const active = filters.shift === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => { setFilters(f => ({ ...f, shift: option.value, hour: 'all' })); setVisibleCount(9); }}
+                    className={`rounded-2xl px-3 py-2.5 text-xs font-black uppercase tracking-wider transition-all active:scale-95 ${
+                      active
+                        ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-fuchsia-500 text-white shadow-lg shadow-amber-200/70 scale-[1.02]'
+                        : 'bg-white text-slate-500 border border-slate-200 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700'
+                    }`}
+                  >
+                    {option.shortLabel}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
