@@ -561,7 +561,7 @@ const MusicCard = ({
 );
 
 
-const MetricCard = ({ icon: Icon, label, value, detail, accent = 'cyan' }: { icon: any; label: string; value: string | number; detail: string; accent?: 'cyan' | 'fuchsia' | 'emerald' | 'amber' | 'violet' | 'blue' }) => {
+const MetricCard = ({ icon: Icon, label, value, detail, accent = 'cyan', onClick }: { icon: any; label: string; value: string | number; detail: string; accent?: 'cyan' | 'fuchsia' | 'emerald' | 'amber' | 'violet' | 'blue'; onClick?: () => void }) => {
   const styles: Record<string, { shell: string; icon: string; text: string; glow: string }> = {
     cyan: { shell: 'from-cyan-50 to-white border-cyan-100', icon: 'from-cyan-400 to-blue-600', text: 'text-cyan-600', glow: 'shadow-cyan-100/70' },
     fuchsia: { shell: 'from-fuchsia-50 to-white border-fuchsia-100', icon: 'from-fuchsia-500 to-purple-600', text: 'text-fuchsia-600', glow: 'shadow-fuchsia-100/70' },
@@ -572,8 +572,14 @@ const MetricCard = ({ icon: Icon, label, value, detail, accent = 'cyan' }: { ico
   };
   const current = styles[accent];
 
+  const Component = onClick ? 'button' : 'div';
+
   return (
-    <div className={`relative overflow-hidden rounded-[1.6rem] border bg-gradient-to-br ${current.shell} p-4 shadow-lg ${current.glow}`}>
+    <Component
+      type={onClick ? 'button' : undefined}
+      onClick={onClick}
+      className={`relative w-full overflow-hidden rounded-[1.6rem] border bg-gradient-to-br ${current.shell} p-4 text-left shadow-lg ${current.glow} ${onClick ? 'cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.98]' : ''}`}
+    >
       <div className="absolute -right-6 -top-8 h-20 w-20 rounded-full bg-white/70 blur-2xl" />
       <div className="relative flex items-start justify-between gap-3">
         <div>
@@ -585,11 +591,11 @@ const MetricCard = ({ icon: Icon, label, value, detail, accent = 'cyan' }: { ico
           <Icon size={20} />
         </div>
       </div>
-    </div>
+    </Component>
   );
 };
 
-const MusicMetricsPanel = ({ metrics }: { metrics: {
+const MusicMetricsPanel = ({ metrics, onOpenRepeated }: { metrics: {
   totalExecutions: number;
   uniqueSongs: number;
   uniqueArtists: number;
@@ -597,7 +603,7 @@ const MusicMetricsPanel = ({ metrics }: { metrics: {
   averageBpm: number | null;
   repeatedSongs: number;
   topTrack: string;
-} }) => (
+}; onOpenRepeated: () => void }) => (
   <section className="mb-8 rounded-[2rem] border border-white/80 bg-white/85 p-5 shadow-xl shadow-slate-200/70 backdrop-blur">
     <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
       <div>
@@ -612,7 +618,7 @@ const MusicMetricsPanel = ({ metrics }: { metrics: {
       <MetricCard icon={Headphones} label="Artistas únicos" value={metrics.uniqueArtists} detail="Vozes diferentes na rádio" accent="blue" />
       <MetricCard icon={Trophy} label="Gênero dominante" value={metrics.dominantGenre} detail="Maior presença na seleção" accent="amber" />
       <MetricCard icon={Flame} label="BPM médio" value={metrics.averageBpm ? `${metrics.averageBpm}` : '—'} detail="Energia média das músicas" accent="emerald" />
-      <MetricCard icon={RefreshCw} label="Repetidas" value={metrics.repeatedSongs} detail="Músicas com mais de 1 execução" accent="violet" />
+      <MetricCard icon={RefreshCw} label="Repetidas" value={metrics.repeatedSongs} detail={metrics.repeatedSongs ? "Clique para ver a lista" : "Músicas com mais de 1 execução"} accent="violet" onClick={onOpenRepeated} />
       <div className="relative overflow-hidden rounded-[1.6rem] border border-slate-200 bg-slate-950 p-4 text-white shadow-lg shadow-slate-300/70 sm:col-span-2">
         <div className="absolute -right-10 -top-14 h-32 w-32 rounded-full bg-cyan-400/30 blur-3xl" />
         <div className="absolute -bottom-16 left-8 h-28 w-28 rounded-full bg-fuchsia-500/30 blur-3xl" />
@@ -629,6 +635,46 @@ const MusicMetricsPanel = ({ metrics }: { metrics: {
       </div>
     </div>
   </section>
+);
+
+const RepeatedTracksModal = ({ tracks, onClose }: { tracks: { artista: string; musica: string; count: number }[]; onClose: () => void }) => (
+  <div className="fixed inset-0 z-[140] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="max-h-[86vh] w-full max-w-2xl overflow-hidden rounded-[2rem] border border-white/15 bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-start justify-between gap-4 bg-slate-950 p-6 text-white">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-cyan-300">Repetidas</p>
+          <h3 className="mt-1 text-2xl font-black uppercase tracking-tight">Músicas com repetição</h3>
+          <p className="mt-2 text-xs font-bold uppercase text-slate-400">Lista calculada com os filtros atuais</p>
+        </div>
+        <button onClick={onClose} className="rounded-2xl bg-white/10 p-3 text-white transition hover:bg-white/20" aria-label="Fechar lista de repetidas">
+          <X size={18} />
+        </button>
+      </div>
+      <div className="max-h-[58vh] overflow-y-auto p-4">
+        {tracks.length ? (
+          <div className="space-y-2">
+            {tracks.map((track, index) => (
+              <div key={`${track.artista}-${track.musica}`} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-xs font-black text-white">#{index + 1}</div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black uppercase text-slate-900">{track.musica}</p>
+                    <p className="truncate text-xs font-bold uppercase text-slate-400">{track.artista}</p>
+                  </div>
+                </div>
+                <div className="shrink-0 rounded-full bg-violet-100 px-3 py-1.5 text-xs font-black uppercase text-violet-700">{track.count}x</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-14 text-center">
+            <p className="text-lg font-black uppercase text-slate-300">Nenhuma música repetida</p>
+            <p className="mt-2 text-sm font-bold text-slate-400">Os filtros atuais não têm faixas com mais de uma execução.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
 );
 
 // ─────────────────────────────────────────────────────────────
@@ -1162,6 +1208,7 @@ const App = () => {
   const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '' });
   const [visibleCount, setVisibleCount] = useState(9);
   const [execModal, setExecModal] = useState<{ artista: string; musica: string; capa: string; execucoes: ExecucaoItem[] } | null>(null);
+  const [showRepeatedModal, setShowRepeatedModal] = useState(false);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
   const filtersRef = useRef(filters);
@@ -1308,6 +1355,14 @@ const App = () => {
     return Object.entries(counts).map(([name, value]) => ({ name, value, percentage: ((value / total) * 100).toFixed(1) })).sort((a, b) => b.value - a.value);
   }, [data, filters.hour, filters.shift]);
 
+  const repeatedTracks = useMemo(() => Object.entries(repeatCountMap)
+    .filter(([, count]) => count > 1)
+    .map(([key, count]) => {
+      const [artista, musica] = key.split('|||');
+      return { artista, musica, count };
+    })
+    .sort((a, b) => b.count - a.count || a.musica.localeCompare(b.musica)), [repeatCountMap]);
+
   const musicMetrics = useMemo(() => {
     const songKeys = new Set<string>();
     const artists = new Set<string>();
@@ -1330,7 +1385,7 @@ const App = () => {
       if (count > topTrackCount) {
         topTrackCount = count;
         const [artista, musica] = key.split('|||');
-        topTrack = `${musica} • ${artista}`;
+        topTrack = `${musica} • ${artista} • ${count}X`;
       }
     });
 
@@ -1388,6 +1443,10 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_30%),radial-gradient(circle_at_top_right,rgba(168,85,247,0.14),transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_42%,#f8fafc_100%)]">
+      {showRepeatedModal && (
+        <RepeatedTracksModal tracks={repeatedTracks} onClose={() => setShowRepeatedModal(false)} />
+      )}
+
       {execModal && (
         <TrackExecutionsModal
           artista={execModal.artista}
@@ -1584,7 +1643,7 @@ const App = () => {
               )
             )}
 
-            {filteredData.length > 0 && <MusicMetricsPanel metrics={musicMetrics} />}
+            {filteredData.length > 0 && <MusicMetricsPanel metrics={musicMetrics} onOpenRepeated={() => setShowRepeatedModal(true)} />}
 
             <TopArtistsCard radio={filters.radio} />
 
