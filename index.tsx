@@ -5,7 +5,7 @@ import {
   Music, Loader2, Plus, Download,
   TrendingUp, Sparkles, Filter, Megaphone, Activity,
   Trophy, X, Youtube, CalendarDays, ChevronDown,
-  TrendingDown, Flame, Volume2, Headphones
+  TrendingDown, Volume2
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -598,9 +598,7 @@ const MetricCard = ({ icon: Icon, label, value, detail, accent = 'cyan', onClick
 const MusicMetricsPanel = ({ metrics, onOpenRepeated }: { metrics: {
   totalExecutions: number;
   uniqueSongs: number;
-  uniqueArtists: number;
   dominantGenre: string;
-  averageBpm: number | null;
   repeatedSongs: number;
   topArtist: string;
   topTrack: string;
@@ -616,13 +614,11 @@ const MusicMetricsPanel = ({ metrics, onOpenRepeated }: { metrics: {
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <MetricCard icon={Activity} label="Execuções" value={metrics.totalExecutions} detail="Registros no filtro atual" accent="cyan" />
       <MetricCard icon={Music} label="Músicas únicas" value={metrics.uniqueSongs} detail="Faixas diferentes tocadas" accent="fuchsia" />
-      <MetricCard icon={Headphones} label="Artistas únicos" value={metrics.uniqueArtists} detail="Vozes diferentes na rádio" accent="blue" />
       <MetricCard icon={Trophy} label="Gênero dominante" value={metrics.dominantGenre} detail="Maior presença na seleção" accent="amber" />
-      <MetricCard icon={Flame} label="BPM médio" value={metrics.averageBpm ? `${metrics.averageBpm}` : '—'} detail="Energia média das músicas" accent="emerald" />
       <MetricCard icon={RefreshCw} label="Repetidas" value={metrics.repeatedSongs} detail={metrics.repeatedSongs ? "Clique para ver a lista" : "Músicas com mais de 1 execução"} accent="violet" onClick={onOpenRepeated} />
-      <div className="relative overflow-hidden rounded-[1.6rem] border border-slate-200 bg-slate-950 p-4 text-white shadow-lg shadow-slate-300/70 sm:col-span-2">
-        <div className="absolute -right-10 -top-14 h-32 w-32 rounded-full bg-cyan-400/30 blur-3xl" />
-        <div className="absolute -bottom-16 left-8 h-28 w-28 rounded-full bg-fuchsia-500/30 blur-3xl" />
+      <div className="relative overflow-hidden rounded-[1.6rem] border border-cyan-200 bg-gradient-to-br from-cyan-950 via-blue-950 to-slate-950 p-4 text-white shadow-lg shadow-cyan-200/60 sm:col-span-2">
+        <div className="absolute -right-10 -top-14 h-32 w-32 rounded-full bg-cyan-300/35 blur-3xl" />
+        <div className="absolute -bottom-16 left-8 h-28 w-28 rounded-full bg-blue-500/30 blur-3xl" />
         <div className="relative flex h-full items-start justify-between gap-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-300">Artista mais executado</p>
@@ -634,9 +630,9 @@ const MusicMetricsPanel = ({ metrics, onOpenRepeated }: { metrics: {
           </div>
         </div>
       </div>
-      <div className="relative overflow-hidden rounded-[1.6rem] border border-slate-200 bg-slate-950 p-4 text-white shadow-lg shadow-slate-300/70 sm:col-span-2">
-        <div className="absolute -right-10 -top-14 h-32 w-32 rounded-full bg-amber-400/25 blur-3xl" />
-        <div className="absolute -bottom-16 left-8 h-28 w-28 rounded-full bg-violet-500/30 blur-3xl" />
+      <div className="relative overflow-hidden rounded-[1.6rem] border border-amber-200 bg-gradient-to-br from-amber-500 via-orange-600 to-fuchsia-700 p-4 text-white shadow-lg shadow-amber-200/70 sm:col-span-2">
+        <div className="absolute -right-10 -top-14 h-32 w-32 rounded-full bg-white/30 blur-3xl" />
+        <div className="absolute -bottom-16 left-8 h-28 w-28 rounded-full bg-fuchsia-300/35 blur-3xl" />
         <div className="relative flex h-full items-start justify-between gap-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-300">Música mais executada</p>
@@ -1381,10 +1377,8 @@ const App = () => {
 
   const musicMetrics = useMemo(() => {
     const songKeys = new Set<string>();
-    const artists = new Set<string>();
     const genreCounts: Record<string, number> = {};
     const artistCounts: Record<string, number> = {};
-    const bpmValues: number[] = [];
     let topArtist = 'SEM DADOS';
     let topArtistCount = 0;
     let topTrack = 'SEM DADOS';
@@ -1394,13 +1388,10 @@ const App = () => {
       const songKey = `${t.artista}|||${t.musica}`;
       songKeys.add(songKey);
       if (t.artista) {
-        artists.add(t.artista);
         artistCounts[t.artista] = (artistCounts[t.artista] || 0) + 1;
       }
       const genre = t.genero || 'Desconhecido';
       genreCounts[genre] = (genreCounts[genre] || 0) + 1;
-      const bpm = Number(t.bpm);
-      if (Number.isFinite(bpm) && bpm > 0) bpmValues.push(bpm);
     });
 
     Object.entries(artistCounts).forEach(([artista, count]) => {
@@ -1419,14 +1410,11 @@ const App = () => {
     });
 
     const dominantGenre = Object.entries(genreCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
-    const averageBpm = bpmValues.length ? Math.round(bpmValues.reduce((sum, bpm) => sum + bpm, 0) / bpmValues.length) : null;
 
     return {
       totalExecutions: filteredData.length,
       uniqueSongs: songKeys.size,
-      uniqueArtists: artists.size,
       dominantGenre,
-      averageBpm,
       repeatedSongs: Object.values(repeatCountMap).filter(count => count > 1).length,
       topArtist,
       topTrack,
