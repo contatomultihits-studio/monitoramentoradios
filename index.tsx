@@ -94,11 +94,11 @@ const isBlocked = (artista: string, musica: string, radio?: string): boolean =>
   });
 
 const GENRE_COLORS: Record<string, string> = {
-  'Sertanejo': '#3B82F6', 'Pop': '#0EA5E9', 'Rock': '#1E40AF',
-  'MPB': '#60A5FA', 'Funk': '#2563EB', 'Pagode': '#0284C7',
-  'Rap/Hip Hop': '#1D4ED8', 'Eletrônica': '#06B6D4', 'Gospel': '#7DD3FC',
-  'Samba': '#1E3A8A', 'Forró': '#93C5FD', 'Reggae': '#34D399',
-  'Jazz': '#1e293b', 'Desconhecido': '#D3D3D3', 'Outros': '#B8B8B8'
+  'Sertanejo': '#5279FF', 'Pop': '#EA7F9F', 'Rock': '#0D0056',
+  'MPB': '#7895FF', 'Funk': '#B75B85', 'Pagode': '#405FD4',
+  'Rap/Hip Hop': '#24106F', 'Eletrônica': '#8BA3FF', 'Gospel': '#D0FF03',
+  'Samba': '#312083', 'Forró': '#A8B8FF', 'Reggae': '#A7CC02',
+  'Jazz': '#180B4F', 'Desconhecido': '#CBD0E4', 'Outros': '#9DA8D7'
 };
 
 const ytURL = (artista: string, musica: string) =>
@@ -178,21 +178,21 @@ const RadioStreamPlayer = ({ radio, streamUrl }: { radio: string; streamUrl: str
   };
 
   return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-zinc-950 via-neutral-900 to-[#12C998] p-6 shadow-2xl shadow-neutral-950/25">
-      <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#16FFBD]/20 blur-3xl" />
-      <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-[#F070A1]/20 blur-3xl" />
+    <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#0D0056] via-[#17116d] to-[#5279FF] p-6 shadow-2xl shadow-[#0D0056]/25">
+      <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-[#D0FF03]/20 blur-3xl" />
+      <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-[#EA7F9F]/20 blur-3xl" />
       <div className="relative z-10 flex h-full flex-col justify-between gap-6">
         <div>
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-[#16FFBD]">
-            <span className={`h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_5px_rgba(52,211,153,0.16)] ${isPlaying ? 'animate-pulse' : ''}`} />
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-[#D0FF03]">
+            <span className={`h-2 w-2 rounded-full bg-[#D0FF03] shadow-[0_0_0_5px_rgba(208,255,3,0.18)] ${isPlaying ? 'animate-pulse' : ''}`} />
             Ao vivo
           </div>
           <div className="mb-5 flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
-              <Radio size={24} className="text-[#16FFBD]" />
+              <Radio size={24} className="text-[#D0FF03]" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#16FFBD]">Ouça agora</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#D0FF03]">Ouça agora</p>
               <h3 className="text-xl font-black uppercase leading-tight text-white">{radio}</h3>
             </div>
           </div>
@@ -263,7 +263,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     return (
       <div className="bg-white p-4 rounded-xl shadow-2xl border border-slate-100">
         <p className="font-black text-slate-800 uppercase text-xs mb-1">{d.name}</p>
-        <p className="font-bold text-blue-600 text-xs">{d.value} músicas ({d.percentage}%)</p>
+        <p className="font-bold text-[#5279FF] text-xs">{d.value} músicas ({d.percentage}%)</p>
         {d.subGenres && (
           <div className="mt-2 pt-2 border-t border-slate-100">
             <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Inclui:</p>
@@ -318,7 +318,7 @@ const TrackExecutionsModal = ({
       onClick={handleBackdrop}
     >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden">
-        <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-t-3xl">
+        <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-[#5279FF] to-[#0D0056] rounded-t-3xl">
           <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 ring-2 ring-white/30 shadow-lg">
             {capa
               ? <img src={capa} alt={musica} className="w-full h-full object-cover" />
@@ -327,8 +327,8 @@ const TrackExecutionsModal = ({
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="font-black text-base text-white leading-tight truncate">{musica}</h2>
-            <p className="text-blue-200 text-xs font-bold truncate">{artista}</p>
-            <p className="text-blue-100 text-[10px] font-bold mt-0.5">
+            <p className="text-[#dbe3ff] text-xs font-bold truncate">{artista}</p>
+            <p className="text-white/80 text-[10px] font-bold mt-0.5">
               {execucoes.length} execução{execucoes.length !== 1 ? 'ões' : ''} nos últimos 7 dias
             </p>
           </div>
@@ -347,9 +347,9 @@ const TrackExecutionsModal = ({
             porDia.map(([dia, horarios]) => (
               <div key={dia} className="bg-slate-50 rounded-2xl p-4">
                 <p className="font-black text-slate-700 text-sm mb-2 flex items-center gap-2">
-                  <CalendarDays size={14} className="text-blue-500" />
+                  <CalendarDays size={14} className="text-[#5279FF]" />
                   {formatDateBR(dia)}
-                  <span className="ml-auto px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black">
+                  <span className="ml-auto px-2 py-0.5 bg-[#5279FF]/15 text-[#0D0056] rounded-full text-[10px] font-black">
                     {horarios.length}x
                   </span>
                 </p>
@@ -359,7 +359,7 @@ const TrackExecutionsModal = ({
                       key={i}
                       className="flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200 rounded-full text-[11px] font-bold text-slate-600 shadow-sm"
                     >
-                      <Clock size={9} className="text-blue-400" />
+                      <Clock size={9} className="text-[#5279FF]" />
                       {h}
                     </span>
                   ))}
@@ -399,32 +399,32 @@ const ArtistModal = ({ artist, tracks, photo, periodLabel, onClose }: { artist: 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={handleBackdrop}>
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
-        <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-t-3xl">
+        <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-[#5279FF] to-[#0D0056] rounded-t-3xl">
           <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 ring-2 ring-white/30 shadow-lg">
             {photo ? <img src={photo} alt={artist} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-white/20"><Music size={24} className="text-white" /></div>}
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="font-black text-xl text-white uppercase leading-tight truncate">{artist}</h2>
-            <p className="text-blue-200 text-xs font-bold mt-0.5">{tracks.length} execuções • {grouped.length} música{grouped.length !== 1 ? 's' : ''} diferente{grouped.length !== 1 ? 's' : ''}</p>
-            <p className="text-blue-300 text-[10px] font-bold mt-0.5 uppercase">{periodLabel}</p>
+            <p className="text-[#dbe3ff] text-xs font-bold mt-0.5">{tracks.length} execuções • {grouped.length} música{grouped.length !== 1 ? 's' : ''} diferente{grouped.length !== 1 ? 's' : ''}</p>
+            <p className="text-[#dbe3ff] text-[10px] font-bold mt-0.5 uppercase">{periodLabel}</p>
           </div>
           <button onClick={onClose} className="flex-shrink-0 p-2 rounded-xl bg-white/20 hover:bg-white/30 transition-all"><X size={20} className="text-white" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-4 space-y-2">
           {grouped.map(({ track: t, count, horarios }) => (
-            <div key={t.musica} className="flex items-center gap-3 bg-slate-50 hover:bg-blue-50 rounded-2xl p-3 transition-all group">
+            <div key={t.musica} className="flex items-center gap-3 bg-slate-50 hover:bg-[#5279FF]/10 rounded-2xl p-3 transition-all group">
               <div className="flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-slate-200 shadow">
                 {t.capa ? <img src={t.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400"><Music size={16} /></div>}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-black text-slate-800 text-sm truncate leading-tight">{t.musica}</p>
                 <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                  {t.genero && t.genero !== 'Desconhecido' && <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[t.genero] || '#3B82F6' }}>{t.genero}</span>}
+                  {t.genero && t.genero !== 'Desconhecido' && <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[t.genero] || '#5279FF' }}>{t.genero}</span>}
                   <span className="text-[10px] font-bold text-slate-400">{horarios.slice(0, 3).join(' • ')}{horarios.length > 3 ? ` +${horarios.length - 3}` : ''}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                {count > 1 && <span className="px-2.5 py-1 bg-amber-100 text-amber-700 rounded-full text-[10px] font-black">{count}x</span>}
+                {count > 1 && <span className="px-2.5 py-1 bg-[#D0FF03]/25 text-[#0D0056] rounded-full text-[10px] font-black">{count}x</span>}
                 <a href={ytURL(artist, t.musica)} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="p-2 bg-red-500 hover:bg-red-600 rounded-full transition-all opacity-0 group-hover:opacity-100"><Youtube size={12} className="text-white" /></a>
               </div>
             </div>
@@ -439,27 +439,27 @@ const ArtistModal = ({ artist, tracks, photo, periodLabel, onClose }: { artist: 
 // NOW PLAYING CARD
 // ─────────────────────────────────────────────────────────────
 const NowPlayingCard = ({ track }: { track: any }) => (
-  <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-fuchsia-950 p-6 sm:p-8 rounded-[2rem] shadow-2xl shadow-cyan-950/30 border border-white/10">
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.28),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(236,72,153,0.22),transparent_32%)] animate-pulse" />
-    <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#F070A1]/20 blur-3xl" />
-    <div className="absolute -left-16 bottom-0 h-48 w-48 rounded-full bg-[#16FFBD]/20 blur-3xl" />
+  <div className="relative overflow-hidden bg-gradient-to-br from-[#0D0056] via-[#20137f] to-[#5279FF] p-6 sm:p-8 rounded-[2rem] shadow-2xl shadow-[#0D0056]/30 border border-white/10">
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(82,121,255,0.30),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(234,127,159,0.28),transparent_32%)] animate-pulse" />
+    <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#EA7F9F]/20 blur-3xl" />
+    <div className="absolute -left-16 bottom-0 h-48 w-48 rounded-full bg-[#D0FF03]/20 blur-3xl" />
     <div className="relative z-10">
       <div className="flex items-center gap-3 mb-5">
-        <span className="flex h-3 w-3"><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-sky-400 opacity-75" /><span className="relative inline-flex rounded-full h-3 w-3 bg-sky-300" /></span>
-        <span className="text-[#16FFBD] font-black text-sm uppercase tracking-[0.25em] flex items-center gap-2"><Sparkles size={16} /> ÚLTIMA EXECUÇÃO</span>
+        <span className="flex h-3 w-3"><span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-[#D0FF03] opacity-75" /><span className="relative inline-flex rounded-full h-3 w-3 bg-[#EA7F9F]" /></span>
+        <span className="text-[#D0FF03] font-black text-sm uppercase tracking-[0.25em] flex items-center gap-2"><Sparkles size={16} /> ÚLTIMA EXECUÇÃO</span>
       </div>
       <div className="flex flex-col sm:flex-row sm:items-center gap-6">
         <div className="flex-shrink-0"><div className="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl overflow-hidden shadow-2xl ring-4 ring-white/20">{track.capa ? <img src={track.capa} alt="Capa" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-white/10"><Music size={48} className="text-white/40" /></div>}</div></div>
         <div className="flex-1 min-w-0">
           <h2 className="font-black text-3xl sm:text-4xl text-white mb-2 leading-tight drop-shadow-lg">{track.musica}</h2>
-          <p className="font-bold text-xl sm:text-2xl text-fuchsia-100 mb-4 drop-shadow-md">{track.artista}</p>
+          <p className="font-bold text-xl sm:text-2xl text-[#f9d7e2] mb-4 drop-shadow-md">{track.artista}</p>
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/15 backdrop-blur-sm rounded-full"><Clock size={16} className="text-[#16FFBD]" /><span className="font-bold text-white text-sm">{track.hora}</span></div>
-            {track.genero && track.genero !== 'Desconhecido' && <span className="px-4 py-2 rounded-full text-sm font-black uppercase text-white shadow-lg" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>{track.genero}</span>}
-            {track.bpm && <div className="flex items-center gap-2 px-4 py-2 bg-emerald-400/90 rounded-full shadow-lg shadow-emerald-950/30"><Activity size={16} className="text-white" /><span className="font-black text-white text-sm">{track.bpm} BPM</span></div>}
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/15 backdrop-blur-sm rounded-full"><Clock size={16} className="text-[#D0FF03]" /><span className="font-bold text-white text-sm">{track.hora}</span></div>
+            {track.genero && track.genero !== 'Desconhecido' && <span className="px-4 py-2 rounded-full text-sm font-black uppercase text-white shadow-lg" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#5279FF' }}>{track.genero}</span>}
+            {track.bpm && <div className="flex items-center gap-2 px-4 py-2 bg-[#5279FF] rounded-full shadow-lg shadow-[#0D0056]/30"><Activity size={16} className="text-white" /><span className="font-black text-white text-sm">{track.bpm} BPM</span></div>}
             {track.ano_lancamento && (
               <div
-                className="flex items-center gap-2 px-4 py-2 bg-fuchsia-500/90 rounded-full shadow-lg shadow-fuchsia-950/30 relative group/ano cursor-default"
+                className="flex items-center gap-2 px-4 py-2 bg-[#EA7F9F] rounded-full shadow-lg shadow-[#0D0056]/25 relative group/ano cursor-default"
                 title="ANO DO LANÇAMENTO"
               >
                 <CalendarDays size={16} className="text-white" />
@@ -491,8 +491,8 @@ const MusicCard = ({
   weeklyExecs: ExecucaoItem[];
   onCapaClick: () => void;
 }) => (
-  <div className={`bg-white/95 backdrop-blur border rounded-3xl p-4 hover:shadow-xl hover:shadow-cyan-950/10 hover:-translate-y-1 transition-all duration-300 ${
-    repeatCount && repeatCount >= REPEAT_THRESHOLD ? 'border-amber-300 bg-amber-50/80 shadow-amber-100/60' : 'border-slate-200/80'
+  <div className={`bg-white/95 backdrop-blur border rounded-3xl p-4 hover:shadow-xl hover:shadow-[#0D0056]/10 hover:-translate-y-1 transition-all duration-300 ${
+    repeatCount && repeatCount >= REPEAT_THRESHOLD ? 'border-[#D0FF03] bg-[#D0FF03]/10 shadow-[#D0FF03]/20' : 'border-slate-200/80'
   }`}>
     <div className="flex items-center gap-4">
       <button
@@ -508,7 +508,7 @@ const MusicCard = ({
           <Clock size={16} className="text-white opacity-0 group-hover:opacity-100 drop-shadow-lg transition-opacity" />
         </div>
         {weeklyExecs.length > 0 && (
-          <div className="absolute -bottom-1 -right-1 min-w-[18px] h-[18px] px-1 bg-cyan-500 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
+          <div className="absolute -bottom-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#5279FF] text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
             {weeklyExecs.length}
           </div>
         )}
@@ -516,24 +516,24 @@ const MusicCard = ({
 
       <div className="flex-1 min-w-0">
         <h3 className="font-black text-slate-900 text-base truncate leading-tight mb-1">{track.musica}</h3>
-        <p className="font-bold text-fuchsia-600 text-sm truncate mb-2">{track.artista}</p>
+        <p className="font-bold text-[#0D0056] text-sm truncate mb-2">{track.artista}</p>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-full">
             <Clock size={10} className="text-slate-500" />
             <span className="font-bold text-[10px] text-slate-600">{track.hora}</span>
           </div>
           {track.genero && track.genero !== 'Desconhecido' && (
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#3B82F6' }}>{track.genero}</span>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#5279FF' }}>{track.genero}</span>
           )}
           {track.bpm && (
-            <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500 rounded-full shadow-sm shadow-emerald-100">
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-[#5279FF] rounded-full shadow-sm shadow-[#5279FF]/15">
               <Activity size={10} className="text-white" />
               <span className="font-black text-[10px] text-white">{track.bpm} BPM</span>
             </div>
           )}
           {track.ano_lancamento && (
             <div
-              className="relative group/ano flex items-center gap-1 px-2.5 py-1 bg-fuchsia-500 rounded-full cursor-default shadow-sm shadow-fuchsia-100"
+              className="relative group/ano flex items-center gap-1 px-2.5 py-1 bg-[#EA7F9F] rounded-full cursor-default shadow-sm shadow-pink-100"
             >
               <CalendarDays size={10} className="text-white" />
               <span className="font-black text-[10px] text-white">{track.ano_lancamento}</span>
@@ -543,14 +543,14 @@ const MusicCard = ({
             </div>
           )}
           {repeatCount && repeatCount >= REPEAT_THRESHOLD && (
-            <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-400 rounded-full">
-              <span className="font-black text-[10px] text-white">🔁 {repeatCount}x hoje</span>
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-[#D0FF03] rounded-full">
+              <span className="font-black text-[10px] text-[#0D0056]">🔁 {repeatCount}x hoje</span>
             </div>
           )}
           {weeklyExecs.length > 0 && (
-            <div className="flex items-center gap-1 px-2.5 py-1 bg-cyan-50 border border-cyan-200 rounded-full">
-              <TrendingUp size={9} className="text-[#12C998]" />
-              <span className="font-black text-[10px] text-cyan-700">{weeklyExecs.length}x semana</span>
+            <div className="flex items-center gap-1 px-2.5 py-1 bg-[#5279FF]/10 border border-[#5279FF]/25 rounded-full">
+              <TrendingUp size={9} className="text-[#5279FF]" />
+              <span className="font-black text-[10px] text-[#0D0056]">{weeklyExecs.length}x semana</span>
             </div>
           )}
         </div>
@@ -563,12 +563,12 @@ const MusicCard = ({
 
 const MetricCard = ({ icon: Icon, label, value, detail, accent = 'cyan', onClick }: { icon: any; label: string; value: string | number; detail: string; accent?: 'cyan' | 'fuchsia' | 'emerald' | 'amber' | 'violet' | 'blue'; onClick?: () => void }) => {
   const styles: Record<string, { shell: string; icon: string; text: string; glow: string }> = {
-    cyan: { shell: 'from-cyan-50 to-white border-cyan-100', icon: 'from-cyan-400 to-blue-600', text: 'text-cyan-600', glow: 'shadow-cyan-100/70' },
-    fuchsia: { shell: 'from-fuchsia-50 to-white border-fuchsia-100', icon: 'from-fuchsia-500 to-purple-600', text: 'text-fuchsia-600', glow: 'shadow-fuchsia-100/70' },
-    emerald: { shell: 'from-emerald-50 to-white border-emerald-100', icon: 'from-emerald-400 to-teal-600', text: 'text-emerald-600', glow: 'shadow-emerald-100/70' },
-    amber: { shell: 'from-amber-50 to-white border-amber-100', icon: 'from-amber-400 to-orange-500', text: 'text-amber-600', glow: 'shadow-amber-100/70' },
-    violet: { shell: 'from-violet-50 to-white border-violet-100', icon: 'from-violet-500 to-indigo-600', text: 'text-violet-600', glow: 'shadow-violet-100/70' },
-    blue: { shell: 'from-blue-50 to-white border-blue-100', icon: 'from-blue-500 to-cyan-500', text: 'text-blue-600', glow: 'shadow-blue-100/70' },
+    cyan: { shell: 'from-[#D0FF03]/15 to-white border-[#D0FF03]/40', icon: 'from-[#D0FF03] to-[#5279FF]', text: 'text-[#0D0056]', glow: 'shadow-[#D0FF03]/20' },
+    fuchsia: { shell: 'from-[#EA7F9F]/20 to-white border-[#EA7F9F]/35', icon: 'from-[#EA7F9F] to-[#0D0056]', text: 'text-[#0D0056]', glow: 'shadow-[#EA7F9F]/20' },
+    emerald: { shell: 'from-[#5279FF]/10 to-white border-[#5279FF]/25', icon: 'from-[#5279FF] to-[#0D0056]', text: 'text-[#0D0056]', glow: 'shadow-[#5279FF]/20' },
+    amber: { shell: 'from-[#5279FF]/10 to-white border-[#5279FF]/25', icon: 'from-[#5279FF] to-[#0D0056]', text: 'text-[#0D0056]', glow: 'shadow-[#5279FF]/20' },
+    violet: { shell: 'from-[#0D0056]/10 to-white border-[#0D0056]/20', icon: 'from-[#0D0056] to-[#5279FF]', text: 'text-[#0D0056]', glow: 'shadow-[#0D0056]/15' },
+    blue: { shell: 'from-[#5279FF]/10 to-white border-[#5279FF]/25', icon: 'from-[#5279FF] to-[#0D0056]', text: 'text-[#0D0056]', glow: 'shadow-[#5279FF]/20' },
   };
   const current = styles[accent];
 
@@ -603,10 +603,10 @@ const MusicMetricsPanel = ({ metrics, onOpenRepeated }: { metrics: {
   topArtist: string;
   topTrack: string;
 }; onOpenRepeated: () => void }) => (
-  <section className="mb-8 rounded-[2rem] border border-white/80 bg-white/85 p-5 shadow-xl shadow-slate-200/70 backdrop-blur">
+  <section className="mb-8 rounded-[2rem] border border-white/80 bg-white/85 p-5 shadow-xl shadow-[#5279FF]/15 backdrop-blur">
     <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-fuchsia-500">Resumo musical</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#EA7F9F]">Resumo musical</p>
         <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">RAIO-X DA PROGRAMAÇÃO</h2>
       </div>
       <p className="max-w-xl text-xs font-bold uppercase leading-relaxed text-slate-400">Métricas calculadas com os filtros atuais, sem alterar consultas, banco ou funcionamento existente.</p>
@@ -616,30 +616,30 @@ const MusicMetricsPanel = ({ metrics, onOpenRepeated }: { metrics: {
       <MetricCard icon={Music} label="Músicas únicas" value={metrics.uniqueSongs} detail="Faixas diferentes tocadas" accent="fuchsia" />
       <MetricCard icon={Trophy} label="Gênero dominante" value={metrics.dominantGenre} detail="Maior presença na seleção" accent="amber" />
       <MetricCard icon={RefreshCw} label="Repetidas" value={metrics.repeatedSongs} detail={metrics.repeatedSongs ? "Clique para ver a lista" : "Músicas com mais de 1 execução"} accent="violet" onClick={onOpenRepeated} />
-      <div className="relative overflow-hidden rounded-[1.6rem] border border-[#16FFBD]/50 bg-gradient-to-br from-neutral-950 via-[#0d4f45] to-[#12C998] p-4 text-white shadow-lg shadow-emerald-200/60 sm:col-span-2">
-        <div className="absolute -right-10 -top-14 h-32 w-32 rounded-full bg-[#16FFBD]/35 blur-3xl" />
-        <div className="absolute -bottom-16 left-8 h-28 w-28 rounded-full bg-[#12C998]/30 blur-3xl" />
+      <div className="relative overflow-hidden rounded-[1.6rem] border border-[#D0FF03]/50 bg-gradient-to-br from-[#0D0056] via-[#20137f] to-[#5279FF] p-4 text-white shadow-lg shadow-[#5279FF]/20 sm:col-span-2">
+        <div className="absolute -right-10 -top-14 h-32 w-32 rounded-full bg-[#D0FF03]/35 blur-3xl" />
+        <div className="absolute -bottom-16 left-8 h-28 w-28 rounded-full bg-[#5279FF]/30 blur-3xl" />
         <div className="relative flex h-full items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#16FFBD]">Artista mais executado</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#D0FF03]">Artista mais executado</p>
             <p className="mt-2 text-xl font-black uppercase leading-tight text-white">{metrics.topArtist}</p>
             <p className="mt-2 text-[11px] font-bold uppercase text-neutral-300">Mesmo tipo de conta do ranking de artistas</p>
           </div>
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#16FFBD] ring-1 ring-white/10">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#D0FF03] ring-1 ring-white/10">
             <Trophy size={22} />
           </div>
         </div>
       </div>
-      <div className="relative overflow-hidden rounded-[1.6rem] border border-[#F070A1]/60 bg-gradient-to-br from-[#C34271] via-[#F070A1] to-[#16FFBD] p-4 text-white shadow-lg shadow-pink-200/70 sm:col-span-2">
+      <div className="relative overflow-hidden rounded-[1.6rem] border border-[#EA7F9F]/60 bg-gradient-to-br from-[#EA7F9F] via-[#EA7F9F] to-[#D0FF03] p-4 text-white shadow-lg shadow-pink-200/70 sm:col-span-2">
         <div className="absolute -right-10 -top-14 h-32 w-32 rounded-full bg-white/30 blur-3xl" />
-        <div className="absolute -bottom-16 left-8 h-28 w-28 rounded-full bg-[#F070A1]/35 blur-3xl" />
+        <div className="absolute -bottom-16 left-8 h-28 w-28 rounded-full bg-[#EA7F9F]/35 blur-3xl" />
         <div className="relative flex h-full items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-300">Música mais executada</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#0D0056]">Música mais executada</p>
             <p className="mt-2 text-xl font-black uppercase leading-tight text-white">{metrics.topTrack}</p>
-            <p className="mt-2 text-[11px] font-bold uppercase text-slate-400">Faixa individual com maior repetição</p>
+            <p className="mt-2 text-[11px] font-bold uppercase text-[#0D0056]/70">Faixa individual com maior repetição</p>
           </div>
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-amber-200 ring-1 ring-white/10">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#0D0056] ring-1 ring-white/10">
             <TrendingUp size={22} />
           </div>
         </div>
@@ -649,11 +649,11 @@ const MusicMetricsPanel = ({ metrics, onOpenRepeated }: { metrics: {
 );
 
 const RepeatedTracksModal = ({ tracks, onClose }: { tracks: { artista: string; musica: string; count: number }[]; onClose: () => void }) => (
-  <div className="fixed inset-0 z-[140] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" onClick={onClose}>
+  <div className="fixed inset-0 z-[140] flex items-center justify-center bg-[#0D0056]/75 p-4 backdrop-blur-sm" onClick={onClose}>
     <div className="max-h-[86vh] w-full max-w-2xl overflow-hidden rounded-[2rem] border border-white/15 bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-      <div className="flex items-start justify-between gap-4 bg-slate-950 p-6 text-white">
+      <div className="flex items-start justify-between gap-4 bg-[#0D0056] p-6 text-white">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#16FFBD]">Repetidas</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#D0FF03]">Repetidas</p>
           <h3 className="mt-1 text-2xl font-black uppercase tracking-tight">Músicas com repetição</h3>
           <p className="mt-2 text-xs font-bold uppercase text-slate-400">Lista calculada com os filtros atuais</p>
         </div>
@@ -667,13 +667,13 @@ const RepeatedTracksModal = ({ tracks, onClose }: { tracks: { artista: string; m
             {tracks.map((track, index) => (
               <div key={`${track.artista}-${track.musica}`} className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-xs font-black text-white">#{index + 1}</div>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#5279FF] to-[#EA7F9F] text-xs font-black text-white">#{index + 1}</div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-black uppercase text-slate-900">{track.musica}</p>
                     <p className="truncate text-xs font-bold uppercase text-slate-400">{track.artista}</p>
                   </div>
                 </div>
-                <div className="shrink-0 rounded-full bg-violet-100 px-3 py-1.5 text-xs font-black uppercase text-violet-700">{track.count}x</div>
+                <div className="shrink-0 rounded-full bg-[#5279FF]/15 px-3 py-1.5 text-xs font-black uppercase text-[#0D0056]">{track.count}x</div>
               </div>
             ))}
           </div>
@@ -826,10 +826,10 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
           onClose={() => setModalArtist(null)}
         />
       )}
-      <div className="bg-gradient-to-br from-amber-50 via-white to-fuchsia-50 p-8 rounded-[2rem] shadow-xl shadow-amber-100/50 mb-8 border border-amber-100">
+      <div className="bg-gradient-to-br from-[#D0FF03]/10 via-white to-[#EA7F9F]/15 p-8 rounded-[2rem] shadow-xl shadow-[#EA7F9F]/20 mb-8 border border-[#EA7F9F]/25">
         <div className="flex items-start justify-between gap-4 mb-5">
           <div className="flex items-center gap-4">
-            <div className="bg-gradient-to-br from-amber-400 via-orange-400 to-fuchsia-500 p-4 rounded-2xl shadow-lg shadow-pink-200/70">
+            <div className="bg-gradient-to-br from-[#D0FF03] via-[#EA7F9F] to-[#5279FF] p-4 rounded-2xl shadow-lg shadow-pink-200/70">
               <Trophy className="text-white" size={28} />
             </div>
             <div>
@@ -840,7 +840,7 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
             </div>
           </div>
           {loadingPeriod && (
-            <Loader2 size={20} className="animate-spin text-amber-500 flex-shrink-0 mt-1" />
+            <Loader2 size={20} className="animate-spin text-[#5279FF] flex-shrink-0 mt-1" />
           )}
         </div>
 
@@ -851,8 +851,8 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
               onClick={() => setPeriod(opt.value)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-wide transition-all ${
                 period === opt.value
-                  ? 'bg-gradient-to-r from-amber-400 to-fuchsia-500 text-white shadow-lg shadow-amber-200/60 scale-105'
-                  : 'bg-white/90 text-slate-600 border border-amber-200 hover:border-fuchsia-300 hover:text-fuchsia-600'
+                  ? 'bg-[#0D0056] text-[#D0FF03] shadow-lg shadow-[#5279FF]/25 scale-105'
+                  : 'bg-white/90 text-[#0D0056] border border-[#5279FF]/25 hover:border-[#EA7F9F] hover:text-[#0D0056]'
               }`}
             >
               <span>{opt.emoji}</span>
@@ -862,7 +862,7 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
         </div>
 
         {loadingPeriod ? (
-          <div className="flex items-center justify-center gap-3 py-12 text-amber-500">
+          <div className="flex items-center justify-center gap-3 py-12 text-[#5279FF]">
             <Loader2 size={28} className="animate-spin" />
             <span className="font-black uppercase text-sm">CARREGANDO OS ARTISTAS MAIS EXECUTADOS DA RÁDIO...</span>
           </div>
@@ -882,20 +882,20 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
                   <div key={artist.artista} className="flex flex-col items-center text-center group">
                     <div className="relative mb-3">
                       <div className={`absolute -top-2 -left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-md ${
-                        rank===1?'bg-yellow-400 text-yellow-900':rank===2?'bg-slate-300 text-slate-700':rank===3?'bg-amber-600 text-white':'bg-slate-200 text-slate-600'
+                        rank===1?'bg-[#D0FF03] text-[#0D0056]':rank===2?'bg-[#5279FF] text-white':rank===3?'bg-[#EA7F9F] text-[#0D0056]':'bg-[#0D0056]/10 text-[#0D0056]'
                       }`}>
                         {rank <= 3 ? ['1°','2°','3°'][rank-1] : `${rank}°`}
                       </div>
                       <button
                         onClick={() => setModalArtist(artist.artista)}
                         className={`relative block w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-lg ring-4 transition-all group-hover:scale-105 cursor-pointer ${
-                          rank===1?'ring-yellow-400':rank===2?'ring-slate-300':rank===3?'ring-amber-500':'ring-slate-200'
+                          rank===1?'ring-[#D0FF03]':rank===2?'ring-[#5279FF]':rank===3?'ring-[#EA7F9F]':'ring-[#0D0056]/15'
                         }`}
                         title={`Ver playlist de ${artist.artista} — ${periodLabel}`}
                       >
                         {photo
                           ? <img src={photo} alt={artist.artista} className="w-full h-full object-cover" onError={(e)=>{(e.target as HTMLImageElement).style.display='none';}}/>
-                          : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cyan-100 to-fuchsia-100"><Music size={24} className="text-[#12C998]" /></div>
+                          : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#D0FF03]/20 to-[#EA7F9F]/25"><Music size={24} className="text-[#5279FF]" /></div>
                         }
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center">
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center gap-1">
@@ -906,17 +906,17 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
                       </button>
                       {photosLoading && !photo && (
                         <div className="absolute inset-0 rounded-2xl bg-white/60 flex items-center justify-center">
-                          <Loader2 size={16} className="animate-spin text-[#12C998]" />
+                          <Loader2 size={16} className="animate-spin text-[#5279FF]" />
                         </div>
                       )}
                     </div>
                     <p className="font-black text-slate-800 text-xs leading-tight truncate w-full">{artist.artista}</p>
-                    <p className="font-bold text-fuchsia-600 text-[10px] mt-1 flex items-center gap-1 justify-center">
+                    <p className="font-bold text-[#0D0056] text-[10px] mt-1 flex items-center gap-1 justify-center">
                       <TrendingUp size={9} />
                       {artist.count} exec{artist.count !== 1 ? 'uções' : 'ução'}
                     </p>
                     {artist.genero && artist.genero !== 'Desconhecido' && (
-                      <span className="mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[artist.genero] || '#3B82F6' }}>
+                      <span className="mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[artist.genero] || '#5279FF' }}>
                         {artist.genero}
                       </span>
                     )}
@@ -928,7 +928,7 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
             {hasMore && (
               <button
                 onClick={() => setVisibleTop(v => v + TOP_PER_COL)}
-                className="mt-6 w-full py-3 bg-white/90 border-2 border-amber-200 hover:border-fuchsia-300 text-amber-700 rounded-2xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all hover:shadow-md"
+                className="mt-6 w-full py-3 bg-white/90 border-2 border-[#5279FF]/25 hover:border-[#EA7F9F] text-[#0D0056] rounded-2xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all hover:shadow-md"
               >
                 <Plus size={14} /> Ver mais artistas ({topArtists.length - visibleTop} restantes)
               </button>
@@ -957,9 +957,9 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
   }
   chartData = chartData.sort((a,b)=>b.value-a.value);
   return (
-    <div ref={chartRef} className="bg-gradient-to-br from-cyan-50 via-white to-indigo-50 p-8 rounded-[2rem] shadow-xl shadow-cyan-100/50 mb-8 border border-cyan-100">
+    <div ref={chartRef} className="bg-gradient-to-br from-[#5279FF]/10 via-white to-[#EA7F9F]/10 p-8 rounded-[2rem] shadow-xl shadow-[#5279FF]/15 mb-8 border border-[#5279FF]/20">
       <div className="flex items-center gap-4 mb-6">
-        <div className="bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 p-4 rounded-2xl shadow-lg shadow-cyan-200/70"><TrendingUp className="text-white" size={28} /></div>
+        <div className="bg-gradient-to-br from-[#5279FF] via-[#334dcc] to-[#0D0056] p-4 rounded-2xl shadow-lg shadow-[#5279FF]/25"><TrendingUp className="text-white" size={28} /></div>
         <div>
           <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Análise de Gêneros</h2>
           <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical (Sem Desconhecidos)</p>
@@ -970,8 +970,8 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
           <PieChart>
             <Pie data={chartData} cx="50%" cy="50%" labelLine={false}
               label={({name,percent})=>`${name} ${(percent*100).toFixed(0)}%`}
-              outerRadius={120} innerRadius={60} fill="#3B82F6" dataKey="value" paddingAngle={2}>
-              {chartData.map((_,i)=>(<Cell key={i} fill={GENRE_COLORS[chartData[i].name]||'#B8B8B8'} stroke="#fff" strokeWidth={2}/>))}
+              outerRadius={120} innerRadius={60} fill="#5279FF" dataKey="value" paddingAngle={2}>
+              {chartData.map((_,i)=>(<Cell key={i} fill={GENRE_COLORS[chartData[i].name]||'#9DA8D7'} stroke="#fff" strokeWidth={2}/>))}
             </Pie>
             <Tooltip content={<CustomTooltip/>}/>
           </PieChart>
@@ -980,7 +980,7 @@ const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObjec
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
         {chartData.map(genre=>(
           <div key={genre.name} className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-5 h-5 rounded-full shadow-md flex-shrink-0" style={{backgroundColor:GENRE_COLORS[genre.name]||'#B8B8B8'}}/>
+            <div className="w-5 h-5 rounded-full shadow-md flex-shrink-0" style={{backgroundColor:GENRE_COLORS[genre.name]||'#9DA8D7'}}/>
             <div className="flex-1 min-w-0">
               <p className="font-black text-sm text-slate-700 uppercase truncate">{genre.name}</p>
               <p className="text-xs text-slate-500 font-bold">{genre.value} músicas • {genre.percentage}%</p>
@@ -1027,10 +1027,10 @@ const DatePicker = ({ value, availableDates, loadingDates, datesLoaded, onChange
   return (
     <div ref={ref} className="relative">
       <button type="button" onClick={handleToggle}
-        className="w-full flex items-center gap-3 pl-4 pr-4 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-[#16FFBD] focus:border-[#16FFBD] focus:outline-none transition-all cursor-pointer">
+        className="w-full flex items-center gap-3 pl-4 pr-4 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-[#D0FF03] focus:border-[#D0FF03] focus:outline-none transition-all cursor-pointer">
         {loadingDates
-          ? <Loader2 size={16} className="text-blue-400 animate-spin flex-shrink-0" />
-          : <CalendarDays size={16} className="text-blue-500 flex-shrink-0" />}
+          ? <Loader2 size={16} className="text-[#5279FF] animate-spin flex-shrink-0" />
+          : <CalendarDays size={16} className="text-[#5279FF] flex-shrink-0" />}
         <span className="flex-1 text-left text-sm">{value ? formatDateBR(value) : 'Selecionar data'}</span>
         <ChevronDown size={16} className={`text-slate-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -1047,10 +1047,10 @@ const DatePicker = ({ value, availableDates, loadingDates, datesLoaded, onChange
           ) : (
             displayDates.map((d, i) => (
               <button key={d} type="button" onClick={() => handleSelect(d)}
-                className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-blue-50 ${d === value ? 'bg-blue-100 text-blue-700' : 'text-slate-700'}`}>
+                className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-[#5279FF]/10 ${d === value ? 'bg-[#5279FF]/15 text-[#0D0056]' : 'text-slate-700'}`}>
                 📅 {formatDateBR(d)}
-                {i === 0 && !datesLoaded && <span className="ml-2 text-[10px] font-black text-emerald-600 uppercase">Hoje</span>}
-                {datesLoaded && d === displayDates[0] && <span className="ml-2 text-[10px] font-black text-emerald-600 uppercase">Mais recente</span>}
+                {i === 0 && !datesLoaded && <span className="ml-2 text-[10px] font-black text-[#0D0056] uppercase">Hoje</span>}
+                {datesLoaded && d === displayDates[0] && <span className="ml-2 text-[10px] font-black text-[#0D0056] uppercase">Mais recente</span>}
               </button>
             ))
           )}
@@ -1086,14 +1086,14 @@ const YearPicker = ({ value, availableYears, onChange }: {
     <div ref={ref} className="relative">
       <button type="button" onClick={() => setOpen(o => !o)}
         className={`w-full flex items-center gap-3 pl-4 pr-4 py-3 rounded-2xl font-bold text-slate-700 border-2 transition-all cursor-pointer text-sm ${
-          value ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-slate-50 border-transparent hover:border-violet-300'
+          value ? 'bg-[#5279FF]/10 border-[#5279FF] text-[#0D0056]' : 'bg-slate-50 border-transparent hover:border-[#5279FF]'
         }`}>
-        <CalendarDays size={16} className={value ? 'text-violet-500 flex-shrink-0' : 'text-slate-400 flex-shrink-0'} />
+        <CalendarDays size={16} className={value ? 'text-[#5279FF] flex-shrink-0' : 'text-slate-400 flex-shrink-0'} />
         <span className="flex-1 text-left">{value ? `Ano: ${value}` : 'Ano de lançamento'}</span>
         {value && (
           <span
             onClick={e => { e.stopPropagation(); onChange(''); }}
-            className="text-violet-400 hover:text-violet-700 font-black text-xs cursor-pointer"
+            className="text-[#5279FF] hover:text-[#0D0056] font-black text-xs cursor-pointer"
           >✕</span>
         )}
         <ChevronDown size={16} className={`text-slate-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
@@ -1102,12 +1102,12 @@ const YearPicker = ({ value, availableYears, onChange }: {
       {open && (
         <div className="absolute left-0 right-0 top-full mt-2 z-[80] bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
           <button type="button" onClick={() => handleSelect('')}
-            className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-violet-50 ${!value ? 'bg-violet-100 text-violet-700' : 'text-slate-500'}`}>
+            className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-[#5279FF]/10 ${!value ? 'bg-[#5279FF]/15 text-[#0D0056]' : 'text-slate-500'}`}>
             🗓️ Todos os anos
           </button>
           {availableYears.map(y => (
             <button key={y} type="button" onClick={() => handleSelect(String(y))}
-              className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-violet-50 ${String(y) === value ? 'bg-violet-100 text-violet-700' : 'text-slate-700'}`}>
+              className={`w-full text-left px-5 py-3 text-sm font-bold transition-all hover:bg-[#5279FF]/10 ${String(y) === value ? 'bg-[#5279FF]/15 text-[#0D0056]' : 'text-slate-700'}`}>
               🎵 {y}
             </button>
           ))}
@@ -1460,7 +1460,7 @@ const App = () => {
   const activeStreamUrl = RADIO_STREAM_URLS[filters.radio];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(22,255,189,0.18),transparent_30%),radial-gradient(circle_at_top_right,rgba(240,112,161,0.20),transparent_30%),linear-gradient(180deg,#f4f4f2_0%,#e7e5e0_46%,#fafafa_100%)]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(208,255,3,0.16),transparent_30%),radial-gradient(circle_at_top_right,rgba(234,127,159,0.22),transparent_30%),linear-gradient(180deg,#f9f9ff_0%,#edf1ff_48%,#fff6f9_100%)]">
       {showRepeatedModal && (
         <RepeatedTracksModal tracks={repeatedTracks} onClose={() => setShowRepeatedModal(false)} />
       )}
@@ -1475,44 +1475,44 @@ const App = () => {
         />
       )}
 
-      <header className="bg-neutral-950/95 border-b border-white/10 sticky top-0 z-50 shadow-2xl shadow-neutral-950/25 backdrop-blur">
+      <header className="bg-[#0D0056]/95 border-b border-white/10 sticky top-0 z-50 shadow-2xl shadow-[#0D0056]/25 backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 h-24 flex items-center justify-between">
           {/* Logo + título clicáveis → volta para a home */}
           <a href="/" className="flex items-center gap-4 group" title="Voltar para a home">
-            <div className="bg-[#F4C414] p-3 rounded-2xl shadow-lg shadow-yellow-600/30 group-hover:shadow-xl group-hover:scale-105 transition-all">
-              <Radio size={32} className="text-white" />
+            <div className="bg-[#D0FF03] p-3 rounded-2xl shadow-lg shadow-[#D0FF03]/25 group-hover:shadow-xl group-hover:scale-105 transition-all">
+              <Radio size={32} className="text-[#0D0056]" />
             </div>
             <div>
-              <h1 className="font-black text-2xl tracking-tight text-white uppercase leading-none group-hover:text-[#16FFBD] transition-colors">IA NO RÁDIO</h1>
-              <p className="text-xs font-bold text-[#16FFBD] uppercase tracking-[0.25em] mt-1">Monitoramento Musical</p>
+              <h1 className="font-black text-2xl tracking-tight text-white uppercase leading-none group-hover:text-[#D0FF03] transition-colors">IA NO RÁDIO</h1>
+              <p className="text-xs font-bold text-[#D0FF03] uppercase tracking-[0.25em] mt-1">Monitoramento Musical</p>
             </div>
           </a>
           <div className="flex items-center gap-3">
             <span
               title="Monitoramento Comercial em breve"
-              className="px-4 py-2 bg-white/10 border border-white/15 rounded-xl font-black text-[#16FFBD] text-xs uppercase tracking-wider flex items-center gap-2 cursor-default select-none opacity-75"
+              className="px-4 py-2 bg-white/10 border border-white/15 rounded-xl font-black text-[#D0FF03] text-xs uppercase tracking-wider flex items-center gap-2 cursor-default select-none opacity-75"
               style={{ animation: 'none' }}
             >
               <Megaphone size={14} />
               Comercial
-              <span className="ml-1 px-2 py-0.5 bg-amber-400 text-white rounded-full text-[9px] font-black uppercase tracking-wider">Em Breve</span>
+              <span className="ml-1 px-2 py-0.5 bg-[#D0FF03] text-[#0D0056] rounded-full text-[9px] font-black uppercase tracking-wider">Em Breve</span>
             </span>
             <button onClick={() => doFetch(filters.radio, filters.date)} className="p-4 bg-white/10 border border-white/15 rounded-2xl hover:bg-white/20 transition-all hover:scale-105 active:scale-95">
-              <RefreshCw className={`text-[#16FFBD] ${refreshing ? 'animate-spin' : ''}`} size={20} />
+              <RefreshCw className={`text-[#D0FF03] ${refreshing ? 'animate-spin' : ''}`} size={20} />
             </button>
           </div>
         </div>
       </header>
 
-      <div className="bg-neutral-200/80 border-b border-white/70 shadow-sm backdrop-blur">
+      <div className="bg-[#5279FF]/10 border-b border-white/70 shadow-sm backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex gap-2 flex-wrap">
             {['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM', 'Dumont FM'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-black text-sm uppercase tracking-wide transition-all ${
-                  filters.radio === r ? 'bg-[#16FFBD] text-neutral-950 shadow-lg shadow-emerald-200/70 scale-105' : 'bg-white text-neutral-600 border border-neutral-200 hover:border-[#F070A1] hover:bg-pink-50 hover:text-[#C34271]'
+                  filters.radio === r ? 'bg-[#D0FF03] text-[#0D0056] shadow-lg shadow-[#D0FF03]/20 scale-105' : 'bg-white text-neutral-600 border border-neutral-200 hover:border-[#EA7F9F] hover:bg-[#EA7F9F]/10 hover:text-[#EA7F9F]'
                 }`}>
-                <span className={`h-2 w-2 rounded-full ${filters.radio === r ? 'bg-neutral-950' : 'bg-[#F070A1]'}`} />
+                <span className={`h-2 w-2 rounded-full ${filters.radio === r ? 'bg-[#0D0056]' : 'bg-[#EA7F9F]'}`} />
                 {r}
               </button>
             ))}
@@ -1524,43 +1524,43 @@ const App = () => {
         <div className="relative z-30 overflow-visible bg-white/90 backdrop-blur rounded-[2rem] shadow-xl shadow-neutral-300/60 p-5 mb-8 border border-white/80">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#C34271]">Controles</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#EA7F9F]">Controles</p>
               <h2 className="font-black text-xl text-slate-900 uppercase tracking-tight">Filtros do monitoramento</h2>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {hasActiveFilters && (
                 <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '' }))}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-2xl text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-slate-200">
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-[#0D0056] hover:bg-[#20137f] rounded-2xl text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#5279FF]/15">
                   <X size={14} /> Limpar filtros
                 </button>
               )}
               <button onClick={exportPDF}
-                className="px-4 py-2 bg-[#F4C414] hover:bg-[#ffd735] text-neutral-950 rounded-2xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-yellow-200/70 hover:shadow-xl active:scale-95">
+                className="px-4 py-2 bg-[#D0FF03] hover:bg-[#dcff39] text-[#0D0056] rounded-2xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#D0FF03]/20 hover:shadow-xl active:scale-95">
                 <Download size={15} />
                 PDF
               </button>
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#16FFBD]/30 bg-[#16FFBD]/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#128060]">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.16)]" />
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#D0FF03]/30 bg-[#D0FF03]/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#0D0056]">
+                <span className="h-2 w-2 rounded-full bg-[#D0FF03] shadow-[0_0_0_4px_rgba(208,255,3,0.18)]" />
                 Auto 30s
               </div>
             </div>
           </div>
 
           <div className="relative mb-4">
-            <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#12C998]" />
+            <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5279FF]" />
             <input type="text" placeholder="Buscar artista ou música..." value={filters.search}
               onChange={e => { setFilters(f => ({ ...f, search: e.target.value })); setVisibleCount(9); }}
-              className="w-full pl-12 pr-4 py-3.5 bg-white rounded-2xl font-bold text-slate-800 border-2 border-[#16FFBD]/30 shadow-sm shadow-emerald-100/50 placeholder:text-slate-400 focus:border-[#16FFBD] focus:outline-none focus:ring-4 focus:ring-[#16FFBD]/20 transition-all text-sm" />
+              className="w-full pl-12 pr-4 py-3.5 bg-white rounded-2xl font-bold text-slate-800 border-2 border-[#D0FF03]/30 shadow-sm shadow-[#5279FF]/10 placeholder:text-slate-400 focus:border-[#D0FF03] focus:outline-none focus:ring-4 focus:ring-[#D0FF03]/20 transition-all text-sm" />
           </div>
 
           {hasActiveFilters && (
             <div className="flex flex-wrap gap-2 mb-4">
-              {filters.search && <span className="px-3 py-1.5 rounded-full bg-fuchsia-50 border border-fuchsia-100 text-fuchsia-700 text-[10px] font-black uppercase tracking-wider">Busca: {filters.search}</span>}
-              {filters.genero && <span className="px-3 py-1.5 rounded-full bg-cyan-50 border border-cyan-100 text-cyan-700 text-[10px] font-black uppercase tracking-wider">Gênero: {filters.genero}</span>}
-              {filters.hour !== 'all' && <span className="px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-wider">Hora: {filters.hour}:00</span>}
-              {filters.shift !== 'all' && <span className="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-wider">Locutor: {getShiftLabel(filters.shift)}</span>}
-              {filters.bpm !== 'all' && <span className="px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-wider">BPM: {filters.bpm === 'slow' ? 'Lento' : filters.bpm === 'moderate' ? 'Moderado' : 'Rápido'}</span>}
-              {filters.ano && <span className="px-3 py-1.5 rounded-full bg-violet-50 border border-violet-100 text-violet-700 text-[10px] font-black uppercase tracking-wider">Ano: {filters.ano}</span>}
+              {filters.search && <span className="px-3 py-1.5 rounded-full bg-[#EA7F9F]/15 border border-[#EA7F9F]/30 text-[#0D0056] text-[10px] font-black uppercase tracking-wider">Busca: {filters.search}</span>}
+              {filters.genero && <span className="px-3 py-1.5 rounded-full bg-[#5279FF]/10 border border-[#5279FF]/25 text-[#0D0056] text-[10px] font-black uppercase tracking-wider">Gênero: {filters.genero}</span>}
+              {filters.hour !== 'all' && <span className="px-3 py-1.5 rounded-full bg-[#5279FF]/10 border border-[#5279FF]/25 text-[#0D0056] text-[10px] font-black uppercase tracking-wider">Hora: {filters.hour}:00</span>}
+              {filters.shift !== 'all' && <span className="px-3 py-1.5 rounded-full bg-[#D0FF03]/15 border border-[#D0FF03]/35 text-[#0D0056] text-[10px] font-black uppercase tracking-wider">Locutor: {getShiftLabel(filters.shift)}</span>}
+              {filters.bpm !== 'all' && <span className="px-3 py-1.5 rounded-full bg-[#EA7F9F]/15 border border-[#EA7F9F]/30 text-[#0D0056] text-[10px] font-black uppercase tracking-wider">BPM: {filters.bpm === 'slow' ? 'Lento' : filters.bpm === 'moderate' ? 'Moderado' : 'Rápido'}</span>}
+              {filters.ano && <span className="px-3 py-1.5 rounded-full bg-[#0D0056]/10 border border-[#0D0056]/20 text-[#0D0056] text-[10px] font-black uppercase tracking-wider">Ano: {filters.ano}</span>}
             </div>
           )}
 
@@ -1575,7 +1575,7 @@ const App = () => {
             />
             <div className="relative">
               <select value={filters.hour} onChange={e => { setFilters(f => ({ ...f, hour: e.target.value, shift: 'all' })); setVisibleCount(9); }}
-                className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-[#16FFBD] focus:border-[#16FFBD] focus:outline-none transition-all cursor-pointer text-sm">
+                className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-[#D0FF03] focus:border-[#D0FF03] focus:outline-none transition-all cursor-pointer text-sm">
                 <option value="all">Todas as horas</option>
                 {hourOptions.map(h => <option key={h} value={h}>{h}:00 – {h}:59</option>)}
               </select>
@@ -1583,7 +1583,7 @@ const App = () => {
             </div>
             <div className="relative">
               <select value={filters.genero} onChange={e => { setFilters(f => ({ ...f, genero: e.target.value })); setVisibleCount(9); }}
-                className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-[#16FFBD] focus:border-[#16FFBD] focus:outline-none transition-all cursor-pointer text-sm">
+                className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-[#D0FF03] focus:border-[#D0FF03] focus:outline-none transition-all cursor-pointer text-sm">
                 <option value="">Todos os gêneros</option>
                 {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
@@ -1591,7 +1591,7 @@ const App = () => {
             </div>
             <div className="relative">
               <select value={filters.bpm} onChange={e => { setFilters(f => ({ ...f, bpm: e.target.value })); setVisibleCount(9); }}
-                className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-[#16FFBD] focus:border-[#16FFBD] focus:outline-none transition-all cursor-pointer text-sm">
+                className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-[#D0FF03] focus:border-[#D0FF03] focus:outline-none transition-all cursor-pointer text-sm">
                 <option value="all">Todos os BPMs</option>
                 <option value="slow">Lento (&lt; 100 BPM)</option>
                 <option value="moderate">Moderado (100–120 BPM)</option>
@@ -1610,7 +1610,7 @@ const App = () => {
           <div className="mt-4 rounded-[1.5rem] border border-slate-100 bg-slate-50/80 p-3">
             <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-500">Troca de locutor</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#5279FF]">Troca de locutor</p>
                 <p className="text-xs font-bold uppercase text-slate-400">Filtros rápidos por faixa de programação</p>
               </div>
               {filters.shift !== 'all' && (
@@ -1629,8 +1629,8 @@ const App = () => {
                     onClick={() => { setFilters(f => ({ ...f, shift: option.value, hour: 'all' })); setVisibleCount(9); }}
                     className={`rounded-2xl px-3 py-2.5 text-xs font-black uppercase tracking-wider transition-all active:scale-95 ${
                       active
-                        ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-fuchsia-500 text-white shadow-lg shadow-pink-200/70 scale-[1.02]'
-                        : 'bg-white text-slate-500 border border-slate-200 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700'
+                        ? 'bg-[#0D0056] text-[#D0FF03] shadow-lg shadow-[#5279FF]/25 scale-[1.02]'
+                        : 'bg-white text-[#0D0056] border border-[#5279FF]/20 hover:border-[#EA7F9F] hover:bg-[#EA7F9F]/10 hover:text-[#0D0056]'
                     }`}
                   >
                     {option.shortLabel}
@@ -1643,7 +1643,7 @@ const App = () => {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
-            <Loader2 size={48} className="animate-spin text-[#12C998]" />
+            <Loader2 size={48} className="animate-spin text-[#5279FF]" />
             <p className="font-black text-slate-400 uppercase text-sm">Carregando playlist...</p>
           </div>
         ) : (
@@ -1668,11 +1668,11 @@ const App = () => {
             <GenreChart data={genreData} chartRef={chartRef} />
 
             {filteredData.length > 0 && (
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 rounded-[1.75rem] border border-white/80 bg-white/80 p-5 shadow-lg shadow-slate-200/60 backdrop-blur">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 rounded-[1.75rem] border border-white/80 bg-white/80 p-5 shadow-lg shadow-[#5279FF]/15 backdrop-blur">
                 <div className="flex items-center gap-3">
-                  <div className="bg-gradient-to-br from-cyan-100 to-fuchsia-100 p-3 rounded-2xl"><Music size={20} className="text-cyan-700" /></div>
+                  <div className="bg-gradient-to-br from-[#D0FF03]/25 to-[#5279FF]/20 p-3 rounded-2xl"><Music size={20} className="text-[#0D0056]" /></div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-fuchsia-500">Playlist monitorada</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#EA7F9F]">Playlist monitorada</p>
                     <p className="font-black text-slate-900 text-lg">{filteredData.length} execuções{filters.ano ? ` • ${filters.ano}` : ''}</p>
                     <p className="text-xs font-bold text-slate-400 uppercase">{filters.radio} • {formatDateBR(filters.date)}</p>
                   </div>
@@ -1710,7 +1710,7 @@ const App = () => {
                 </div>
                 {visibleCount < filteredData.length && (
                   <button onClick={() => setVisibleCount(v => v + 9)}
-                    className="w-full mt-6 py-4 bg-white/90 border-2 border-cyan-200 hover:border-fuchsia-300 text-cyan-700 rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all hover:shadow-lg">
+                    className="w-full mt-6 py-4 bg-white/90 border-2 border-[#5279FF]/25 hover:border-[#EA7F9F] text-[#0D0056] rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all hover:shadow-lg">
                     <Plus size={18} /> Carregar mais ({filteredData.length - visibleCount} restantes)
                   </button>
                 )}
