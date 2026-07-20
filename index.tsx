@@ -650,48 +650,14 @@ const MusicMetricsPanel = ({ metrics, onOpenUnique, onOpenRepeated }: { metrics:
 );
 
 const ProgrammingVarietyPanel = ({ metrics }: { metrics: {
-  varietyIndex: number;
-  uniqueSongs: number;
   totalExecutions: number;
-  repetitionRate: number;
-  repeatedExecutions: number;
-  topTenConcentration: number;
-  topTenExecutions: number;
-  artistDiversity: number;
+  buckets: { label: string; executions: number; tracks: number; percentage: number }[];
 } }) => {
-  const indicators = [
-    {
-      label: 'ÍNDICE DE VARIEDADE',
-      value: `${metrics.varietyIndex}%`,
-      detail: `${metrics.uniqueSongs} músicas únicas em ${metrics.totalExecutions} execuções`,
-      bar: 'bg-[#D0FF03]',
-      shell: 'border-[#D0FF03]/45 bg-[#D0FF03]/10',
-      text: 'text-[#0D0056]',
-    },
-    {
-      label: 'TAXA DE REPETIÇÃO',
-      value: `${metrics.repetitionRate}%`,
-      detail: `${metrics.repeatedExecutions} execuções pertencem a faixas repetidas`,
-      bar: 'bg-[#EA7F9F]',
-      shell: 'border-[#EA7F9F]/40 bg-[#EA7F9F]/10',
-      text: 'text-[#0D0056]',
-    },
-    {
-      label: 'CONCENTRAÇÃO TOP 10',
-      value: `${metrics.topTenConcentration}%`,
-      detail: `${metrics.topTenExecutions} execuções estão nas 10 mais tocadas`,
-      bar: 'bg-[#5279FF]',
-      shell: 'border-[#5279FF]/35 bg-[#5279FF]/10',
-      text: 'text-[#0D0056]',
-    },
-    {
-      label: 'DIVERSIDADE DE ARTISTAS',
-      value: metrics.artistDiversity,
-      detail: 'artistas diferentes no período selecionado',
-      bar: 'bg-[#0D0056]',
-      shell: 'border-[#0D0056]/20 bg-[#0D0056]/5',
-      text: 'text-[#0D0056]',
-    },
+  const styles = [
+    { bar: 'bg-[#D0FF03]', shell: 'border-[#D0FF03]/45 bg-[#D0FF03]/10' },
+    { bar: 'bg-[#EA7F9F]', shell: 'border-[#EA7F9F]/40 bg-[#EA7F9F]/10' },
+    { bar: 'bg-[#5279FF]', shell: 'border-[#5279FF]/35 bg-[#5279FF]/10' },
+    { bar: 'bg-[#0D0056]', shell: 'border-[#0D0056]/20 bg-[#0D0056]/5' },
   ];
 
   return (
@@ -699,18 +665,20 @@ const ProgrammingVarietyPanel = ({ metrics }: { metrics: {
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#5279FF]">Inteligência da programação</p>
-          <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">VARIEDADE E CONCENTRAÇÃO</h2>
+          <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">DISTRIBUIÇÃO DE REPETIÇÃO</h2>
         </div>
-        <p className="max-w-xl text-xs font-bold uppercase leading-relaxed text-slate-400">Leitura calculada apenas com as músicas do filtro atual.</p>
+        <p className="max-w-xl text-xs font-bold uppercase leading-relaxed text-slate-400">100% das execuções do dia ou filtro atual, distribuídas pela quantidade de vezes que cada música tocou.</p>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {indicators.map(indicator => (
-          <div key={indicator.label} className={`rounded-[1.5rem] border p-4 ${indicator.shell}`}>
-            <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${indicator.text}`}>{indicator.label}</p>
-            <p className="mt-2 text-3xl font-black leading-none text-slate-950">{indicator.value}</p>
-            <p className="mt-2 min-h-8 text-[11px] font-bold uppercase leading-snug text-slate-500">{indicator.detail}</p>
+        {metrics.buckets.map((bucket, index) => (
+          <div key={bucket.label} className={`rounded-[1.5rem] border p-4 ${styles[index].shell}`}>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0D0056]">{bucket.label}</p>
+            <p className="mt-2 text-3xl font-black leading-none text-slate-950">{bucket.percentage}%</p>
+            <p className="mt-2 min-h-8 text-[11px] font-bold uppercase leading-snug text-slate-500">
+              {bucket.executions} execuções • {bucket.tracks} música{bucket.tracks !== 1 ? 's' : ''}
+            </p>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/80">
-              <div className={`h-full rounded-full ${indicator.bar}`} style={{ width: `${indicator.label === 'DIVERSIDADE DE ARTISTAS' ? Math.min(100, (metrics.artistDiversity / Math.max(metrics.totalExecutions, 1)) * 100) : Number(String(indicator.value).replace('%', ''))}%` }} />
+              <div className={`h-full rounded-full ${styles[index].bar}`} style={{ width: `${bucket.percentage}%` }} />
             </div>
           </div>
         ))}
@@ -1701,22 +1669,39 @@ const App = () => {
 
   const programmingVarietyMetrics = useMemo(() => {
     const totalExecutions = filteredData.length;
-    const uniqueSongs = Object.keys(repeatCountMap).length;
-    const artistDiversity = new Set(filteredData.map(track => track.artista).filter(Boolean)).size;
     const counts = Object.values(repeatCountMap);
-    const repeatedExecutions = counts.reduce((total, count) => total + (count > 1 ? count : 0), 0);
-    const topTenExecutions = [...counts].sort((a, b) => b - a).slice(0, 10).reduce((total, count) => total + count, 0);
-    const percentage = (value: number) => totalExecutions ? Math.round((value / totalExecutions) * 100) : 0;
+    const buckets = [
+      { label: 'TOCADAS 1X', executions: 0, tracks: 0 },
+      { label: 'TOCADAS 2X', executions: 0, tracks: 0 },
+      { label: 'TOCADAS 3X', executions: 0, tracks: 0 },
+      { label: 'TOCADAS 4X+', executions: 0, tracks: 0 },
+    ];
+
+    counts.forEach(count => {
+      const bucketIndex = count === 1 ? 0 : count === 2 ? 1 : count === 3 ? 2 : 3;
+      buckets[bucketIndex].executions += count;
+      buckets[bucketIndex].tracks++;
+    });
+
+    const percentageParts = buckets.map((bucket, index) => {
+      const exact = totalExecutions ? (bucket.executions / totalExecutions) * 100 : 0;
+      return { index, percentage: Math.floor(exact), remainder: exact % 1 };
+    });
+    let remainingPoints = 100 - percentageParts.reduce((total, part) => total + part.percentage, 0);
+    percentageParts.sort((a, b) => b.remainder - a.remainder).forEach(part => {
+      if (remainingPoints > 0) {
+        part.percentage++;
+        remainingPoints--;
+      }
+    });
+    const percentages = percentageParts.reduce<Record<number, number>>((map, part) => {
+      map[part.index] = part.percentage;
+      return map;
+    }, {});
 
     return {
-      varietyIndex: percentage(uniqueSongs),
-      uniqueSongs,
       totalExecutions,
-      repetitionRate: percentage(repeatedExecutions),
-      repeatedExecutions,
-      topTenConcentration: percentage(topTenExecutions),
-      topTenExecutions,
-      artistDiversity,
+      buckets: buckets.map((bucket, index) => ({ ...bucket, percentage: percentages[index] || 0 })),
     };
   }, [filteredData, repeatCountMap]);
 
