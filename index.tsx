@@ -1792,8 +1792,130 @@ const App = () => {
         </div>
       </header>
 
-      <div className="bg-[#5279FF]/10 border-b border-white/70 shadow-sm backdrop-blur">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+      <section className="relative z-[60] overflow-visible border-b border-[#5279FF]/15 bg-white/90 shadow-sm backdrop-blur">
+        <div className="max-w-6xl mx-auto px-6 py-3">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+              <div className="flex shrink-0 items-center gap-3">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.28em] text-[#EA7F9F]">Controles</p>
+                  <h2 className="font-black text-sm text-slate-900 uppercase tracking-tight">Filtros</h2>
+                </div>
+                {hasActiveFilters && (
+                  <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '' }))}
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-[#0D0056] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white transition-all hover:bg-[#20137f]">
+                    <X size={13} /> Limpar
+                  </button>
+                )}
+              </div>
+
+              <div className="relative min-w-0 flex-1">
+                <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5279FF]" />
+                <input type="text" placeholder="Buscar artista ou música..." value={filters.search}
+                  onChange={e => { setFilters(f => ({ ...f, search: e.target.value })); setVisibleCount(9); }}
+                  className="w-full rounded-xl border border-[#D0FF03]/50 bg-white py-2.5 pl-10 pr-4 text-sm font-bold text-slate-800 shadow-sm shadow-[#5279FF]/10 placeholder:text-slate-400 transition-all focus:border-[#D0FF03] focus:outline-none focus:ring-4 focus:ring-[#D0FF03]/20" />
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
+                <button onClick={exportPDF}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-[#D0FF03] px-3 py-2.5 text-[10px] font-black uppercase tracking-wider text-[#0D0056] shadow-md shadow-[#D0FF03]/20 transition-all hover:bg-[#dcff39] active:scale-95">
+                  <Download size={14} /> PDF
+                </button>
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-[#D0FF03]/30 bg-[#D0FF03]/10 px-2.5 py-2 text-[9px] font-black uppercase tracking-wider text-[#0D0056]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#D0FF03] shadow-[0_0_0_3px_rgba(208,255,3,0.18)]" />
+                  Auto 30s
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
+              <DatePicker
+                value={filters.date}
+                availableDates={availableDates}
+                loadingDates={loadingDates}
+                datesLoaded={datesLoaded}
+                onChange={d => { setFilters(f => ({ ...f, date: d })); setVisibleCount(9); }}
+                onOpen={handleOpenDatePicker}
+              />
+              <div className="relative">
+                <select value={filters.hour} onChange={e => { setFilters(f => ({ ...f, hour: e.target.value, shift: 'all' })); setVisibleCount(9); }}
+                  className="w-full appearance-none rounded-xl border border-transparent bg-slate-50 py-2.5 pl-3 pr-9 text-sm font-bold text-slate-700 transition-all hover:border-[#D0FF03] focus:border-[#D0FF03] focus:outline-none cursor-pointer">
+                  <option value="all">Todas as horas</option>
+                  {hourOptions.map(h => <option key={h} value={h}>{h}:00 – {h}:59</option>)}
+                </select>
+                <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+              <div className="relative">
+                <select value={filters.genero} onChange={e => { setFilters(f => ({ ...f, genero: e.target.value })); setVisibleCount(9); }}
+                  className="w-full appearance-none rounded-xl border border-transparent bg-slate-50 py-2.5 pl-3 pr-9 text-sm font-bold text-slate-700 transition-all hover:border-[#D0FF03] focus:border-[#D0FF03] focus:outline-none cursor-pointer">
+                  <option value="">Todos os gêneros</option>
+                  {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+                <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+              <div className="relative">
+                <select value={filters.bpm} onChange={e => { setFilters(f => ({ ...f, bpm: e.target.value })); setVisibleCount(9); }}
+                  className="w-full appearance-none rounded-xl border border-transparent bg-slate-50 py-2.5 pl-3 pr-9 text-sm font-bold text-slate-700 transition-all hover:border-[#D0FF03] focus:border-[#D0FF03] focus:outline-none cursor-pointer">
+                  <option value="all">Todos os BPMs</option>
+                  <option value="slow">Lento (&lt; 100 BPM)</option>
+                  <option value="moderate">Moderado (100–120 BPM)</option>
+                  <option value="fast">Rápido (&gt; 120 BPM)</option>
+                </select>
+                <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+              <YearPicker
+                value={filters.ano}
+                availableYears={availableYears}
+                onChange={y => { setFilters(f => ({ ...f, ano: y })); setVisibleCount(9); }}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2 border-t border-slate-100 pt-2 lg:flex-row lg:items-center">
+              <div className="flex min-w-fit items-center gap-2">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#5279FF]">Turnos</p>
+                {filters.shift !== 'all' && (
+                  <button onClick={() => { setFilters(f => ({ ...f, shift: 'all' })); setVisibleCount(9); }} className="text-[9px] font-black uppercase tracking-wider text-slate-400 hover:text-slate-700">
+                    Limpar
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 lg:grid-cols-7 lg:flex-1">
+                {SHIFT_FILTER_OPTIONS.map(option => {
+                  const active = filters.shift === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => { setFilters(f => ({ ...f, shift: option.value, hour: 'all' })); setVisibleCount(9); }}
+                      className={`rounded-xl px-2 py-2 text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 ${
+                        active
+                          ? 'bg-[#0D0056] text-[#D0FF03] shadow-md shadow-[#5279FF]/20'
+                          : 'border border-[#5279FF]/20 bg-white text-[#0D0056] hover:border-[#EA7F9F] hover:bg-[#EA7F9F]/10'
+                      }`}
+                    >
+                      {option.shortLabel}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {hasActiveFilters && (
+              <div className="flex flex-wrap gap-1.5">
+                {filters.search && <span className="rounded-full border border-[#EA7F9F]/30 bg-[#EA7F9F]/15 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#0D0056]">Busca: {filters.search}</span>}
+                {filters.genero && <span className="rounded-full border border-[#5279FF]/25 bg-[#5279FF]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#0D0056]">Gênero: {filters.genero}</span>}
+                {filters.hour !== 'all' && <span className="rounded-full border border-[#5279FF]/25 bg-[#5279FF]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#0D0056]">Hora: {filters.hour}:00</span>}
+                {filters.shift !== 'all' && <span className="rounded-full border border-[#D0FF03]/35 bg-[#D0FF03]/15 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#0D0056]">Locutor: {getShiftLabel(filters.shift)}</span>}
+                {filters.bpm !== 'all' && <span className="rounded-full border border-[#EA7F9F]/30 bg-[#EA7F9F]/15 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#0D0056]">BPM: {filters.bpm === 'slow' ? 'Lento' : filters.bpm === 'moderate' ? 'Moderado' : 'Rápido'}</span>}
+                {filters.ano && <span className="rounded-full border border-[#0D0056]/20 bg-[#0D0056]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#0D0056]">Ano: {filters.ano}</span>}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <div className="relative z-10 bg-[#5279FF]/10 border-b border-white/70 shadow-sm backdrop-blur">
+        <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex gap-2 flex-wrap">
             {['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM', 'Dumont FM'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
@@ -1809,126 +1931,6 @@ const App = () => {
       </div>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="relative z-30 overflow-visible bg-white/90 backdrop-blur rounded-[2rem] shadow-xl shadow-neutral-300/60 p-5 mb-8 border border-white/80">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#EA7F9F]">Controles</p>
-              <h2 className="font-black text-xl text-slate-900 uppercase tracking-tight">Filtros do monitoramento</h2>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {hasActiveFilters && (
-                <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '' }))}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-[#0D0056] hover:bg-[#20137f] rounded-2xl text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#5279FF]/15">
-                  <X size={14} /> Limpar filtros
-                </button>
-              )}
-              <button onClick={exportPDF}
-                className="px-4 py-2 bg-[#D0FF03] hover:bg-[#dcff39] text-[#0D0056] rounded-2xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#D0FF03]/20 hover:shadow-xl active:scale-95">
-                <Download size={15} />
-                PDF
-              </button>
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#D0FF03]/30 bg-[#D0FF03]/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#0D0056]">
-                <span className="h-2 w-2 rounded-full bg-[#D0FF03] shadow-[0_0_0_4px_rgba(208,255,3,0.18)]" />
-                Auto 30s
-              </div>
-            </div>
-          </div>
-
-          <div className="relative mb-4">
-            <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5279FF]" />
-            <input type="text" placeholder="Buscar artista ou música..." value={filters.search}
-              onChange={e => { setFilters(f => ({ ...f, search: e.target.value })); setVisibleCount(9); }}
-              className="w-full pl-12 pr-4 py-3.5 bg-white rounded-2xl font-bold text-slate-800 border-2 border-[#D0FF03]/30 shadow-sm shadow-[#5279FF]/10 placeholder:text-slate-400 focus:border-[#D0FF03] focus:outline-none focus:ring-4 focus:ring-[#D0FF03]/20 transition-all text-sm" />
-          </div>
-
-          {hasActiveFilters && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {filters.search && <span className="px-3 py-1.5 rounded-full bg-[#EA7F9F]/15 border border-[#EA7F9F]/30 text-[#0D0056] text-[10px] font-black uppercase tracking-wider">Busca: {filters.search}</span>}
-              {filters.genero && <span className="px-3 py-1.5 rounded-full bg-[#5279FF]/10 border border-[#5279FF]/25 text-[#0D0056] text-[10px] font-black uppercase tracking-wider">Gênero: {filters.genero}</span>}
-              {filters.hour !== 'all' && <span className="px-3 py-1.5 rounded-full bg-[#5279FF]/10 border border-[#5279FF]/25 text-[#0D0056] text-[10px] font-black uppercase tracking-wider">Hora: {filters.hour}:00</span>}
-              {filters.shift !== 'all' && <span className="px-3 py-1.5 rounded-full bg-[#D0FF03]/15 border border-[#D0FF03]/35 text-[#0D0056] text-[10px] font-black uppercase tracking-wider">Locutor: {getShiftLabel(filters.shift)}</span>}
-              {filters.bpm !== 'all' && <span className="px-3 py-1.5 rounded-full bg-[#EA7F9F]/15 border border-[#EA7F9F]/30 text-[#0D0056] text-[10px] font-black uppercase tracking-wider">BPM: {filters.bpm === 'slow' ? 'Lento' : filters.bpm === 'moderate' ? 'Moderado' : 'Rápido'}</span>}
-              {filters.ano && <span className="px-3 py-1.5 rounded-full bg-[#0D0056]/10 border border-[#0D0056]/20 text-[#0D0056] text-[10px] font-black uppercase tracking-wider">Ano: {filters.ano}</span>}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            <DatePicker
-              value={filters.date}
-              availableDates={availableDates}
-              loadingDates={loadingDates}
-              datesLoaded={datesLoaded}
-              onChange={d => { setFilters(f => ({ ...f, date: d })); setVisibleCount(9); }}
-              onOpen={handleOpenDatePicker}
-            />
-            <div className="relative">
-              <select value={filters.hour} onChange={e => { setFilters(f => ({ ...f, hour: e.target.value, shift: 'all' })); setVisibleCount(9); }}
-                className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-[#D0FF03] focus:border-[#D0FF03] focus:outline-none transition-all cursor-pointer text-sm">
-                <option value="all">Todas as horas</option>
-                {hourOptions.map(h => <option key={h} value={h}>{h}:00 – {h}:59</option>)}
-              </select>
-              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            </div>
-            <div className="relative">
-              <select value={filters.genero} onChange={e => { setFilters(f => ({ ...f, genero: e.target.value })); setVisibleCount(9); }}
-                className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-[#D0FF03] focus:border-[#D0FF03] focus:outline-none transition-all cursor-pointer text-sm">
-                <option value="">Todos os gêneros</option>
-                {uniqueGenres.map(g => <option key={g} value={g}>{g}</option>)}
-              </select>
-              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            </div>
-            <div className="relative">
-              <select value={filters.bpm} onChange={e => { setFilters(f => ({ ...f, bpm: e.target.value })); setVisibleCount(9); }}
-                className="w-full appearance-none pl-4 pr-10 py-3 bg-slate-50 rounded-2xl font-bold text-slate-700 border-2 border-transparent hover:border-[#D0FF03] focus:border-[#D0FF03] focus:outline-none transition-all cursor-pointer text-sm">
-                <option value="all">Todos os BPMs</option>
-                <option value="slow">Lento (&lt; 100 BPM)</option>
-                <option value="moderate">Moderado (100–120 BPM)</option>
-                <option value="fast">Rápido (&gt; 120 BPM)</option>
-              </select>
-              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            </div>
-            {/* ── SELETOR DE ANO DE LANÇAMENTO ── */}
-            <YearPicker
-              value={filters.ano}
-              availableYears={availableYears}
-              onChange={y => { setFilters(f => ({ ...f, ano: y })); setVisibleCount(9); }}
-            />
-          </div>
-
-          <div className="mt-4 rounded-[1.5rem] border border-slate-100 bg-slate-50/80 p-3">
-            <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#5279FF]">Troca de locutor</p>
-                <p className="text-xs font-bold uppercase text-slate-400">Filtros rápidos por faixa de programação</p>
-              </div>
-              {filters.shift !== 'all' && (
-                <button onClick={() => { setFilters(f => ({ ...f, shift: 'all' })); setVisibleCount(9); }} className="text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-slate-700">
-                  Limpar período
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-7">
-              {SHIFT_FILTER_OPTIONS.map(option => {
-                const active = filters.shift === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => { setFilters(f => ({ ...f, shift: option.value, hour: 'all' })); setVisibleCount(9); }}
-                    className={`rounded-2xl px-3 py-2.5 text-xs font-black uppercase tracking-wider transition-all active:scale-95 ${
-                      active
-                        ? 'bg-[#0D0056] text-[#D0FF03] shadow-lg shadow-[#5279FF]/25 scale-[1.02]'
-                        : 'bg-white text-[#0D0056] border border-[#5279FF]/20 hover:border-[#EA7F9F] hover:bg-[#EA7F9F]/10 hover:text-[#0D0056]'
-                    }`}
-                  >
-                    {option.shortLabel}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <Loader2 size={48} className="animate-spin text-[#5279FF]" />
