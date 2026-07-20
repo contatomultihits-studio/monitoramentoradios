@@ -286,12 +286,13 @@ interface ExecucaoItem {
 }
 
 const TrackExecutionsModal = ({
-  artista, musica, capa, execucoes, onClose
+  artista, musica, capa, execucoes, periodLabel = 'ÚLTIMOS 7 DIAS', onClose
 }: {
   artista: string;
   musica: string;
   capa: string;
   execucoes: ExecucaoItem[];
+  periodLabel?: string;
   onClose: () => void;
 }) => {
   const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -329,7 +330,7 @@ const TrackExecutionsModal = ({
             <h2 className="font-black text-base text-white leading-tight truncate">{musica}</h2>
             <p className="text-[#dbe3ff] text-xs font-bold truncate">{artista}</p>
             <p className="text-white/80 text-[10px] font-bold mt-0.5">
-              {execucoes.length} execução{execucoes.length !== 1 ? 'ões' : ''} nos últimos 7 dias
+              {execucoes.length} execução{execucoes.length !== 1 ? 'ões' : ''} • {periodLabel}
             </p>
           </div>
           <button
@@ -755,9 +756,9 @@ function getPeriodCutoff(period: TopPeriod): string {
 }
 
 // ─────────────────────────────────────────────────────────────
-// loadTopArtistsForPeriod — busca artistas do período
+// loadTracksForPeriod — busca execuções do período
 // ─────────────────────────────────────────────────────────────
-async function loadTopArtistsForPeriod(radio: string, period: TopPeriod): Promise<any[]> {
+async function loadTracksForPeriod(radio: string, period: TopPeriod): Promise<any[]> {
   const supabase = getSupabaseClient();
   if (!supabase) return [];
   const cutoff = getPeriodCutoff(period);
@@ -800,10 +801,10 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
     }
     setLoadingPeriod(true);
     try {
-      const rows = await loadTopArtistsForPeriod(r, p);
+      const rows = await loadTracksForPeriod(r, p);
       if (p !== 'today') topArtistsCache[cacheKey] = rows;
       setPeriodData(rows);
-    } catch (err) { console.error('Erro loadTopArtistsForPeriod:', err); }
+    } catch (err) { console.error('Erro loadTracksForPeriod:', err); }
     finally { setLoadingPeriod(false); }
   }, []);
 
@@ -976,6 +977,165 @@ const TopArtistsCard = ({ radio }: { radio: string }) => {
           </>
         )}
       </div>
+    </>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────
+// MÚSICAS MAIS EXECUTADAS — com seletor de período próprio
+// ─────────────────────────────────────────────────────────────
+const topTracksCache: Record<string, any[]> = {};
+const TOP_TRACK_LIMITS = [5, 10, 20];
+
+const TopTracksCard = ({ radio }: { radio: string }) => {
+  const [period, setPeriod] = useState<TopPeriod>('today');
+  const [periodData, setPeriodData] = useState<any[]>([]);
+  const [loadingPeriod, setLoadingPeriod] = useState(false);
+  const [visibleLimit, setVisibleLimit] = useState(5);
+  const [selectedTrack, setSelectedTrack] = useState<{ artista: string; musica: string; capa: string; execucoes: ExecucaoItem[] } | null>(null);
+
+  const fetchPeriodData = useCallback(async (r: string, p: TopPeriod) => {
+    const cacheKey = `${r}___${p}`;
+    if (p !== 'today' && topTracksCache[cacheKey]) {
+      setPeriodData(topTracksCache[cacheKey]);
+      return;
+    }
+    setLoadingPeriod(true);
+    try {
+      const rows = await loadTracksForPeriod(r, p);
+      if (p !== 'today') topTracksCache[cacheKey] = rows;
+      setPeriodData(rows);
+    } catch (err) { console.error('Erro loadTracksForPeriod:', err); }
+    finally { setLoadingPeriod(false); }
+  }, []);
+
+  useEffect(() => {
+    fetchPeriodData(radio, period);
+  }, [radio, period, fetchPeriodData]);
+
+  const topTracks = useMemo(() => {
+    const counts: Record<string, { artista: string; musica: string; count: number; genero: string; capa: string; execucoes: ExecucaoItem[] }> = {};
+    periodData.forEach(t => {
+      const key = `${t.artista}|||${t.musica}`;
+      if (!counts[key]) {
+        counts[key] = { artista: t.artista, musica: t.musica, count: 0, genero: t.genero, capa: t.capa || '', execucoes: [] };
+      }
+      counts[key].count++;
+      counts[key].execucoes.push({ data: t.data, hora: t.hora, tocou_em: t.tocou_em });
+      if (!counts[key].capa && t.capa) counts[key].capa = t.capa;
+    });
+    return Object.values(counts)
+      .sort((a, b) => b.count - a.count || a.musica.localeCompare(b.musica));
+  }, [periodData]);
+
+  const periodLabel = TOP_PERIOD_OPTIONS.find(o => o.value === period)?.label || '';
+  const visibleTracks = topTracks.slice(0, visibleLimit);
+
+  return (
+    <>
+      {selectedTrack && (
+        <TrackExecutionsModal
+          artista={selectedTrack.artista}
+          musica={selectedTrack.musica}
+          capa={selectedTrack.capa}
+          execucoes={selectedTrack.execucoes}
+          periodLabel={period === 'today' ? 'HOJE' : `ÚLTIMOS ${periodLabel.toUpperCase()}`}
+          onClose={() => setSelectedTrack(null)}
+        />
+      )}
+      <section className="mb-8 rounded-[2rem] border border-[#5279FF]/20 bg-gradient-to-br from-[#5279FF]/10 via-white to-[#D0FF03]/10 p-6 shadow-xl shadow-[#5279FF]/15">
+        <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="rounded-2xl bg-gradient-to-br from-[#0D0056] via-[#5279FF] to-[#EA7F9F] p-4 shadow-lg shadow-[#5279FF]/25">
+              <Music className="text-[#D0FF03]" size={28} />
+            </div>
+            <div>
+              <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">MÚSICAS MAIS EXECUTADAS</h2>
+              <p className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                {period === 'today' ? 'ATUALIZADO HOJE • DESDE A MEIA-NOITE' : `ATUALIZADO ÚLTIMOS ${periodLabel.toUpperCase()}`} • TOQUE NA MÚSICA PARA VER AS EXECUÇÕES
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-start rounded-2xl border border-[#D0FF03]/30 bg-[#D0FF03]/10 p-1.5">
+            <span className="px-2 text-[10px] font-black uppercase tracking-wider text-[#0D0056]">Exibir</span>
+            {TOP_TRACK_LIMITS.map(limit => (
+              <button
+                key={limit}
+                type="button"
+                onClick={() => setVisibleLimit(limit)}
+                className={`rounded-xl px-3 py-2 text-xs font-black transition-all ${
+                  visibleLimit === limit ? 'bg-[#0D0056] text-[#D0FF03] shadow-md' : 'text-[#0D0056] hover:bg-white'
+                }`}
+              >
+                {limit}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-5 flex flex-wrap gap-2">
+          {TOP_PERIOD_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setPeriod(opt.value)}
+              className={`flex items-center gap-1.5 rounded-2xl px-4 py-2 text-xs font-black uppercase tracking-wide transition-all ${
+                period === opt.value
+                  ? 'bg-[#EA7F9F] text-[#0D0056] shadow-lg shadow-[#EA7F9F]/30 scale-105'
+                  : 'border border-[#5279FF]/25 bg-white/90 text-[#0D0056] hover:border-[#D0FF03] hover:bg-[#D0FF03]/10'
+              }`}
+            >
+              <span>{opt.emoji}</span>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {loadingPeriod ? (
+          <div className="flex items-center justify-center gap-3 py-12 text-[#5279FF]">
+            <Loader2 size={28} className="animate-spin" />
+            <span className="text-sm font-black uppercase">Carregando músicas mais executadas...</span>
+          </div>
+        ) : topTracks.length === 0 ? (
+          <div className="py-12 text-center">
+            <div className="mb-3 text-5xl">🎵</div>
+            <p className="font-black uppercase text-slate-400">Nenhum dado disponível</p>
+            <p className="mt-1 text-sm text-slate-400">Tente outro período</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {visibleTracks.map((track, index) => (
+              <button
+                key={`${track.artista}|||${track.musica}`}
+                type="button"
+                onClick={() => setSelectedTrack(track)}
+                className="group flex w-full items-center gap-3 rounded-2xl border border-[#5279FF]/15 bg-white/90 p-3 text-left transition-all hover:-translate-y-0.5 hover:border-[#EA7F9F] hover:shadow-lg"
+                title={`Ver execuções de ${track.musica}`}
+              >
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl text-xs font-black ${
+                  index === 0 ? 'bg-[#D0FF03] text-[#0D0056]' : index === 1 ? 'bg-[#5279FF] text-white' : index === 2 ? 'bg-[#EA7F9F] text-[#0D0056]' : 'bg-[#0D0056]/10 text-[#0D0056]'
+                }`}>
+                  {index + 1}º
+                </div>
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-[#5279FF]/10 shadow">
+                  {track.capa ? <img src={track.capa} alt={track.musica} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center"><Music size={18} className="text-[#5279FF]" /></div>}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-black uppercase text-slate-900">{track.musica}</p>
+                  <p className="truncate text-xs font-bold uppercase text-[#0D0056]">{track.artista}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    {track.genero && track.genero !== 'Desconhecido' && <span className="rounded-full px-2 py-0.5 text-[9px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#5279FF' }}>{track.genero}</span>}
+                    <span className="text-[10px] font-bold uppercase text-slate-400 group-hover:text-[#5279FF]">Ver execuções</span>
+                  </div>
+                </div>
+                <div className="shrink-0 rounded-full bg-[#D0FF03]/25 px-3 py-1.5 text-xs font-black uppercase text-[#0D0056]">
+                  {track.count}x
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
     </>
   );
 };
@@ -1722,6 +1882,8 @@ const App = () => {
             )}
 
             <TopArtistsCard radio={filters.radio} />
+
+            <TopTracksCard radio={filters.radio} />
 
             <GenreChart data={genreData} chartRef={chartRef} />
 
