@@ -1576,7 +1576,7 @@ const App = () => {
   }, [data]);
 
   const filteredData = useMemo(() => data.filter(t => {
-    const matchSearch = filters.search ? (t.artista + t.musica).toLowerCase().includes(filters.search.toLowerCase()) : true;
+    const matchSearch = filters.search ? t.musica.toLowerCase().includes(filters.search.toLowerCase()) : true;
     const matchGenero = filters.genero ? t.genero === filters.genero : true;
     const matchHour   = filters.hour !== 'all' ? t.hora.startsWith(`${filters.hour}:`) : true;
     const matchShift  = isHourInShift(t.hora, filters.shift);
@@ -1795,28 +1795,14 @@ const App = () => {
       <section className="relative z-[60] overflow-visible border-b border-[#5279FF]/15 bg-white/90 shadow-sm backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-              <div className="flex shrink-0 items-center gap-3">
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.28em] text-[#EA7F9F]">Controles</p>
-                  <h2 className="font-black text-sm text-slate-900 uppercase tracking-tight">Filtros</h2>
-                </div>
-                {hasActiveFilters && (
-                  <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '' }))}
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-[#0D0056] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white transition-all hover:bg-[#20137f]">
-                    <X size={13} /> Limpar
-                  </button>
-                )}
-              </div>
-
-              <div className="relative min-w-0 flex-1">
-                <Search size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5279FF]" />
-                <input type="text" placeholder="Buscar artista ou música..." value={filters.search}
-                  onChange={e => { setFilters(f => ({ ...f, search: e.target.value })); setVisibleCount(9); }}
-                  className="w-full rounded-xl border border-[#D0FF03]/50 bg-white py-2.5 pl-10 pr-4 text-sm font-bold text-slate-800 shadow-sm shadow-[#5279FF]/10 placeholder:text-slate-400 transition-all focus:border-[#D0FF03] focus:outline-none focus:ring-4 focus:ring-[#D0FF03]/20" />
-              </div>
-
-              <div className="flex shrink-0 items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {hasActiveFilters && (
+                <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '' }))}
+                  className="mr-auto flex items-center justify-center gap-1.5 rounded-xl bg-[#0D0056] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white transition-all hover:bg-[#20137f]">
+                  <X size={13} /> Limpar filtros
+                </button>
+              )}
+              <div className="flex items-center gap-2">
                 <button onClick={exportPDF}
                   className="flex items-center justify-center gap-1.5 rounded-xl bg-[#D0FF03] px-3 py-2.5 text-[10px] font-black uppercase tracking-wider text-[#0D0056] shadow-md shadow-[#D0FF03]/20 transition-all hover:bg-[#dcff39] active:scale-95">
                   <Download size={14} /> PDF
@@ -1966,6 +1952,15 @@ const App = () => {
             <TopTracksCard radio={filters.radio} />
 
             <GenreChart data={genreData} chartRef={chartRef} />
+
+            <div className="mb-6 rounded-[1.5rem] border border-[#5279FF]/20 bg-white/90 p-4 shadow-lg shadow-[#5279FF]/10 backdrop-blur">
+              <div className="relative">
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5279FF]" />
+                <input type="text" placeholder="Buscar música na playlist..." value={filters.search}
+                  onChange={e => { setFilters(f => ({ ...f, search: e.target.value })); setVisibleCount(9); }}
+                  className="w-full rounded-xl border border-[#D0FF03]/50 bg-white py-3 pl-11 pr-4 text-sm font-bold text-slate-800 shadow-sm shadow-[#5279FF]/10 placeholder:text-slate-400 transition-all focus:border-[#D0FF03] focus:outline-none focus:ring-4 focus:ring-[#D0FF03]/20" />
+              </div>
+            </div>
 
             {filteredData.length > 0 && (
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 rounded-[1.75rem] border border-white/80 bg-white/80 p-5 shadow-lg shadow-[#5279FF]/15 backdrop-blur">
