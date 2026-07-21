@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { 
   Search, Clock, RefreshCw, Radio, 
   Music, Loader2, Plus, Download,
-  TrendingUp, Sparkles, Filter, Megaphone, Activity,
+  TrendingUp, Sparkles, Filter, Activity,
   Trophy, X, Youtube, CalendarDays, ChevronDown,
   TrendingDown, Volume2
 } from 'lucide-react';
@@ -1776,15 +1776,11 @@ const App = () => {
             </div>
           </a>
           <div className="flex items-center gap-3">
-            <span
-              title="Monitoramento Comercial em breve"
-              className="px-4 py-2 bg-white/10 border border-white/15 rounded-xl font-black text-[#D0FF03] text-xs uppercase tracking-wider flex items-center gap-2 cursor-default select-none opacity-75"
-              style={{ animation: 'none' }}
-            >
-              <Megaphone size={14} />
-              Comercial
-              <span className="ml-1 px-2 py-0.5 bg-[#D0FF03] text-[#0D0056] rounded-full text-[9px] font-black uppercase tracking-wider">Em Breve</span>
-            </span>
+            <button onClick={exportPDF}
+              className="flex items-center gap-2 rounded-xl border border-[#D0FF03]/30 bg-[#D0FF03] px-4 py-2.5 text-xs font-black uppercase tracking-wider text-[#0D0056] shadow-lg shadow-[#D0FF03]/15 transition-all hover:bg-[#dcff39] hover:shadow-xl active:scale-95">
+              <Download size={15} />
+              Baixar PDF
+            </button>
             <button onClick={() => doFetch(filters.radio, filters.date)} className="p-4 bg-white/10 border border-white/15 rounded-2xl hover:bg-white/20 transition-all hover:scale-105 active:scale-95">
               <RefreshCw className={`text-[#D0FF03] ${refreshing ? 'animate-spin' : ''}`} size={20} />
             </button>
@@ -1795,24 +1791,14 @@ const App = () => {
       <section className="relative z-[60] overflow-visible border-b border-[#5279FF]/15 bg-white/90 shadow-sm backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {hasActiveFilters && (
+            {hasActiveFilters && (
+              <div className="flex justify-end">
                 <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '' }))}
-                  className="mr-auto flex items-center justify-center gap-1.5 rounded-xl bg-[#0D0056] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white transition-all hover:bg-[#20137f]">
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-[#0D0056] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white transition-all hover:bg-[#20137f]">
                   <X size={13} /> Limpar filtros
                 </button>
-              )}
-              <div className="flex items-center gap-2">
-                <button onClick={exportPDF}
-                  className="flex items-center justify-center gap-1.5 rounded-xl bg-[#D0FF03] px-3 py-2.5 text-[10px] font-black uppercase tracking-wider text-[#0D0056] shadow-md shadow-[#D0FF03]/20 transition-all hover:bg-[#dcff39] active:scale-95">
-                  <Download size={14} /> PDF
-                </button>
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-[#D0FF03]/30 bg-[#D0FF03]/10 px-2.5 py-2 text-[9px] font-black uppercase tracking-wider text-[#0D0056]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#D0FF03] shadow-[0_0_0_3px_rgba(208,255,3,0.18)]" />
-                  Auto 30s
-                </div>
               </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
               <DatePicker
