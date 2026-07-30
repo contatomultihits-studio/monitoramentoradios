@@ -805,7 +805,7 @@ async function loadTracksForPeriod(radio: string, period: TopPeriod): Promise<an
   const { data: rows, error } = await supabase
     .from('radio_airplay')
     .select('artista, musica, capa, genero, tocou_em, bpm')
-    .eq('radio', radio)
+    .ilike('radio', radio)
     .gte('tocou_em', cutoff)
     .order('tocou_em', { ascending: false });
   if (error) return [];
@@ -1375,7 +1375,7 @@ async function loadDayData(radio: string, date: string): Promise<any[]> {
   const { dayStart, dayEnd } = getBrasiliaDateBounds(date);
   const { data: tracks, error } = await supabase
     .from('radio_airplay').select('*')
-    .eq('radio', radio)
+    .ilike('radio', radio)
     .gte('tocou_em', dayStart).lte('tocou_em', dayEnd)
     .order('tocou_em', { ascending: false });
   if (error) throw error;
@@ -1396,7 +1396,7 @@ async function loadWeeklyData(radio: string): Promise<any[]> {
   const { data: tracks, error } = await supabase
     .from('radio_airplay')
     .select('artista, musica, capa, genero, tocou_em, bpm')
-    .eq('radio', radio)
+    .ilike('radio', radio)
     .gte('tocou_em', twoWeeksAgo.toISOString())
     .order('tocou_em', { ascending: false });
   if (error) return [];
@@ -1414,7 +1414,7 @@ async function loadLatestDate(radio: string): Promise<string> {
   const { data: rows } = await supabase
     .from('radio_airplay')
     .select('tocou_em')
-    .eq('radio', radio)
+    .ilike('radio', radio)
     .order('tocou_em', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -1431,7 +1431,7 @@ async function loadAvailableDates(radio: string): Promise<string[]> {
     const { data: rows, error } = await supabase
       .from('radio_airplay')
       .select('tocou_em')
-      .eq('radio', radio)
+      .ilike('radio', radio)
       .order('tocou_em', { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
     if (error || !rows || rows.length === 0) break;
