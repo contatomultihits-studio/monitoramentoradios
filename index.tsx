@@ -8,7 +8,6 @@ import {
   TrendingDown, Volume2
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 const REFRESH_INTERVAL_MS = 30000;
 
@@ -99,6 +98,14 @@ const GENRE_COLORS: Record<string, string> = {
   'Rap/Hip Hop': '#24106F', 'Eletrônica': '#8BA3FF', 'Gospel': '#D0FF03',
   'Samba': '#312083', 'Forró': '#A8B8FF', 'Reggae': '#A7CC02',
   'Jazz': '#180B4F', 'Desconhecido': '#CBD0E4', 'Outros': '#9DA8D7'
+};
+
+const getGenreColor = (genre: string): string => {
+  const normalizedGenre = genre.trim().toLocaleLowerCase('pt-BR');
+  const matchingGenre = Object.keys(GENRE_COLORS).find(
+    name => name.toLocaleLowerCase('pt-BR') === normalizedGenre
+  );
+  return matchingGenre ? GENRE_COLORS[matchingGenre] : '#9DA8D7';
 };
 
 const ytURL = (artista: string, musica: string) =>
@@ -254,28 +261,6 @@ const fetchArtistPhoto = async (artistName: string): Promise<string> => {
     artistPhotoCache[artistName] = photoUrl.includes('2a96cbd8b46e442fc41c2b86b821562f') ? '' : photoUrl;
   } catch { artistPhotoCache[artistName] = ''; }
   return artistPhotoCache[artistName];
-};
-
-// ─────────────────────────────────────────────────────────────
-// TOOLTIP GÊNEROS
-// ─────────────────────────────────────────────────────────────
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const d = payload[0].payload;
-    return (
-      <div className="bg-white p-4 rounded-xl shadow-2xl border border-slate-100">
-        <p className="font-black text-slate-800 uppercase text-xs mb-1">{d.name}</p>
-        <p className="font-bold text-[#5279FF] text-xs">{d.value} músicas ({d.percentage}%)</p>
-        {d.subGenres && (
-          <div className="mt-2 pt-2 border-t border-slate-100">
-            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Inclui:</p>
-            <p className="text-[10px] text-slate-600 leading-tight">{d.subGenres.join(', ')}</p>
-          </div>
-        )}
-      </div>
-    );
-  }
-  return null;
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -1183,50 +1168,90 @@ const TopTracksCard = ({ radio }: { radio: string }) => {
 // ─────────────────────────────────────────────────────────────
 // GRÁFICO DE GÊNEROS
 // ─────────────────────────────────────────────────────────────
-const GenreChart = ({ data, chartRef }: { data: any[]; chartRef?: React.RefObject<HTMLDivElement> }) => {
+const GenreChart = ({ data, chartRef, onSelectGenre }: {
+  data: any[];
+  chartRef?: React.RefObject<HTMLDivElement>;
+  onSelectGenre?: (genre: string) => void;
+}) => {
   if (!data || !data.length) return null;
-  const knownGenres = data.filter(g => g.name !== 'Desconhecido');
+  const knownGenres = data.filter(
+    genre => genre.name.trim().toLocaleLowerCase('pt-BR') !== 'desconhecido'
+  );
   if (!knownGenres.length) return null;
-  const mainGenres = knownGenres.filter(g => parseFloat(g.percentage) >= 3);
-  const smallGenres = knownGenres.filter(g => parseFloat(g.percentage) < 3);
-  let chartData = [...mainGenres];
-  if (smallGenres.length > 0) {
-    const ov = smallGenres.reduce((s,g)=>s+g.value,0);
-    const tk = knownGenres.reduce((s,g)=>s+g.value,0);
-    chartData.push({name:'Outros',value:ov,percentage:((ov/tk)*100).toFixed(1),subGenres:smallGenres.map(g=>g.name)});
+  const total = knownGenres.reduce((sum, genre) => sum + genre.value, 0);
+  const sortedGenres = [...knownGenres].sort((a, b) => b.value - a.value);
+  const visibleGenres = sortedGenres.slice(0, 6);
+  const remainingGenres = sortedGenres.slice(6);
+  if (remainingGenres.length) {
+    const otherValue = remainingGenres.reduce((sum, genre) => sum + genre.value, 0);
+    visibleGenres.push({
+      name: 'Outros',
+      value: otherValue,
+      percentage: ((otherValue / total) * 100).toFixed(1),
+      subGenres: remainingGenres.map(genre => genre.name),
+    });
   }
-  chartData = chartData.sort((a,b)=>b.value-a.value);
+  const dominantGenre = sortedGenres[0];
+  const topThreeValue = sortedGenres.slice(0, 3).reduce((sum, genre) => sum + genre.value, 0);
+  const topThreePercentage = ((topThreeValue / total) * 100).toFixed(1);
+
   return (
     <div ref={chartRef} className="bg-gradient-to-br from-[#5279FF]/10 via-white to-[#EA7F9F]/10 p-8 rounded-[2rem] shadow-xl shadow-[#5279FF]/15 mb-8 border border-[#5279FF]/20">
       <div className="flex items-center gap-4 mb-6">
         <div className="bg-gradient-to-br from-[#5279FF] via-[#334dcc] to-[#0D0056] p-4 rounded-2xl shadow-lg shadow-[#5279FF]/25"><TrendingUp className="text-white" size={28} /></div>
         <div>
-          <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Análise de Gêneros</h2>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Distribuição Musical (Sem Desconhecidos)</p>
+          <h2 className="font-black text-2xl tracking-tight text-slate-900 uppercase">Ranking de Gêneros da Programação</h2>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wide">Comparação do filtro atual • sem gêneros desconhecidos</p>
         </div>
       </div>
-      <div className="bg-white/90 p-6 rounded-2xl shadow-inner border border-slate-100">
-        <ResponsiveContainer width="100%" height={350}>
-          <PieChart>
-            <Pie data={chartData} cx="50%" cy="50%" labelLine={false}
-              label={({name,percent})=>`${name} ${(percent*100).toFixed(0)}%`}
-              outerRadius={120} innerRadius={60} fill="#5279FF" dataKey="value" paddingAngle={2}>
-              {chartData.map((_,i)=>(<Cell key={i} fill={GENRE_COLORS[chartData[i].name]||'#9DA8D7'} stroke="#fff" strokeWidth={2}/>))}
-            </Pie>
-            <Tooltip content={<CustomTooltip/>}/>
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
-        {chartData.map(genre=>(
-          <div key={genre.name} className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-5 h-5 rounded-full shadow-md flex-shrink-0" style={{backgroundColor:GENRE_COLORS[genre.name]||'#9DA8D7'}}/>
-            <div className="flex-1 min-w-0">
-              <p className="font-black text-sm text-slate-700 uppercase truncate">{genre.name}</p>
-              <p className="text-xs text-slate-500 font-bold">{genre.value} músicas • {genre.percentage}%</p>
-            </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 mb-6">
+        {[
+          ['Gênero dominante', dominantGenre.name, `${dominantGenre.percentage}%`],
+          ['Gêneros presentes', String(knownGenres.length), 'NO FILTRO ATUAL'],
+          ['Concentração Top 3', `${topThreePercentage}%`, 'DA PROGRAMAÇÃO'],
+          ['Execuções analisadas', String(total), 'COM GÊNERO IDENTIFICADO'],
+        ].map(([label, value, helper]) => (
+          <div key={label} className="rounded-2xl border border-[#5279FF]/15 bg-white/90 p-4 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">{label}</p>
+            <p className="mt-1 truncate text-xl font-black uppercase text-[#0D0056]">{value}</p>
+            <p className="mt-1 text-[9px] font-black uppercase tracking-wide text-[#5279FF]">{helper}</p>
           </div>
         ))}
+      </div>
+      <div className="space-y-3 rounded-2xl border border-slate-100 bg-white/90 p-4 sm:p-6 shadow-inner">
+        {visibleGenres.map(genre => {
+          const percentage = Number(genre.percentage);
+          const isSelectable = genre.name !== 'Outros' && !!onSelectGenre;
+          const content = (
+            <>
+              <div className="mb-2 flex items-end justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black uppercase text-slate-800">{genre.name}</p>
+                  <p className="text-[10px] font-bold uppercase text-slate-500">{genre.value} execuções</p>
+                </div>
+                <p className="shrink-0 text-lg font-black text-[#0D0056]">{genre.percentage}%</p>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(percentage, 100)}%`, backgroundColor: getGenreColor(genre.name) }}
+                />
+              </div>
+              {genre.subGenres && <p className="mt-2 text-[9px] font-bold uppercase text-slate-400">Inclui: {genre.subGenres.join(', ')}</p>}
+            </>
+          );
+          return isSelectable ? (
+            <button key={genre.name} type="button" onClick={() => onSelectGenre?.(genre.name)}
+              className="block w-full rounded-xl p-3 text-left transition hover:bg-[#5279FF]/5 focus:outline-none focus:ring-2 focus:ring-[#5279FF]/40"
+              title={`Filtrar a playlist por ${genre.name}`}>
+              {content}
+            </button>
+          ) : (
+            <div key={genre.name} className="rounded-xl p-3">
+              {content}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -1599,13 +1624,13 @@ const App = () => {
   }, [filteredData]);
 
   const genreData = useMemo(() => {
-    const filtered = data.filter(t => (filters.hour !== 'all' ? t.hora.startsWith(`${filters.hour}:`) : true) && isHourInShift(t.hora, filters.shift));
+    const filtered = filteredData;
     const counts: Record<string, number> = {};
     filtered.forEach(t => { const g = t.genero || 'Desconhecido'; counts[g] = (counts[g] || 0) + 1; });
-    const total = filtered.length;
+    const total = filtered.filter(t => (t.genero || 'Desconhecido').toLocaleLowerCase('pt-BR') !== 'desconhecido').length;
     if (!total) return [];
     return Object.entries(counts).map(([name, value]) => ({ name, value, percentage: ((value / total) * 100).toFixed(1) })).sort((a, b) => b.value - a.value);
-  }, [data, filters.hour, filters.shift]);
+  }, [filteredData]);
 
   // Mantém a lista de repetidas 100% sincronizada com os filtros ativos da playlist.
   const repeatedTracks = useMemo(() => Object.entries(repeatCountMap)
@@ -1939,7 +1964,8 @@ const App = () => {
 
             <TopTracksCard radio={filters.radio} />
 
-            <GenreChart data={genreData} chartRef={chartRef} />
+            <GenreChart data={genreData} chartRef={chartRef}
+              onSelectGenre={genre => { setFilters(f => ({ ...f, genero: genre })); setVisibleCount(9); }} />
 
             <div className="mb-6 rounded-[1.5rem] border border-[#5279FF]/20 bg-white/90 p-4 shadow-lg shadow-[#5279FF]/10 backdrop-blur">
               <div className="relative">
