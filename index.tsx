@@ -21,6 +21,9 @@ const SHIFT_FILTER_OPTIONS = [
   { value: '02-06', label: '02h às 06h', shortLabel: '02h–06h', start: 2, end: 6 },
 ];
 
+const CAMELOT_OPTIONS = Array.from({ length: 12 }, (_, index) => index + 1)
+  .flatMap(number => [`${number}A`, `${number}B`]);
+
 const isHourInShift = (time: string, shift: string): boolean => {
   if (shift === 'all') return true;
   const option = SHIFT_FILTER_OPTIONS.find(o => o.value === shift);
@@ -407,7 +410,9 @@ const ArtistModal = ({ artist, tracks, photo, periodLabel, onClose }: { artist: 
               <div className="flex-1 min-w-0">
                 <p className="font-black text-slate-800 text-sm truncate leading-tight">{t.musica}</p>
                 <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                  {t.genero && t.genero !== 'Desconhecido' && <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[t.genero] || '#5279FF' }}>{t.genero}</span>}
+                  {t.genero && t.genero !== 'Desconhecido' && <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white" style={{ backgroundColor: getGenreColor(t.genero) }}>{t.genero}</span>}
+                  {t.camelot && <span className="rounded-full bg-[#D0FF03] px-2 py-0.5 text-[9px] font-black uppercase text-[#0D0056]">CAMELOT {t.camelot}</span>}
+                  {t.tom_musical && <span className="text-[10px] font-bold uppercase text-slate-500">TOM {t.tom_musical}</span>}
                   <span className="text-[10px] font-bold text-slate-400">{horarios.slice(0, 3).join(' • ')}{horarios.length > 3 ? ` +${horarios.length - 3}` : ''}</span>
                 </div>
               </div>
@@ -443,8 +448,10 @@ const NowPlayingCard = ({ track }: { track: any }) => (
           <p className="font-bold text-xl sm:text-2xl text-[#f9d7e2] mb-4 drop-shadow-md">{track.artista}</p>
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/15 backdrop-blur-sm rounded-full"><Clock size={16} className="text-[#D0FF03]" /><span className="font-bold text-white text-sm">{track.hora}</span></div>
-            {track.genero && track.genero !== 'Desconhecido' && <span className="px-4 py-2 rounded-full text-sm font-black uppercase text-white shadow-lg" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#5279FF' }}>{track.genero}</span>}
+            {track.genero && track.genero !== 'Desconhecido' && <span className="px-4 py-2 rounded-full text-sm font-black uppercase text-white shadow-lg" style={{ backgroundColor: getGenreColor(track.genero) }}>{track.genero}</span>}
             {track.bpm && <div className="flex items-center gap-2 px-4 py-2 bg-[#5279FF] rounded-full shadow-lg shadow-[#0D0056]/30"><Activity size={16} className="text-white" /><span className="font-black text-white text-sm">{track.bpm} BPM</span></div>}
+            {track.camelot && <div className="rounded-full bg-[#D0FF03] px-4 py-2 text-sm font-black uppercase text-[#0D0056] shadow-lg shadow-[#D0FF03]/20">CAMELOT {track.camelot}</div>}
+            {track.tom_musical && <div className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-black uppercase text-white backdrop-blur-sm">TOM {track.tom_musical}</div>}
             {track.ano_lancamento && (
               <div
                 className="flex items-center gap-2 px-4 py-2 bg-[#EA7F9F] rounded-full shadow-lg shadow-[#0D0056]/25 relative group/ano cursor-default"
@@ -511,12 +518,22 @@ const MusicCard = ({
             <span className="font-bold text-[10px] text-slate-600">{track.hora}</span>
           </div>
           {track.genero && track.genero !== 'Desconhecido' && (
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#5279FF' }}>{track.genero}</span>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase text-white" style={{ backgroundColor: getGenreColor(track.genero) }}>{track.genero}</span>
           )}
           {track.bpm && (
             <div className="flex items-center gap-1 px-2.5 py-1 bg-[#5279FF] rounded-full shadow-sm shadow-[#5279FF]/15">
               <Activity size={10} className="text-white" />
               <span className="font-black text-[10px] text-white">{track.bpm} BPM</span>
+            </div>
+          )}
+          {track.camelot && (
+            <div className="rounded-full bg-[#D0FF03] px-2.5 py-1 text-[10px] font-black uppercase text-[#0D0056] shadow-sm shadow-[#D0FF03]/20">
+              CAMELOT {track.camelot}
+            </div>
+          )}
+          {track.tom_musical && (
+            <div className="rounded-full border border-[#0D0056]/15 bg-[#0D0056]/5 px-2.5 py-1 text-[10px] font-black uppercase text-[#0D0056]">
+              TOM {track.tom_musical}
             </div>
           )}
           {track.ano_lancamento && (
@@ -789,7 +806,7 @@ async function loadTracksForPeriod(radio: string, period: TopPeriod): Promise<an
   const cutoff = getPeriodCutoff(period);
   const { data: rows, error } = await supabase
     .from('radio_airplay')
-    .select('artista, musica, capa, genero, tocou_em, bpm')
+    .select('artista, musica, capa, genero, tocou_em, bpm, tom_musical, camelot')
     .ilike('radio', radio)
     .gte('tocou_em', cutoff)
     .order('tocou_em', { ascending: false });
@@ -797,7 +814,7 @@ async function loadTracksForPeriod(radio: string, period: TopPeriod): Promise<an
   return (rows || [])
     .map((t: any) => {
       const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
-      return { artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', capa: t.capa, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, bpm: t.bpm, tocou_em: t.tocou_em };
+      return { artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', capa: t.capa, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, bpm: t.bpm, tom_musical: t.tom_musical ?? null, camelot: t.camelot ?? null, tocou_em: t.tocou_em };
     })
     .filter((t: any) => !isBlocked(t.artista, t.musica, radio));
 }
@@ -1039,11 +1056,11 @@ const TopTracksCard = ({ radio }: { radio: string }) => {
   }, [radio, period, fetchPeriodData]);
 
   const topTracks = useMemo(() => {
-    const counts: Record<string, { artista: string; musica: string; count: number; genero: string; capa: string; execucoes: ExecucaoItem[] }> = {};
+    const counts: Record<string, { artista: string; musica: string; count: number; genero: string; capa: string; tom_musical: string | null; camelot: string | null; execucoes: ExecucaoItem[] }> = {};
     periodData.forEach(t => {
       const key = `${t.artista}|||${t.musica}`;
       if (!counts[key]) {
-        counts[key] = { artista: t.artista, musica: t.musica, count: 0, genero: t.genero, capa: t.capa || '', execucoes: [] };
+        counts[key] = { artista: t.artista, musica: t.musica, count: 0, genero: t.genero, capa: t.capa || '', tom_musical: t.tom_musical ?? null, camelot: t.camelot ?? null, execucoes: [] };
       }
       counts[key].count++;
       counts[key].execucoes.push({ data: t.data, hora: t.hora, tocou_em: t.tocou_em });
@@ -1148,8 +1165,10 @@ const TopTracksCard = ({ radio }: { radio: string }) => {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-black uppercase text-slate-900">{track.musica}</p>
                   <p className="truncate text-xs font-bold uppercase text-[#0D0056]">{track.artista}</p>
-                  <div className="mt-1 flex items-center gap-2">
-                    {track.genero && track.genero !== 'Desconhecido' && <span className="rounded-full px-2 py-0.5 text-[9px] font-black uppercase text-white" style={{ backgroundColor: GENRE_COLORS[track.genero] || '#5279FF' }}>{track.genero}</span>}
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    {track.genero && track.genero !== 'Desconhecido' && <span className="rounded-full px-2 py-0.5 text-[9px] font-black uppercase text-white" style={{ backgroundColor: getGenreColor(track.genero) }}>{track.genero}</span>}
+                    {track.camelot && <span className="rounded-full bg-[#D0FF03] px-2 py-0.5 text-[9px] font-black uppercase text-[#0D0056]">{track.camelot}</span>}
+                    {track.tom_musical && <span className="text-[9px] font-black uppercase text-slate-500">{track.tom_musical}</span>}
                     <span className="text-[10px] font-bold uppercase text-slate-400 group-hover:text-[#5279FF]">Ver execuções</span>
                   </div>
                 </div>
@@ -1407,7 +1426,7 @@ async function loadDayData(radio: string, date: string): Promise<any[]> {
   return (tracks || [])
     .map((t: any) => {
       const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
-      return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, capa: t.capa, bpm: t.bpm, ano_lancamento: t.ano_lancamento ?? null };
+      return { id: t.id, artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', radio: t.radio, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, capa: t.capa, bpm: t.bpm, ano_lancamento: t.ano_lancamento ?? null, tom_musical: t.tom_musical ?? null, camelot: t.camelot ?? null };
     })
     .filter((t: any) => !isBlocked(t.artista, t.musica, t.radio));
 }
@@ -1420,7 +1439,7 @@ async function loadWeeklyData(radio: string): Promise<any[]> {
   twoWeeksAgo.setDate(now.getDate() - 14);
   const { data: tracks, error } = await supabase
     .from('radio_airplay')
-    .select('artista, musica, capa, genero, tocou_em, bpm')
+    .select('artista, musica, capa, genero, tocou_em, bpm, tom_musical, camelot')
     .ilike('radio', radio)
     .gte('tocou_em', twoWeeksAgo.toISOString())
     .order('tocou_em', { ascending: false });
@@ -1428,7 +1447,7 @@ async function loadWeeklyData(radio: string): Promise<any[]> {
   return (tracks || [])
     .map((t: any) => {
       const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
-      return { artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', capa: t.capa, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, bpm: t.bpm, tocou_em: t.tocou_em };
+      return { artista: t.artista || 'Desconhecido', musica: t.musica || 'Sem Título', capa: t.capa, genero: t.genero || 'Desconhecido', data: d, hora, timestamp, bpm: t.bpm, tom_musical: t.tom_musical ?? null, camelot: t.camelot ?? null, tocou_em: t.tocou_em };
     })
     .filter((t: any) => !isBlocked(t.artista, t.musica, radio));
 }
@@ -1481,7 +1500,7 @@ const App = () => {
   const [loadingDates, setLoadingDates] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '' });
+  const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '', camelot: '' });
   const [visibleCount, setVisibleCount] = useState(9);
   const [execModal, setExecModal] = useState<{ artista: string; musica: string; capa: string; execucoes: ExecucaoItem[] } | null>(null);
   const [showUniqueModal, setShowUniqueModal] = useState(false);
@@ -1581,7 +1600,7 @@ const App = () => {
     setAvailableDates([]);
     setDatesLoaded(false);
     setVisibleCount(9);
-    setFilters(f => ({ ...f, radio: r, date: '', search: '', genero: '', hour: 'all', bpm: 'all', ano: '' }));
+    setFilters(f => ({ ...f, radio: r, date: '', search: '', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '', camelot: '' }));
     setLoading(true);
     const today = await loadLatestDate(r);
     if (today) {
@@ -1608,13 +1627,14 @@ const App = () => {
     const matchHour   = filters.hour !== 'all' ? t.hora.startsWith(`${filters.hour}:`) : true;
     const matchShift  = isHourInShift(t.hora, filters.shift);
     const matchAno    = filters.ano ? String(t.ano_lancamento) === filters.ano : true;
+    const matchCamelot = filters.camelot ? String(t.camelot || '').trim().toUpperCase() === filters.camelot : true;
     let matchBpm = true;
     if (filters.bpm !== 'all' && t.bpm) {
       if (filters.bpm === 'slow') matchBpm = t.bpm < 100;
       else if (filters.bpm === 'moderate') matchBpm = t.bpm >= 100 && t.bpm <= 120;
       else if (filters.bpm === 'fast') matchBpm = t.bpm > 120;
     }
-    return matchSearch && matchGenero && matchHour && matchShift && matchBpm && matchAno;
+    return matchSearch && matchGenero && matchHour && matchShift && matchBpm && matchAno && matchCamelot;
   }), [data, filters]);
 
   const repeatCountMap = useMemo(() => {
@@ -1767,7 +1787,7 @@ const App = () => {
     doc.save(`IAnoRadio_${filters.radio}_${filters.date}_${hourLabel}.pdf`);
   };
 
-  const hasActiveFilters = filters.search || filters.genero || filters.hour !== 'all' || filters.shift !== 'all' || filters.bpm !== 'all' || filters.ano;
+  const hasActiveFilters = filters.search || filters.genero || filters.hour !== 'all' || filters.shift !== 'all' || filters.bpm !== 'all' || filters.ano || filters.camelot;
   const activeStreamUrl = RADIO_STREAM_URLS[filters.radio];
 
   return (
@@ -1820,14 +1840,14 @@ const App = () => {
           <div className="flex flex-col gap-3">
             {hasActiveFilters && (
               <div className="flex justify-end">
-                <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '' }))}
+                <button onClick={() => setFilters(f => ({ ...f, search: '', genero: '', hour: 'all', shift: 'all', bpm: 'all', ano: '', camelot: '' }))}
                   className="flex items-center justify-center gap-1.5 rounded-xl bg-[#0D0056] px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white transition-all hover:bg-[#20137f]">
                   <X size={13} /> Limpar filtros
                 </button>
               </div>
             )}
 
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-6">
               <DatePicker
                 value={filters.date}
                 availableDates={availableDates}
@@ -1859,6 +1879,14 @@ const App = () => {
                   <option value="slow">Lento (&lt; 100 BPM)</option>
                   <option value="moderate">Moderado (100–120 BPM)</option>
                   <option value="fast">Rápido (&gt; 120 BPM)</option>
+                </select>
+                <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+              <div className="relative">
+                <select value={filters.camelot} onChange={e => { setFilters(f => ({ ...f, camelot: e.target.value })); setVisibleCount(9); }}
+                  className="w-full appearance-none rounded-xl border border-transparent bg-slate-50 py-2.5 pl-3 pr-9 text-sm font-bold text-slate-700 transition-all hover:border-[#D0FF03] focus:border-[#D0FF03] focus:outline-none cursor-pointer">
+                  <option value="">Todos os Camelot</option>
+                  {CAMELOT_OPTIONS.map(code => <option key={code} value={code}>{code}</option>)}
                 </select>
                 <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
@@ -1906,6 +1934,7 @@ const App = () => {
                 {filters.hour !== 'all' && <span className="rounded-full border border-[#5279FF]/25 bg-[#5279FF]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#0D0056]">Hora: {filters.hour}:00</span>}
                 {filters.shift !== 'all' && <span className="rounded-full border border-[#D0FF03]/35 bg-[#D0FF03]/15 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#0D0056]">Locutor: {getShiftLabel(filters.shift)}</span>}
                 {filters.bpm !== 'all' && <span className="rounded-full border border-[#EA7F9F]/30 bg-[#EA7F9F]/15 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#0D0056]">BPM: {filters.bpm === 'slow' ? 'Lento' : filters.bpm === 'moderate' ? 'Moderado' : 'Rápido'}</span>}
+                {filters.camelot && <span className="rounded-full border border-[#D0FF03]/50 bg-[#D0FF03]/20 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#0D0056]">Camelot: {filters.camelot}</span>}
                 {filters.ano && <span className="rounded-full border border-[#0D0056]/20 bg-[#0D0056]/10 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-[#0D0056]">Ano: {filters.ano}</span>}
               </div>
             )}
