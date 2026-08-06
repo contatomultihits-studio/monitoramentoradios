@@ -5,7 +5,7 @@ import {
   Music, Loader2, Plus, Download,
   TrendingUp, Sparkles, Filter, Megaphone, Activity,
   Trophy, X, Youtube, CalendarDays, ChevronDown,
-  TrendingDown, Flame
+  TrendingDown, Flame, Play, Pause, Volume2
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -15,6 +15,15 @@ const LASTFM_API_KEY = '2a416b64ded1827a7e82e61d9a87b2e0';
 const REPEAT_THRESHOLD = 2;
 const PAGE_SIZE = 1000;
 const getSupabaseClient = () => (window as any)._supabaseClient;
+
+const RADIOS = [
+  { name: 'Metropolitana FM' },
+  { name: 'Antena 1' },
+  { name: 'Forbes Radio' },
+  { name: 'MIX Rio FM' },
+  { name: 'ALPHA FM', streamUrl: 'https://ice.fabricahost.com.br/alphafmsp' },
+  { name: 'BAND FM', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/BANDFM_SP.mp3' },
+];
 
 // ─────────────────────────────────────────────────────────────
 // Aguarda o Supabase estar pronto (evento 'supabase-ready')
@@ -967,8 +976,28 @@ const App = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState({ date: '', search: '', radio: 'Metropolitana FM', genero: '', hour: 'all', bpm: 'all', ano: '' });
   const [visibleCount, setVisibleCount] = useState(9);
+  const [isRadioPlaying, setIsRadioPlaying] = useState(false);
+  const [playerError, setPlayerError] = useState('');
   const [execModal, setExecModal] = useState<{ artista: string; musica: string; capa: string; execucoes: ExecucaoItem[] } | null>(null);
   const chartRef = React.useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const selectedRadio = RADIOS.find(radio => radio.name === filters.radio);
+
+  const toggleRadioPlayer = useCallback(async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    setPlayerError('');
+    if (!audio.paused) {
+      audio.pause();
+      return;
+    }
+    try {
+      await audio.play();
+    } catch {
+      setPlayerError('Não foi possível iniciar a transmissão. Tente novamente.');
+    }
+  }, []);
 
   const filtersRef = useRef(filters);
   useEffect(() => { filtersRef.current = filters; }, [filters]);
@@ -1058,6 +1087,9 @@ const App = () => {
   }, [doFetch]);
 
   const handleRadioChange = useCallback(async (r: string) => {
+    audioRef.current?.pause();
+    setIsRadioPlaying(false);
+    setPlayerError('');
     setData([]);
     setWeeklyData([]);
     setAvailableDates([]);
@@ -1193,15 +1225,53 @@ const App = () => {
       <div className="bg-white border-b border-slate-100 shadow-sm">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex gap-2 flex-wrap">
-            {['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM'].map(r => (
-              <button key={r} onClick={() => handleRadioChange(r)}
+            {RADIOS.map(({ name }) => (
+              <button key={name} onClick={() => handleRadioChange(name)}
                 className={`px-5 py-2.5 rounded-2xl font-black text-sm uppercase tracking-wide transition-all ${
-                  filters.radio === r ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600'
+                  filters.radio === name ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600'
                 }`}>
-                {r}
+                {name}
               </button>
             ))}
           </div>
+          {selectedRadio?.streamUrl && (
+            <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-3">
+              <audio
+                ref={audioRef}
+                src={selectedRadio.streamUrl}
+                preload="none"
+                onPlay={() => setIsRadioPlaying(true)}
+                onPause={() => setIsRadioPlaying(false)}
+                onError={() => { setIsRadioPlaying(false); setPlayerError('Transmissão indisponível no momento.'); }}
+              />
+              <button
+                type="button"
+                onClick={toggleRadioPlayer}
+                className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-xs font-black uppercase tracking-wider text-white shadow-md transition-all hover:bg-blue-700 active:scale-95"
+                aria-label={isRadioPlaying ? `Pausar ${selectedRadio.name}` : `Ouvir ${selectedRadio.name} ao vivo`}
+              >
+                {isRadioPlaying ? <Pause size={16} /> : <Play size={16} />}
+                {isRadioPlaying ? 'Pausar' : 'Ouvir ao vivo'}
+              </button>
+              <div className="flex min-w-0 items-center gap-2">
+                <Volume2 size={18} className="flex-shrink-0 text-blue-600" />
+                <div className="min-w-0">
+                  <p className="text-xs font-black uppercase tracking-wide text-slate-700">{selectedRadio.name}</p>
+                  <p className={`text-[11px] font-bold ${playerError ? 'text-red-500' : 'text-slate-500'}`}>
+                    {playerError || (isRadioPlaying ? 'Transmitindo ao vivo agora' : 'Clique para escutar a transmissão')}
+                  </p>
+                </div>
+              </div>
+              <a
+                href={selectedRadio.streamUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sm:ml-auto text-center text-[11px] font-black uppercase tracking-wide text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                Abrir link do stream
+              </a>
+            </div>
+          )}
         </div>
       </div>
 
