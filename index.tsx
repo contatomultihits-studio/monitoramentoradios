@@ -116,6 +116,7 @@ const ytURL = (artista: string, musica: string) =>
 
 const RADIO_STREAM_URLS: Record<string, string> = {
   'Metropolitana FM': 'https://ice.fabricahost.com.br/metropolitana985sp',
+  'Alpha FM': 'https://ice.fabricahost.com.br/alphafmsp',
   'Dumont FM': 'https://8402.brasilstream.com.br/stream?origem=cadenaandroid',
   'Forbes Radio': 'https://9176.brasilstream.com.br/stream',
   'MIX Rio FM': 'https://playerservices.streamtheworld.com/api/livestream-redirect/MIXRIOAAC.aac',
@@ -1944,7 +1945,7 @@ const App = () => {
       <div className="relative z-10 bg-[#5279FF]/10 border-b border-white/70 shadow-sm backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex gap-2 flex-wrap">
-            {['Metropolitana FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM', 'Dumont FM', 'Gazeta FM'].map(r => (
+            {['Metropolitana FM', 'Alpha FM', 'Antena 1', 'Forbes Radio', 'MIX Rio FM', 'Dumont FM', 'Gazeta FM'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-black text-sm uppercase tracking-wide transition-all ${
                   filters.radio === r ? 'bg-[#D0FF03] text-[#0D0056] shadow-lg shadow-[#D0FF03]/20 scale-105' : 'bg-white text-neutral-600 border border-neutral-200 hover:border-[#EA7F9F] hover:bg-[#EA7F9F]/10 hover:text-[#EA7F9F]'
