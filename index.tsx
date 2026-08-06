@@ -22,6 +22,7 @@ const RADIOS = [
   { name: 'Forbes Radio' },
   { name: 'MIX Rio FM' },
   { name: 'ALPHA FM', streamUrl: 'https://ice.fabricahost.com.br/alphafmsp' },
+  { name: 'BAND FM', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/BANDFM_SP.mp3' },
 ];
 
 // ─────────────────────────────────────────────────────────────
