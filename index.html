@@ -28,59 +28,6 @@
             transform: translateY(-4px);
         }
 
-        /* ── Em Breve overlay ── */
-        .card-coming-soon {
-            position: relative;
-            cursor: default;
-            pointer-events: none;
-        }
-        .card-coming-soon .coming-soon-overlay {
-            position: absolute;
-            inset: 0;
-            border-radius: 1.5rem;
-            background: rgba(255,255,255,0.55);
-            backdrop-filter: blur(3px);
-            -webkit-backdrop-filter: blur(3px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            padding-top: 1.25rem;
-            z-index: 10;
-        }
-        .badge-em-breve {
-            background: linear-gradient(135deg, #EA7F9F, #5279FF);
-            color: #fff;
-            font-weight: 900;
-            font-size: 0.85rem;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            padding: 0.45rem 1.2rem;
-            border-radius: 9999px;
-            box-shadow: 0 4px 16px rgba(245,158,11,0.45);
-            animation: pulse-badge 2s ease-in-out infinite;
-        }
-        @keyframes pulse-badge {
-            0%, 100% { box-shadow: 0 4px 16px rgba(245,158,11,0.45); transform: scale(1); }
-            50%       { box-shadow: 0 4px 28px rgba(245,158,11,0.70); transform: scale(1.04); }
-        }
-        .card-coming-soon .inner-content {
-            opacity: 0.4;
-            filter: grayscale(0.6);
-        }
-
-        /* ── Features list inside card ── */
-        .feature-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: #0D0056;
-            background: rgba(82,121,255,.12);
-            border-radius: 9999px;
-            padding: 0.25rem 0.75rem;
-        }
     </style>
 </head>
 <body>
@@ -100,10 +47,8 @@
             <p class="text-xl font-bold text-[#5279FF] uppercase tracking-wider">Sistema de Monitoramento Inteligente</p>
         </div>
 
-        <!-- CARDS — grid 3 colunas -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-
-            <!-- CARD MUSICAL -->
+        <!-- CARD MUSICAL -->
+        <div class="max-w-sm mx-auto">
             <a href="musical" class="btn-monitor block bg-white rounded-3xl shadow-xl p-8 border-4 border-transparent hover:border-[#EA7F9F]">
                 <div class="bg-gradient-to-br from-[#EA7F9F] to-[#0D0056] p-5 rounded-2xl shadow-lg inline-block mb-5">
                     <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -115,56 +60,6 @@
                 <h2 class="font-black text-2xl text-[#0D0056] uppercase mb-2">Monitoramento<br/>Musical</h2>
                 <p class="text-slate-500 font-bold text-sm">Acompanhe músicas e execuções em tempo real</p>
             </a>
-
-            <!-- CARD COMPARAÇÕES — EM BREVE -->
-            <div class="card-coming-soon btn-monitor bg-white rounded-3xl shadow-xl p-8 border-4 border-transparent">
-                <div class="coming-soon-overlay" aria-hidden="true">
-                    <span class="badge-em-breve">⏳ Em Breve</span>
-                </div>
-                <div class="inner-content">
-                    <div class="bg-gradient-to-br from-[#5279FF] to-[#0D0056] p-5 rounded-2xl shadow-lg inline-block mb-5">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="7" width="4" height="14" rx="1"/>
-                            <rect x="9" y="3" width="4" height="18" rx="1"/>
-                            <rect x="16" y="10" width="4" height="11" rx="1"/>
-                            <line x1="2" y1="22" x2="22" y2="22"/>
-                        </svg>
-                    </div>
-                    <h2 class="font-black text-2xl text-[#0D0056] uppercase mb-2">Comparações<br/>de Rádios</h2>
-                    <p class="text-slate-500 font-bold text-sm mb-4">Compare execuções entre rádios lado a lado</p>
-                    <div class="flex flex-wrap gap-2 justify-center">
-                        <span class="feature-pill">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-                            Top artistas
-                        </span>
-                        <span class="feature-pill">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="16" r="2"/></svg>
-                            Gêneros
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CARD COMERCIAL — EM BREVE -->
-            <div class="card-coming-soon btn-monitor bg-white rounded-3xl shadow-xl p-8 border-4 border-transparent">
-                <div class="coming-soon-overlay" aria-hidden="true">
-                    <span class="badge-em-breve">⏳ Em Breve</span>
-                </div>
-                <div class="inner-content">
-                    <div class="bg-gradient-to-br from-[#0D0056] to-[#5279FF] p-5 rounded-2xl shadow-lg inline-block mb-5">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/>
-                            <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/>
-                            <circle cx="12" cy="12" r="2"/>
-                            <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/>
-                            <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/>
-                        </svg>
-                    </div>
-                    <h2 class="font-black text-2xl text-[#0D0056] uppercase mb-2">Monitoramento<br/>Comercial</h2>
-                    <p class="text-slate-500 font-bold text-sm">Acompanhe anúncios e inserções</p>
-                </div>
-            </div>
-
         </div>
 
         <!-- FOOTER -->
