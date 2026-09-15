@@ -665,7 +665,17 @@ type DailyHighlight = {
   imageAlt?: string;
 };
 
-const DailyHighlightsCarousel = ({ highlights }: { highlights: DailyHighlight[] }) => {
+const DailyHighlightsCarousel = ({ highlights, metrics, onOpenUnique, onOpenRepeated }: {
+  highlights: DailyHighlight[];
+  metrics: {
+    totalExecutions: number;
+    uniqueSongs: number;
+    dominantGenre: string;
+    repeatedSongs: number;
+  };
+  onOpenUnique: () => void;
+  onOpenRepeated: () => void;
+}) => {
   const [activeSlide, setActiveSlide] = useState(0);
   const activeHighlight = highlights[activeSlide];
 
@@ -686,8 +696,8 @@ const DailyHighlightsCarousel = ({ highlights }: { highlights: DailyHighlight[] 
     <section className="mb-8 rounded-[2rem] border border-white/80 bg-white/85 p-5 shadow-xl shadow-[#5279FF]/15 backdrop-blur">
       <div className="mb-4 flex flex-col items-center gap-2 text-center">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#EA7F9F]">Leitura rápida</p>
-          <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">Destaques do dia</h2>
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#EA7F9F]">Resumo musical</p>
+          <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">RAIO-X DA PROGRAMAÇÃO</h2>
         </div>
         <p className="max-w-xl text-xs font-bold uppercase leading-relaxed text-slate-400">Insights calculados com a data e os filtros ativos.</p>
       </div>
@@ -747,6 +757,13 @@ const DailyHighlightsCarousel = ({ highlights }: { highlights: DailyHighlight[] 
             />
           ))}
         </div>
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard icon={Activity} label="Execuções" value={metrics.totalExecutions} detail="Registros no filtro atual" accent="cyan" />
+        <MetricCard icon={Music} label="Músicas únicas" value={metrics.uniqueSongs} detail={metrics.uniqueSongs ? "Clique para ver a lista" : "Faixas diferentes tocadas"} accent="fuchsia" onClick={onOpenUnique} />
+        <MetricCard icon={Trophy} label="Gênero dominante" value={metrics.dominantGenre} detail="Maior presença na seleção" accent="amber" />
+        <MetricCard icon={RefreshCw} label="Repetidas" value={metrics.repeatedSongs} detail={metrics.repeatedSongs ? "Clique para ver a lista" : "Músicas com mais de 1 execução"} accent="violet" onClick={onOpenRepeated} />
       </div>
     </section>
   );
@@ -2152,10 +2169,9 @@ const App = () => {
               )
             )}
 
-            {filteredData.length > 0 && <DailyHighlightsCarousel highlights={dailyHighlights} />}
-
             {filteredData.length > 0 && (
-              <MusicMetricsPanel
+              <DailyHighlightsCarousel
+                highlights={dailyHighlights}
                 metrics={musicMetrics}
                 onOpenUnique={() => setShowUniqueModal(true)}
                 onOpenRepeated={() => setShowRepeatedModal(true)}
