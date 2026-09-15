@@ -661,6 +661,8 @@ type DailyHighlight = {
   description: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   accent: 'pink' | 'lime' | 'violet' | 'blue';
+  image?: string | null;
+  imageAlt?: string;
 };
 
 const DailyHighlightsCarousel = ({ highlights }: { highlights: DailyHighlight[] }) => {
@@ -682,7 +684,7 @@ const DailyHighlightsCarousel = ({ highlights }: { highlights: DailyHighlight[] 
 
   return (
     <section className="mb-8 rounded-[2rem] border border-white/80 bg-white/85 p-5 shadow-xl shadow-[#5279FF]/15 backdrop-blur">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-4 flex flex-col items-center gap-2 text-center">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#EA7F9F]">Leitura rápida</p>
           <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">Destaques do dia</h2>
@@ -699,16 +701,25 @@ const DailyHighlightsCarousel = ({ highlights }: { highlights: DailyHighlight[] 
           {highlights.map((highlight, index) => {
             const Icon = highlight.icon;
             return (
-              <article key={highlight.eyebrow} className={`min-w-full bg-gradient-to-br p-6 ${accentStyles[highlight.accent]}`} aria-hidden={index !== activeSlide}>
-                <div className="flex min-h-44 flex-col justify-between gap-6 sm:flex-row sm:items-end">
+              <article key={highlight.eyebrow} className={`min-w-full bg-gradient-to-br px-14 py-7 sm:px-20 ${accentStyles[highlight.accent]}`} aria-hidden={index !== activeSlide}>
+                <div className="flex min-h-56 flex-col items-center justify-center text-center">
+                  {highlight.image ? (
+                    <img
+                      src={highlight.image}
+                      alt={highlight.imageAlt || `Capa de ${highlight.value}`}
+                      className="mb-4 h-24 w-24 rounded-3xl object-cover shadow-2xl ring-2 ring-white/35 sm:h-28 sm:w-28"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-white/15 text-[#D0FF03] ring-1 ring-white/20 shadow-xl backdrop-blur-sm">
+                      <Icon size={32} />
+                    </div>
+                  )}
                   <div className="max-w-2xl">
                     <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/70">{highlight.eyebrow}</p>
                     <h3 className="mt-3 text-2xl font-black uppercase leading-tight sm:text-3xl">{highlight.title}</h3>
                     <p className="mt-3 text-lg font-black leading-snug text-[#D0FF03] sm:text-xl">{highlight.value}</p>
                     <p className="mt-3 text-xs font-bold uppercase leading-relaxed text-white/75">{highlight.description}</p>
-                  </div>
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-white/15 text-[#D0FF03] ring-1 ring-white/20 shadow-xl backdrop-blur-sm">
-                    <Icon size={30} />
                   </div>
                 </div>
               </article>
@@ -1804,6 +1815,27 @@ const App = () => {
 
   const dailyHighlights = useMemo<DailyHighlight[]>(() => {
     const mostRepeatedTrack = repeatedTracks[0];
+    const topTrackEntry = Object.entries(repeatCountMap)
+      .sort(([, countA], [, countB]) => countB - countA)[0];
+    const [topTrackArtist, topTrackTitle] = topTrackEntry?.[0]?.split('|||') || [];
+    const topTrackCover = filteredData.find(track =>
+      track.artista === topTrackArtist && track.musica === topTrackTitle
+    )?.capa || null;
+
+    const artistCounts: Record<string, number> = {};
+    filteredData.forEach(track => {
+      artistCounts[track.artista] = (artistCounts[track.artista] || 0) + 1;
+    });
+    const topArtistName = Object.entries(artistCounts)
+      .sort(([, countA], [, countB]) => countB - countA)[0]?.[0];
+    const topArtistCover = filteredData.find(track => track.artista === topArtistName)?.capa || null;
+
+    const repeatedTrackCover = mostRepeatedTrack
+      ? filteredData.find(track =>
+        track.artista === mostRepeatedTrack.artista && track.musica === mostRepeatedTrack.musica
+      )?.capa || null
+      : null;
+
     const repetitionValue = mostRepeatedTrack
       ? `${mostRepeatedTrack.musica} • ${mostRepeatedTrack.artista}`
       : 'Nenhuma repetição identificada';
@@ -1819,6 +1851,8 @@ const App = () => {
         description: 'A música com maior presença na programação selecionada.',
         icon: Music,
         accent: 'pink',
+        image: topTrackCover,
+        imageAlt: topTrackTitle ? `Capa de ${topTrackTitle}` : undefined,
       },
       {
         eyebrow: 'Artista líder',
@@ -1827,6 +1861,8 @@ const App = () => {
         description: 'Artista com mais execuções dentro do filtro atual.',
         icon: Trophy,
         accent: 'lime',
+        image: topArtistCover,
+        imageAlt: topArtistName ? `Capa de uma música de ${topArtistName}` : undefined,
       },
       {
         eyebrow: 'Alerta de repetição',
@@ -1835,6 +1871,8 @@ const App = () => {
         description: repetitionDescription,
         icon: RefreshCw,
         accent: 'violet',
+        image: repeatedTrackCover,
+        imageAlt: mostRepeatedTrack ? `Capa de ${mostRepeatedTrack.musica}` : undefined,
       },
       {
         eyebrow: 'Gênero dominante',
@@ -1843,9 +1881,11 @@ const App = () => {
         description: 'Estilo musical com maior presença na programação selecionada.',
         icon: Sparkles,
         accent: 'blue',
+        image: filteredData[0]?.capa || null,
+        imageAlt: filteredData[0] ? `Capa de ${filteredData[0].musica}` : undefined,
       },
     ];
-  }, [musicMetrics, repeatedTracks]);
+  }, [filteredData, musicMetrics, repeatedTracks, repeatCountMap]);
 
   const programmingVarietyMetrics = useMemo(() => {
     const totalExecutions = filteredData.length;
