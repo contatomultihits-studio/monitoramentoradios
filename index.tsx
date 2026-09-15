@@ -4,7 +4,7 @@ import {
   Search, Clock, RefreshCw, Radio, 
   Music, Loader2, Plus, Download,
   TrendingUp, Sparkles, Filter, Activity,
-  Trophy, X, Youtube, CalendarDays, ChevronDown,
+  Trophy, X, Youtube, CalendarDays, ChevronDown, ChevronLeft, ChevronRight,
   TrendingDown, Volume2
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
@@ -653,6 +653,93 @@ const MusicMetricsPanel = ({ metrics, onOpenUnique, onOpenRepeated }: { metrics:
     </div>
   </section>
 );
+
+type DailyHighlight = {
+  eyebrow: string;
+  title: string;
+  value: string;
+  description: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  accent: 'pink' | 'lime' | 'violet' | 'blue';
+};
+
+const DailyHighlightsCarousel = ({ highlights }: { highlights: DailyHighlight[] }) => {
+  const [activeSlide, setActiveSlide] = useState(0);
+  const activeHighlight = highlights[activeSlide];
+
+  const goToSlide = (index: number) => {
+    setActiveSlide((index + highlights.length) % highlights.length);
+  };
+
+  if (!activeHighlight) return null;
+
+  const accentStyles = {
+    pink: 'from-[#EA7F9F] via-[#c75a80] to-[#0D0056] text-white',
+    lime: 'from-[#0D0056] via-[#20137f] to-[#5279FF] text-white',
+    violet: 'from-[#5279FF] via-[#4436b7] to-[#0D0056] text-white',
+    blue: 'from-[#0D0056] via-[#5279FF] to-[#8ba3ff] text-white',
+  } as const;
+
+  return (
+    <section className="mb-8 rounded-[2rem] border border-white/80 bg-white/85 p-5 shadow-xl shadow-[#5279FF]/15 backdrop-blur">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#EA7F9F]">Leitura rápida</p>
+          <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">Destaques do dia</h2>
+        </div>
+        <p className="max-w-xl text-xs font-bold uppercase leading-relaxed text-slate-400">Insights calculados com a data e os filtros ativos.</p>
+      </div>
+
+      <div className="relative overflow-hidden rounded-[1.75rem]">
+        <div
+          className="flex transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+          aria-live="polite"
+        >
+          {highlights.map((highlight, index) => {
+            const Icon = highlight.icon;
+            return (
+              <article key={highlight.eyebrow} className={`min-w-full bg-gradient-to-br p-6 ${accentStyles[highlight.accent]}`} aria-hidden={index !== activeSlide}>
+                <div className="flex min-h-44 flex-col justify-between gap-6 sm:flex-row sm:items-end">
+                  <div className="max-w-2xl">
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/70">{highlight.eyebrow}</p>
+                    <h3 className="mt-3 text-2xl font-black uppercase leading-tight sm:text-3xl">{highlight.title}</h3>
+                    <p className="mt-3 text-lg font-black leading-snug text-[#D0FF03] sm:text-xl">{highlight.value}</p>
+                    <p className="mt-3 text-xs font-bold uppercase leading-relaxed text-white/75">{highlight.description}</p>
+                  </div>
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-white/15 text-[#D0FF03] ring-1 ring-white/20 shadow-xl backdrop-blur-sm">
+                    <Icon size={30} />
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        <button type="button" onClick={() => goToSlide(activeSlide - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 rounded-2xl bg-white/15 p-2.5 text-white backdrop-blur-sm transition hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-[#D0FF03]" aria-label="Ver destaque anterior">
+          <ChevronLeft size={20} />
+        </button>
+        <button type="button" onClick={() => goToSlide(activeSlide + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-2xl bg-white/15 p-2.5 text-white backdrop-blur-sm transition hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-[#D0FF03]" aria-label="Ver próximo destaque">
+          <ChevronRight size={20} />
+        </button>
+
+        <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2" role="tablist" aria-label="Navegação dos destaques do dia">
+          {highlights.map((highlight, index) => (
+            <button
+              key={highlight.eyebrow}
+              type="button"
+              onClick={() => goToSlide(index)}
+              className={`h-2.5 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-[#D0FF03] ${index === activeSlide ? 'w-7 bg-[#D0FF03]' : 'w-2.5 bg-white/50 hover:bg-white/80'}`}
+              aria-label={`Ver destaque: ${highlight.title}`}
+              aria-selected={index === activeSlide}
+              role="tab"
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
 
 const ProgrammingVarietyPanel = ({ metrics }: { metrics: {
   totalExecutions: number;
@@ -1715,6 +1802,51 @@ const App = () => {
     };
   }, [filteredData, repeatCountMap]);
 
+  const dailyHighlights = useMemo<DailyHighlight[]>(() => {
+    const mostRepeatedTrack = repeatedTracks[0];
+    const repetitionValue = mostRepeatedTrack
+      ? `${mostRepeatedTrack.musica} • ${mostRepeatedTrack.artista}`
+      : 'Nenhuma repetição identificada';
+    const repetitionDescription = mostRepeatedTrack
+      ? `${mostRepeatedTrack.count} execuções da mesma faixa no filtro atual.`
+      : 'A programação está sem músicas repetidas no filtro atual.';
+
+    return [
+      {
+        eyebrow: 'Música líder',
+        title: 'Faixa mais executada',
+        value: musicMetrics.topTrack,
+        description: 'A música com maior presença na programação selecionada.',
+        icon: Music,
+        accent: 'pink',
+      },
+      {
+        eyebrow: 'Artista líder',
+        title: 'Nome em destaque',
+        value: musicMetrics.topArtist,
+        description: 'Artista com mais execuções dentro do filtro atual.',
+        icon: Trophy,
+        accent: 'lime',
+      },
+      {
+        eyebrow: 'Alerta de repetição',
+        title: mostRepeatedTrack ? 'Atenção à recorrência' : 'Programação variada',
+        value: repetitionValue,
+        description: repetitionDescription,
+        icon: RefreshCw,
+        accent: 'violet',
+      },
+      {
+        eyebrow: 'Gênero dominante',
+        title: 'Clima da programação',
+        value: musicMetrics.dominantGenre,
+        description: 'Estilo musical com maior presença na programação selecionada.',
+        icon: Sparkles,
+        accent: 'blue',
+      },
+    ];
+  }, [musicMetrics, repeatedTracks]);
+
   const programmingVarietyMetrics = useMemo(() => {
     const totalExecutions = filteredData.length;
     const counts = Object.values(repeatCountMap);
@@ -1979,6 +2111,8 @@ const App = () => {
                 </div>
               )
             )}
+
+            {filteredData.length > 0 && <DailyHighlightsCarousel highlights={dailyHighlights} />}
 
             {filteredData.length > 0 && (
               <MusicMetricsPanel
