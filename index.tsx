@@ -4,7 +4,7 @@ import {
   Search, Clock, RefreshCw, Radio, 
   Music, Loader2, Plus, Download,
   TrendingUp, Sparkles, Filter, Activity,
-  Trophy, X, Youtube, CalendarDays, ChevronDown,
+  Trophy, X, Youtube, CalendarDays, ChevronDown, ChevronLeft, ChevronRight,
   TrendingDown, Volume2
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
@@ -121,6 +121,7 @@ const RADIO_STREAM_URLS: Record<string, string> = {
   'Forbes Radio': 'https://9176.brasilstream.com.br/stream',
   'MIX Rio FM': 'https://playerservices.streamtheworld.com/api/livestream-redirect/MIXRIOAAC.aac',
   'Gazeta FM': 'http://gazetafmsite.crossradio.com.br:19878/index.html',
+  'EDUCADORA FM': 'https://stm22.xcast.com.br:11282/stream',
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -652,6 +653,121 @@ const MusicMetricsPanel = ({ metrics, onOpenUnique, onOpenRepeated }: { metrics:
     </div>
   </section>
 );
+
+type DailyHighlight = {
+  eyebrow: string;
+  title: string;
+  value: string;
+  description: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  accent: 'pink' | 'lime' | 'violet' | 'blue';
+  image?: string | null;
+  imageAlt?: string;
+};
+
+const DailyHighlightsCarousel = ({ highlights, metrics, onOpenUnique, onOpenRepeated }: {
+  highlights: DailyHighlight[];
+  metrics: {
+    totalExecutions: number;
+    uniqueSongs: number;
+    dominantGenre: string;
+    repeatedSongs: number;
+  };
+  onOpenUnique: () => void;
+  onOpenRepeated: () => void;
+}) => {
+  const [activeSlide, setActiveSlide] = useState(0);
+  const activeHighlight = highlights[activeSlide];
+
+  const goToSlide = (index: number) => {
+    setActiveSlide((index + highlights.length) % highlights.length);
+  };
+
+  if (!activeHighlight) return null;
+
+  const accentStyles = {
+    pink: 'from-[#EA7F9F] via-[#c75a80] to-[#0D0056] text-white',
+    lime: 'from-[#0D0056] via-[#20137f] to-[#5279FF] text-white',
+    violet: 'from-[#5279FF] via-[#4436b7] to-[#0D0056] text-white',
+    blue: 'from-[#0D0056] via-[#5279FF] to-[#8ba3ff] text-white',
+  } as const;
+
+  return (
+    <section className="mb-8 rounded-[2rem] border border-white/80 bg-white/85 p-5 shadow-xl shadow-[#5279FF]/15 backdrop-blur">
+      <div className="mb-4 flex flex-col items-center gap-2 text-center">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#EA7F9F]">Resumo musical</p>
+          <h2 className="text-xl font-black uppercase tracking-tight text-slate-950">RAIO-X DA PROGRAMAÇÃO</h2>
+        </div>
+        <p className="max-w-xl text-xs font-bold uppercase leading-relaxed text-slate-400">Insights calculados com a data e os filtros ativos.</p>
+      </div>
+
+      <div className="relative overflow-hidden rounded-[1.75rem]">
+        <div
+          className="flex transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+          aria-live="polite"
+        >
+          {highlights.map((highlight, index) => {
+            const Icon = highlight.icon;
+            return (
+              <article key={highlight.eyebrow} className={`min-w-full bg-gradient-to-br px-14 py-7 sm:px-20 ${accentStyles[highlight.accent]}`} aria-hidden={index !== activeSlide}>
+                <div className="flex min-h-56 flex-col items-center justify-center text-center">
+                  {highlight.image ? (
+                    <img
+                      src={highlight.image}
+                      alt={highlight.imageAlt || `Capa de ${highlight.value}`}
+                      className="mb-4 h-24 w-24 rounded-3xl object-cover shadow-2xl ring-2 ring-white/35 sm:h-28 sm:w-28"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-white/15 text-[#D0FF03] ring-1 ring-white/20 shadow-xl backdrop-blur-sm">
+                      <Icon size={32} />
+                    </div>
+                  )}
+                  <div className="max-w-2xl">
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/70">{highlight.eyebrow}</p>
+                    <h3 className="mt-3 text-2xl font-black uppercase leading-tight sm:text-3xl">{highlight.title}</h3>
+                    <p className="mt-3 text-lg font-black leading-snug text-[#D0FF03] sm:text-xl">{highlight.value}</p>
+                    <p className="mt-3 text-xs font-bold uppercase leading-relaxed text-white/75">{highlight.description}</p>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        <button type="button" onClick={() => goToSlide(activeSlide - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 rounded-2xl bg-white/15 p-2.5 text-white backdrop-blur-sm transition hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-[#D0FF03]" aria-label="Ver destaque anterior">
+          <ChevronLeft size={20} />
+        </button>
+        <button type="button" onClick={() => goToSlide(activeSlide + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-2xl bg-white/15 p-2.5 text-white backdrop-blur-sm transition hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-[#D0FF03]" aria-label="Ver próximo destaque">
+          <ChevronRight size={20} />
+        </button>
+
+        <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2" role="tablist" aria-label="Navegação dos destaques do dia">
+          {highlights.map((highlight, index) => (
+            <button
+              key={highlight.eyebrow}
+              type="button"
+              onClick={() => goToSlide(index)}
+              className={`h-2.5 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-[#D0FF03] ${index === activeSlide ? 'w-7 bg-[#D0FF03]' : 'w-2.5 bg-white/50 hover:bg-white/80'}`}
+              aria-label={`Ver destaque: ${highlight.title}`}
+              aria-selected={index === activeSlide}
+              role="tab"
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard icon={Activity} label="Execuções" value={metrics.totalExecutions} detail="Registros no filtro atual" accent="cyan" />
+        <MetricCard icon={Music} label="Músicas únicas" value={metrics.uniqueSongs} detail={metrics.uniqueSongs ? "Clique para ver a lista" : "Faixas diferentes tocadas"} accent="fuchsia" onClick={onOpenUnique} />
+        <MetricCard icon={Trophy} label="Gênero dominante" value={metrics.dominantGenre} detail="Maior presença na seleção" accent="amber" />
+        <MetricCard icon={RefreshCw} label="Repetidas" value={metrics.repeatedSongs} detail={metrics.repeatedSongs ? "Clique para ver a lista" : "Músicas com mais de 1 execução"} accent="violet" onClick={onOpenRepeated} />
+      </div>
+    </section>
+  );
+};
 
 const ProgrammingVarietyPanel = ({ metrics }: { metrics: {
   totalExecutions: number;
@@ -1714,6 +1830,80 @@ const App = () => {
     };
   }, [filteredData, repeatCountMap]);
 
+  const dailyHighlights = useMemo<DailyHighlight[]>(() => {
+    const mostRepeatedTrack = repeatedTracks[0];
+    const topTrackEntry = Object.entries(repeatCountMap)
+      .sort(([, countA], [, countB]) => countB - countA)[0];
+    const [topTrackArtist, topTrackTitle] = topTrackEntry?.[0]?.split('|||') || [];
+    const topTrackCover = filteredData.find(track =>
+      track.artista === topTrackArtist && track.musica === topTrackTitle
+    )?.capa || null;
+
+    const artistCounts: Record<string, number> = {};
+    filteredData.forEach(track => {
+      artistCounts[track.artista] = (artistCounts[track.artista] || 0) + 1;
+    });
+    const topArtistName = Object.entries(artistCounts)
+      .sort(([, countA], [, countB]) => countB - countA)[0]?.[0];
+    const topArtistCover = filteredData.find(track => track.artista === topArtistName)?.capa || null;
+
+    const repeatedTrackCover = mostRepeatedTrack
+      ? filteredData.find(track =>
+        track.artista === mostRepeatedTrack.artista && track.musica === mostRepeatedTrack.musica
+      )?.capa || null
+      : null;
+
+    const repetitionValue = mostRepeatedTrack
+      ? `${mostRepeatedTrack.musica} • ${mostRepeatedTrack.artista}`
+      : 'Nenhuma repetição identificada';
+    const repetitionDescription = mostRepeatedTrack
+      ? `${mostRepeatedTrack.count} execuções da mesma faixa no filtro atual.`
+      : 'A programação está sem músicas repetidas no filtro atual.';
+
+    return [
+      {
+        eyebrow: 'Música líder',
+        title: 'Faixa mais executada',
+        value: musicMetrics.topTrack,
+        description: 'A música com maior presença na programação selecionada.',
+        icon: Music,
+        accent: 'pink',
+        image: topTrackCover,
+        imageAlt: topTrackTitle ? `Capa de ${topTrackTitle}` : undefined,
+      },
+      {
+        eyebrow: 'Artista líder',
+        title: 'Nome em destaque',
+        value: musicMetrics.topArtist,
+        description: 'Artista com mais execuções dentro do filtro atual.',
+        icon: Trophy,
+        accent: 'lime',
+        image: topArtistCover,
+        imageAlt: topArtistName ? `Capa de uma música de ${topArtistName}` : undefined,
+      },
+      {
+        eyebrow: 'Alerta de repetição',
+        title: mostRepeatedTrack ? 'Atenção à recorrência' : 'Programação variada',
+        value: repetitionValue,
+        description: repetitionDescription,
+        icon: RefreshCw,
+        accent: 'violet',
+        image: repeatedTrackCover,
+        imageAlt: mostRepeatedTrack ? `Capa de ${mostRepeatedTrack.musica}` : undefined,
+      },
+      {
+        eyebrow: 'Gênero dominante',
+        title: 'Clima da programação',
+        value: musicMetrics.dominantGenre,
+        description: 'Estilo musical com maior presença na programação selecionada.',
+        icon: Sparkles,
+        accent: 'blue',
+        image: filteredData[0]?.capa || null,
+        imageAlt: filteredData[0] ? `Capa de ${filteredData[0].musica}` : undefined,
+      },
+    ];
+  }, [filteredData, musicMetrics, repeatedTracks, repeatCountMap]);
+
   const programmingVarietyMetrics = useMemo(() => {
     const totalExecutions = filteredData.length;
     const counts = Object.values(repeatCountMap);
@@ -1945,7 +2135,7 @@ const App = () => {
       <div className="relative z-10 bg-[#5279FF]/10 border-b border-white/70 shadow-sm backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex gap-2 flex-wrap">
-            {['Metropolitana FM', 'ALPHA FM SÃO PAULO', 'Antena 1', 'Forbes Radio', 'MIX Rio FM', 'Dumont FM', 'Gazeta FM'].map(r => (
+            {['Metropolitana FM', 'ALPHA FM SÃO PAULO', 'Antena 1', 'Forbes Radio', 'MIX Rio FM', 'Dumont FM', 'Gazeta FM', 'Kiss FM', 'EDUCADORA FM'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-black text-sm uppercase tracking-wide transition-all ${
                   filters.radio === r ? 'bg-[#D0FF03] text-[#0D0056] shadow-lg shadow-[#D0FF03]/20 scale-105' : 'bg-white text-neutral-600 border border-neutral-200 hover:border-[#EA7F9F] hover:bg-[#EA7F9F]/10 hover:text-[#EA7F9F]'
@@ -1980,7 +2170,8 @@ const App = () => {
             )}
 
             {filteredData.length > 0 && (
-              <MusicMetricsPanel
+              <DailyHighlightsCarousel
+                highlights={dailyHighlights}
                 metrics={musicMetrics}
                 onOpenUnique={() => setShowUniqueModal(true)}
                 onOpenRepeated={() => setShowRepeatedModal(true)}
