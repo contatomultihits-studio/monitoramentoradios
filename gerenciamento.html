@@ -14,8 +14,6 @@
     .fade-up { animation: fadeUp 0.35s ease forwards; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .spin { animation: spin 0.8s linear infinite; }
-    #modal-excluir { backdrop-filter: blur(4px); }
-    #modal-excluir-radio { backdrop-filter: blur(4px); }
   </style>
 </head>
 <body class="min-h-screen bg-slate-50">
@@ -38,34 +36,6 @@
 })();
 </script>
 
-<!-- MODAL CONFIRMAÇÃO EXCLUSÃO COMERCIAL -->
-<div id="modal-excluir" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-  <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full">
-    <div class="text-4xl text-center mb-4">🗑️</div>
-    <div class="font-black text-slate-800 text-center text-base uppercase mb-2">Desativar Comercial?</div>
-    <div id="modal-excluir-nome" class="text-center text-sm font-bold text-slate-500 mb-6"></div>
-    <p class="text-xs text-center text-slate-400 mb-6">O comercial será <strong>desativado</strong> e não aparecerá mais na lista. O monitoramento para imediatamente. As detecções históricas são <strong>preservadas</strong>.</p>
-    <div class="flex gap-3">
-      <button onclick="fecharModalExcluir()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-black uppercase text-sm transition-all">Cancelar</button>
-      <button id="btn-confirmar-excluir" onclick="confirmarExclusao()" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-sm transition-all">Desativar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL CONFIRMAÇÃO EXCLUSÃO RÁDIO -->
-<div id="modal-excluir-radio" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-  <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full">
-    <div class="text-4xl text-center mb-4">📻</div>
-    <div class="font-black text-slate-800 text-center text-base uppercase mb-2">Remover Rádio?</div>
-    <div id="modal-excluir-radio-nome" class="text-center text-sm font-bold text-slate-500 mb-6"></div>
-    <p class="text-xs text-center text-slate-400 mb-6">A rádio será <strong>desativada permanentemente</strong>. O monitoramento para em até 60 segundos. As detecções históricas são mantidas.</p>
-    <div class="flex gap-3">
-      <button onclick="fecharModalExcluirRadio()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-black uppercase text-sm transition-all">Cancelar</button>
-      <button id="btn-confirmar-excluir-radio" onclick="confirmarExclusaoRadio()" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase text-sm transition-all">Remover</button>
-    </div>
-  </div>
-</div>
-
 <header class="bg-white border-b border-blue-100 sticky top-0 z-50 shadow-sm">
   <div class="max-w-5xl mx-auto px-6 h-24 flex items-center justify-between">
     <div class="flex items-center gap-4">
@@ -78,7 +48,7 @@
       </div>
     </div>
     <div class="flex items-center gap-3">
-      <a href="/comercial" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-600 text-xs uppercase tracking-wider transition-all">← Voltar</a>
+      <a href="/" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-600 text-xs uppercase tracking-wider transition-all">← Voltar</a>
       <button onclick="fazerLogout()" title="Sair" class="p-4 bg-red-50 rounded-2xl hover:bg-red-100 transition-all hover:scale-105 active:scale-95">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
       </button>
@@ -87,12 +57,6 @@
 </header>
 
 <main class="max-w-5xl mx-auto px-6 py-10">
-
-  <div class="flex gap-2 mb-8 flex-wrap">
-    <button class="tab-btn active px-5 py-2.5 rounded-2xl font-black uppercase text-sm bg-slate-100 text-slate-600" onclick="trocarAba('usuarios',this)">👥 Usuários</button>
-    <button class="tab-btn px-5 py-2.5 rounded-2xl font-black uppercase text-sm bg-slate-100 text-slate-600" onclick="trocarAba('comerciais',this)">🎙️ Comerciais</button>
-    <button class="tab-btn px-5 py-2.5 rounded-2xl font-black uppercase text-sm bg-slate-100 text-slate-600" onclick="trocarAba('radios',this)">📻 Rádios</button>
-  </div>
 
   <!-- ABA USUÁRIOS -->
   <div id="aba-usuarios">
@@ -144,305 +108,16 @@
     </div>
   </div>
 
-  <!-- ABA COMERCIAIS -->
-  <div id="aba-comerciais" class="hidden">
-    <div class="max-w-2xl mx-auto">
-      <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 mb-8 fade-up">
-        <div class="flex items-center gap-3 mb-8">
-          <div class="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </div>
-          <div>
-            <div class="font-black text-slate-800 text-base uppercase">Cadastrar Novo Comercial</div>
-            <div class="text-xs font-bold text-slate-400">MP3 ou WAV — máx. 50MB</div>
-          </div>
-        </div>
-        <div class="space-y-5">
-          <div>
-            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Nome do Comercial *</label>
-            <input type="text" id="cadNome" placeholder="Ex: FISK INSTITUCIONAL 2026" class="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:border-blue-400 transition-all" />
-          </div>
-          <div>
-            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Cliente *</label>
-            <input type="text" id="cadCliente" placeholder="Ex: FISK INGLÊS" class="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:border-blue-400 transition-all" />
-          </div>
-          <div>
-            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Arquivo de Áudio *</label>
-            <div onclick="document.getElementById('cadArquivo').click()" class="border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all group">
-              <div class="text-4xl mb-2 group-hover:scale-110 transition-transform">🎵</div>
-              <div class="font-black text-slate-500 uppercase text-sm">Clique para selecionar</div>
-              <div class="text-xs text-slate-400 mt-1">MP3 ou WAV</div>
-              <div id="nomeArquivo" class="mt-3 text-sm font-bold text-blue-600 hidden"></div>
-            </div>
-            <input type="file" id="cadArquivo" accept=".mp3,.wav,audio/*" class="hidden" onchange="mostrarArquivo(this)" />
-          </div>
-          <div id="progressoUpload" class="hidden">
-            <div class="flex justify-between mb-1"><span class="text-xs font-black text-slate-500 uppercase">Enviando...</span><span id="pctUpload" class="text-xs font-black text-blue-600">0%</span></div>
-            <div class="w-full bg-slate-100 rounded-full h-2"><div id="barraUpload" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width:0%"></div></div>
-          </div>
-          <div id="msgCadastro" class="hidden rounded-2xl px-4 py-3 text-sm font-bold"></div>
-          <button onclick="cadastrarAudio()" type="button" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm transition-all shadow-lg hover:scale-105 active:scale-95">🚀 Cadastrar e Gerar DNA</button>
-        </div>
-        <div class="mt-6 p-4 bg-blue-50 rounded-2xl border border-blue-100">
-          <div class="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2">ℹ️ Como funciona</div>
-          <ul class="text-xs text-blue-600 font-bold space-y-1">
-            <li>• Arquivo salvo no bucket <code class="bg-white px-1 rounded">comerciais</code></li>
-            <li>• RadioDNA gera fingerprint automaticamente</li>
-            <li>• Monitoramento inicia na próxima varredura</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- LISTA DE COMERCIAIS -->
-      <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 fade-up">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <div class="text-sm font-black text-slate-800 uppercase tracking-wider">🎙️ Áudios de Referência</div>
-            <div class="text-xs font-bold text-slate-400 mt-1">Comerciais ativos no sistema</div>
-          </div>
-          <button onclick="carregarReferencias()" class="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-black text-xs uppercase transition-all">🔄 Atualizar</button>
-        </div>
-        <div id="loadingRef" class="text-center text-slate-400 font-bold py-12">Carregando...</div>
-        <div id="gridRef" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
-        <div id="semRef" class="hidden text-center py-16"><div class="text-4xl mb-2">🎙️</div><div class="font-black text-slate-300 uppercase text-sm">Nenhum áudio cadastrado</div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ABA RÁDIOS -->
-  <div id="aba-radios" class="hidden">
-    <div class="max-w-2xl mx-auto">
-
-      <!-- FORMULÁRIO CADASTRO -->
-      <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 mb-8 fade-up">
-        <div class="flex items-center gap-3 mb-8">
-          <div class="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </div>
-          <div>
-            <div class="font-black text-slate-800 text-base uppercase">Adicionar Nova Rádio</div>
-            <div class="text-xs font-bold text-slate-400">Stream MP3 / AAC / HLS</div>
-          </div>
-        </div>
-        <div class="space-y-5">
-          <div>
-            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Nome da Rádio *</label>
-            <input type="text" id="radioNome" placeholder="Ex: Jovem Pan SP" class="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:border-indigo-400 transition-all" />
-          </div>
-          <div>
-            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">URL do Stream *</label>
-            <input type="url" id="radioUrl" placeholder="https://stream.exemplo.com/radio.mp3" class="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 font-bold text-slate-700 focus:outline-none focus:border-indigo-400 transition-all" />
-          </div>
-          <div id="msgRadio" class="hidden rounded-2xl px-4 py-3 text-sm font-bold"></div>
-          <button onclick="cadastrarRadio()" type="button" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm transition-all shadow-lg hover:scale-105 active:scale-95">
-            📻 Adicionar Rádio
-          </button>
-        </div>
-        <div class="mt-6 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-          <div class="text-[10px] font-black text-indigo-700 uppercase tracking-widest mb-2">ℹ️ Como funciona</div>
-          <ul class="text-xs text-indigo-600 font-bold space-y-1">
-            <li>• Rádio cadastrada aqui é detectada pelo servidor em até 60s</li>
-            <li>• Thread de monitoramento sobe automaticamente</li>
-            <li>• Para parar: desativar pelo botão na lista abaixo</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- LISTA DE RÁDIOS -->
-      <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 fade-up">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <div class="text-sm font-black text-slate-800 uppercase tracking-wider">📻 Rádios Monitoradas</div>
-            <div class="text-xs font-bold text-slate-400 mt-1">Todas as rádios no sistema</div>
-          </div>
-          <button onclick="carregarRadios()" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-black text-xs uppercase transition-all">🔄 Atualizar</button>
-        </div>
-        <div id="loadingRadios" class="text-center text-slate-400 font-bold py-12">Carregando...</div>
-        <div id="listaRadios" class="hidden space-y-3"></div>
-        <div id="semRadios" class="hidden text-center py-16">
-          <div class="text-4xl mb-2">📻</div>
-          <div class="font-black text-slate-300 uppercase text-sm">Nenhuma rádio cadastrada</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
 </main>
 
 <script>
 const SUPABASE_URL = 'https://ojtdpnrjulrlhxvbmsnr.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qdGRwbnJqdWxybGh4dmJtc25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgwNTcyOTEsImV4cCI6MjA4MzYzMzI5MX0.yFxbWvKgOkP_-ludtajzsqjE1nZiah3iOJbLQT_le_E';
 let sb;
-let _excluirItem = null;
-let _excluirRadioItem = null;
-
-function brt(s){
-  if(!s)return'—';
-  try{return new Date(s).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return s.slice(0,16);}
-}
-
-function trocarAba(aba,btn){
-  ['usuarios','comerciais','radios'].forEach(a=>document.getElementById('aba-'+a).classList.add('hidden'));
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('aba-'+aba).classList.remove('hidden');
-  btn.classList.add('active');
-  if(aba==='comerciais') carregarReferencias();
-  if(aba==='radios') carregarRadios();
-}
 
 async function fazerLogout(){
   if(sb) await sb.auth.signOut();
   window.location.href='/login';
-}
-
-// ─── MODAL EXCLUSÃO COMERCIAL (SOFT DELETE) ────────────────────────
-function abrirModalExcluir(id, nome, arquivo_url){
-  _excluirItem = { id, nome, arquivo_url };
-  document.getElementById('modal-excluir-nome').textContent = nome;
-  document.getElementById('modal-excluir').classList.remove('hidden');
-}
-function fecharModalExcluir(){
-  _excluirItem = null;
-  document.getElementById('modal-excluir').classList.add('hidden');
-}
-async function confirmarExclusao(){
-  if(!_excluirItem) return;
-  const btn = document.getElementById('btn-confirmar-excluir');
-  btn.disabled = true;
-  btn.textContent = 'Desativando...';
-  try{
-    // SOFT DELETE — apenas marca ativo=false, preserva histórico de detecções
-    const { error } = await sb.from('referencias').update({ ativo: false }).eq('id', _excluirItem.id);
-    if(error) throw error;
-    fecharModalExcluir();
-    carregarReferencias();
-  }catch(e){
-    alert('❌ Erro ao desativar: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = 'Desativar';
-  }
-}
-
-// ─── MODAL EXCLUSÃO RÁDIO ──────────────────────────────────────────
-function abrirModalExcluirRadio(id, nome){
-  _excluirRadioItem = { id, nome };
-  document.getElementById('modal-excluir-radio-nome').textContent = nome;
-  document.getElementById('modal-excluir-radio').classList.remove('hidden');
-}
-function fecharModalExcluirRadio(){
-  _excluirRadioItem = null;
-  document.getElementById('modal-excluir-radio').classList.add('hidden');
-}
-async function confirmarExclusaoRadio(){
-  if(!_excluirRadioItem) return;
-  const btn = document.getElementById('btn-confirmar-excluir-radio');
-  btn.disabled = true;
-  btn.textContent = 'Removendo...';
-  try{
-    const { error } = await sb.from('radios').delete().eq('id', _excluirRadioItem.id);
-    if(error) throw error;
-    fecharModalExcluirRadio();
-    carregarRadios();
-  }catch(e){
-    alert('❌ Erro ao remover rádio: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = 'Remover';
-  }
-}
-
-// ─── TOGGLE ATIVA/INATIVA ──────────────────────────────────────────
-async function toggleRadio(id, ativaAtual){
-  try{
-    const { error } = await sb.from('radios').update({ ativa: !ativaAtual }).eq('id', id);
-    if(error) throw error;
-    carregarRadios();
-  }catch(e){
-    alert('❌ Erro: ' + e.message);
-  }
-}
-
-// ─── CADASTRAR RÁDIO ──────────────────────────────────────────────
-async function cadastrarRadio(){
-  const nome = document.getElementById('radioNome').value.trim();
-  const url  = document.getElementById('radioUrl').value.trim();
-  const msg  = document.getElementById('msgRadio');
-  msg.classList.add('hidden');
-  if(!nome || !url){
-    msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-red-50 text-red-600 border border-red-200';
-    msg.textContent='❌ Preencha nome e URL do stream.';
-    msg.classList.remove('hidden');
-    return;
-  }
-  const btn = document.querySelector('#aba-radios button[onclick="cadastrarRadio()"]');
-  btn.disabled = true;
-  btn.textContent = 'Cadastrando...';
-  try{
-    const { error } = await sb.from('radios').insert({ nome, stream_url: url, ativa: true });
-    if(error) throw error;
-    msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-green-50 text-green-700 border border-green-200';
-    msg.textContent='✅ Rádio adicionada! O monitor detecta em até 60 segundos.';
-    msg.classList.remove('hidden');
-    document.getElementById('radioNome').value='';
-    document.getElementById('radioUrl').value='';
-    setTimeout(()=>carregarRadios(), 1000);
-  }catch(e){
-    msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-red-50 text-red-600 border border-red-200';
-    msg.textContent='❌ Erro: '+(e.message||JSON.stringify(e));
-    msg.classList.remove('hidden');
-  }finally{
-    btn.disabled=false;
-    btn.textContent='📻 Adicionar Rádio';
-  }
-}
-
-// ─── CARREGAR RÁDIOS ──────────────────────────────────────────────
-async function carregarRadios(){
-  if(!sb){ setTimeout(carregarRadios, 300); return; }
-  document.getElementById('loadingRadios').classList.remove('hidden');
-  document.getElementById('listaRadios').classList.add('hidden');
-  document.getElementById('semRadios').classList.add('hidden');
-  const { data, error } = await sb.from('radios').select('*').order('criado_em', { ascending: true });
-  document.getElementById('loadingRadios').classList.add('hidden');
-  if(error||!data||!data.length){
-    document.getElementById('semRadios').classList.remove('hidden');
-    return;
-  }
-  const lista = document.getElementById('listaRadios');
-  lista.innerHTML = '';
-  data.forEach(r => {
-    const idEsc = r.id;
-    const nomeEsc = (r.nome||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-    const urlCurta = (r.stream_url||'').replace(/^https?:\/\//,'').slice(0,50) + ((r.stream_url||'').length > 55 ? '…' : '');
-    const card = document.createElement('div');
-    card.className = 'bg-slate-50 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4 border border-slate-200 hover:border-indigo-200 transition-all';
-    card.innerHTML = `
-      <div class="flex items-center gap-3 flex-1 min-w-0">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl ${r.ativa ? 'bg-green-100' : 'bg-slate-200'}">
-          📻
-        </div>
-        <div class="min-w-0">
-          <div class="font-black text-slate-800 text-sm truncate">${r.nome||'—'}</div>
-          <div class="text-xs font-bold text-slate-400 truncate mt-0.5" title="${r.stream_url||''}">${urlCurta}</div>
-          <div class="text-[10px] text-slate-300 mt-0.5">${brt(r.criado_em)}</div>
-        </div>
-      </div>
-      <div class="flex items-center gap-2 flex-shrink-0">
-        <span class="px-3 py-1 rounded-full text-[10px] font-black ${r.ativa ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-500'}">
-          ${r.ativa ? '🟢 Ativa' : '⚫ Inativa'}
-        </span>
-        <button onclick="toggleRadio('${idEsc}', ${r.ativa})"
-          class="px-3 py-2 rounded-xl text-xs font-black uppercase transition-all ${r.ativa ? 'bg-amber-50 hover:bg-amber-100 text-amber-700' : 'bg-green-50 hover:bg-green-100 text-green-700'}">
-          ${r.ativa ? '⏸ Pausar' : '▶ Ativar'}
-        </button>
-        <button onclick="abrirModalExcluirRadio('${idEsc}', '${nomeEsc}')"
-          class="p-2 bg-red-50 hover:bg-red-100 rounded-xl text-red-500 transition-all" title="Remover rádio">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-        </button>
-      </div>`;
-    lista.appendChild(card);
-  });
-  lista.classList.remove('hidden');
 }
 
 // ─── USUÁRIOS ──────────────────────────────────────────────────────
@@ -456,11 +131,14 @@ async function criarUsuario(e){
   btn.innerHTML='<svg class="spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Criando...';
   alerta.classList.add('hidden');
   try{
-    const{data:authData,error:authError}=await sb.auth.signUp({email,password:'123mudar',options:{emailRedirectTo:window.location.origin+'/trocar-senha',data:{nome}}});
-    if(authError)throw new Error(authError.message);
-    if(!authData.user)throw new Error('Erro ao criar usuário');
-    const{error:perfilError}=await sb.from('perfis_usuarios').insert({user_id:authData.user.id,nome,radios_acesso:['maringa_fm'],ativo:true,senha_alterada:false});
-    if(perfilError)throw new Error(perfilError.message);
+    // Criação feita no servidor (função criar-usuario), que confere se é o administrador.
+    const{data:res,error:fnError}=await sb.functions.invoke('criar-usuario',{body:{email,nome}});
+    if(fnError){
+      let msg=fnError.message;
+      try{const corpo=await fnError.context.json(); if(corpo&&corpo.error) msg=corpo.error;}catch(_){}
+      throw new Error(msg);
+    }
+    if(!res||!res.ok)throw new Error((res&&res.error)||'Erro ao criar usuário');
     alerta.className='mb-5 bg-green-50 border border-green-200 rounded-2xl px-5 py-4';
     alerta.innerHTML=`<p class="font-bold text-green-700 text-sm">✅ Usuário <strong>${email}</strong> criado!</p><p class="text-xs text-green-600 mt-1">Senha: <code class="bg-white px-2 py-1 rounded font-mono">123mudar</code></p>`;
     alerta.classList.remove('hidden');
@@ -501,92 +179,6 @@ async function carregarUsuarios(){
   }catch(err){
     container.innerHTML=`<div class="bg-red-50 rounded-2xl p-8 text-center"><p class="font-bold text-red-600 text-sm">❌ Erro: ${err.message}</p></div>`;
   }finally{ico.style.animation='';}
-}
-
-// ─── CARREGAR COMERCIAIS (só ativos) ──────────────────────────────
-async function carregarReferencias(){
-  if(!sb){ setTimeout(carregarReferencias, 300); return; }
-  document.getElementById('loadingRef').classList.remove('hidden');
-  document.getElementById('gridRef').classList.add('hidden');
-  document.getElementById('semRef').classList.add('hidden');
-  // Filtra apenas ativo=true — soft deleted não aparecem
-  const{data,error}=await sb.from('referencias').select('*').eq('ativo', true).order('criado_em',{ascending:false});
-  document.getElementById('loadingRef').classList.add('hidden');
-  if(error||!data||!data.length){document.getElementById('semRef').classList.remove('hidden');return;}
-  const grid=document.getElementById('gridRef');
-  grid.innerHTML='';
-  data.forEach(r=>{
-    const has=!!r.fingerprint;
-    const dur=r.duration?r.duration.toFixed(1)+'s':'—';
-    const dt=r.criado_em?brt(r.criado_em):'—';
-    const nomeEsc=(r.nome||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-    const card=document.createElement('div');
-    card.className='bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col gap-3';
-    card.innerHTML=`
-      <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${has?'bg-green-50':'bg-amber-50'}">${has?'✅':'⏳'}</div>
-        <div class="flex-1 min-w-0">
-          <div class="font-black text-slate-800 text-sm truncate">${r.nome||'—'}</div>
-          <div class="text-xs font-bold text-slate-500">${r.cliente||'—'}</div>
-        </div>
-      </div>
-      <div class="flex items-center gap-2 flex-wrap">
-        <span class="px-2.5 py-1 rounded-full text-[10px] font-black ${has?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}">${has?'✅ DNA OK':'⏳ Aguardando'}</span>
-        <span class="text-[10px] font-bold text-slate-400">${dur}</span>
-        <span class="text-[10px] text-slate-300">${dt}</span>
-      </div>
-      <div class="flex gap-2 mt-1">
-        ${r.arquivo_url?`<a href="${r.arquivo_url}" target="_blank" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-center text-xs font-black text-slate-600 uppercase transition-all">⬇ Baixar</a>`:''}
-        <button onclick="abrirModalExcluir('${r.id}', '${nomeEsc}', '${r.arquivo_url||''}')"
-          class="${r.arquivo_url?'':'flex-1 '}py-2 px-4 bg-red-50 hover:bg-red-100 rounded-xl text-xs font-black text-red-600 uppercase transition-all flex items-center justify-center gap-1">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-          Desativar
-        </button>
-      </div>`;
-    grid.appendChild(card);
-  });
-  grid.classList.remove('hidden');
-}
-
-async function cadastrarAudio(){
-  const nome=document.getElementById('cadNome').value.trim();
-  const cliente=document.getElementById('cadCliente').value.trim();
-  const arquivo=document.getElementById('cadArquivo').files[0];
-  const msg=document.getElementById('msgCadastro');
-  msg.classList.add('hidden');
-  if(!nome||!cliente||!arquivo){msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-red-50 text-red-600 border border-red-200';msg.textContent='❌ Preencha todos os campos.';msg.classList.remove('hidden');return;}
-  document.getElementById('progressoUpload').classList.remove('hidden');
-  const barra=document.getElementById('barraUpload'),pct=document.getElementById('pctUpload');
-  const sp=p=>{barra.style.width=p+'%';pct.textContent=p+'%';};
-  try{
-    sp(20);
-    const ext=arquivo.name.split('.').pop();
-    const slug=nome.toUpperCase().replace(/\s+/g,'_').replace(/[^A-Z0-9_]/g,'')+'_'+Date.now()+'.'+ext;
-    sp(40);
-    const{error:upErr}=await sb.storage.from('comerciais').upload(slug,arquivo,{contentType:arquivo.type||'audio/mpeg',upsert:false});
-    if(upErr)throw upErr;
-    sp(70);
-    const{data:urlData}=sb.storage.from('comerciais').getPublicUrl(slug);
-    sp(85);
-    const{error:insErr}=await sb.from('referencias').insert({nome,cliente,arquivo_url:urlData.publicUrl,duration:null,fingerprint:null,ativo:true});
-    if(insErr)throw insErr;
-    sp(100);
-    msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-green-50 text-green-700 border border-green-200';
-    msg.textContent='✅ Cadastrado! O RadioDNA gerará o fingerprint.';
-    msg.classList.remove('hidden');
-    ['cadNome','cadCliente','cadArquivo'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('nomeArquivo').classList.add('hidden');
-    setTimeout(()=>carregarReferencias(),2000);
-  }catch(e){
-    msg.className='rounded-2xl px-4 py-3 text-sm font-bold bg-red-50 text-red-600 border border-red-200';
-    msg.textContent='❌ Erro: '+(e.message||JSON.stringify(e));
-    msg.classList.remove('hidden');
-  }finally{setTimeout(()=>document.getElementById('progressoUpload').classList.add('hidden'),2000);}
-}
-
-function mostrarArquivo(input){
-  const el=document.getElementById('nomeArquivo');
-  if(input.files[0]){el.textContent='📎 '+input.files[0].name;el.classList.remove('hidden');}
 }
 
 async function init(){

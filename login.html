@@ -79,7 +79,17 @@
   })();
 
   async function checkPrimeiroAcesso(session) {
-    const redirect = new URLSearchParams(window.location.search).get('redirect') || '/comercial';
+    const redirect = new URLSearchParams(window.location.search).get('redirect') || '/musical';
+
+    // Só entra quem está ativo na lista do /gerenciamento (ou o administrador).
+    const { data: autorizado } = await sbClient.rpc('usuario_autorizado');
+    if (autorizado !== true) {
+      await sbClient.auth.signOut();
+      document.getElementById('alerta').classList.remove('hidden');
+      document.getElementById('alerta-msg').textContent = '❌ Acesso não autorizado. Fale com o administrador.';
+      return false;
+    }
+
     const { data: perfil } = await sbClient
       .from('perfis_usuarios')
       .select('senha_alterada')
@@ -98,6 +108,7 @@
     const btn = document.getElementById('btn-login');
     const email = document.getElementById('inp-email').value.trim();
     const senha = document.getElementById('inp-senha').value;
+    const btnHtml = btn.innerHTML;
 
     btn.disabled = true;
     btn.innerHTML = '<svg class="spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Entrando...';
@@ -114,7 +125,11 @@
     }
 
     // Checa primeiro acesso
-    await checkPrimeiroAcesso(data.session);
+    const liberado = await checkPrimeiroAcesso(data.session);
+    if (liberado === false) {
+      btn.disabled = false;
+      btn.innerHTML = btnHtml;
+    }
   }
 </script>
 </body>
