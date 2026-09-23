@@ -68,6 +68,13 @@ function brasiliaLocalToUTC(isoLocal: string): string {
   return new Date(local.getTime() - offset).toISOString();
 }
 
+// Limite superior para tocou_em: descarta execuções com horário no futuro
+// (ex.: API da Educadora manda só a hora; perto da meia-noite a coleta pode
+// gravar a música de ontem com a data de hoje). Folga de 5 min para relógios.
+function getMaxTocouEm(): string {
+  return new Date(Date.now() + 5 * 60 * 1000).toISOString();
+}
+
 // Retorna a data atual em Brasília no formato YYYY-MM-DD
 function getTodayBrasilia(): string {
   const now = new Date();
@@ -925,6 +932,7 @@ async function loadTracksForPeriod(radio: string, period: TopPeriod): Promise<an
     .select('artista, musica, capa, genero, tocou_em, bpm, tom_musical, camelot')
     .ilike('radio', radio)
     .gte('tocou_em', cutoff)
+    .lte('tocou_em', getMaxTocouEm())
     .order('tocou_em', { ascending: false });
   if (error) return [];
   return (rows || [])
@@ -1536,7 +1544,7 @@ async function loadDayData(radio: string, date: string): Promise<any[]> {
   const { data: tracks, error } = await supabase
     .from('radio_airplay').select('*')
     .ilike('radio', radio)
-    .gte('tocou_em', dayStart).lte('tocou_em', dayEnd)
+    .gte('tocou_em', dayStart).lte('tocou_em', dayEnd < getMaxTocouEm() ? dayEnd : getMaxTocouEm())
     .order('tocou_em', { ascending: false });
   if (error) throw error;
   return (tracks || [])
@@ -1558,6 +1566,7 @@ async function loadWeeklyData(radio: string): Promise<any[]> {
     .select('artista, musica, capa, genero, tocou_em, bpm, tom_musical, camelot')
     .ilike('radio', radio)
     .gte('tocou_em', twoWeeksAgo.toISOString())
+    .lte('tocou_em', getMaxTocouEm())
     .order('tocou_em', { ascending: false });
   if (error) return [];
   return (tracks || [])
@@ -1575,6 +1584,7 @@ async function loadLatestDate(radio: string): Promise<string> {
     .from('radio_airplay')
     .select('tocou_em')
     .ilike('radio', radio)
+    .lte('tocou_em', getMaxTocouEm())
     .order('tocou_em', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -1592,6 +1602,7 @@ async function loadAvailableDates(radio: string): Promise<string[]> {
       .from('radio_airplay')
       .select('tocou_em')
       .ilike('radio', radio)
+      .lte('tocou_em', getMaxTocouEm())
       .order('tocou_em', { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
     if (error || !rows || rows.length === 0) break;
