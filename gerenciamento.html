@@ -16,7 +16,7 @@
     .spin { animation: spin 0.8s linear infinite; }
   </style>
 </head>
-<body class="min-h-screen bg-slate-50">
+<body class="min-h-screen bg-[#F5F6FA]">
 
 <!-- AUTH GUARD -->
 <script>
@@ -36,15 +36,15 @@
 })();
 </script>
 
-<header class="bg-white border-b border-blue-100 sticky top-0 z-50 shadow-sm">
-  <div class="max-w-5xl mx-auto px-6 h-24 flex items-center justify-between">
+<header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+  <div class="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
     <div class="flex items-center gap-4">
-      <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-lg">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <div class="bg-[#0D0056] p-3 rounded-2xl">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#D0FF03" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       </div>
       <div>
         <h1 class="font-black text-2xl tracking-tight text-slate-900 uppercase leading-none">IA NO RÁDIO</h1>
-        <p class="text-xs font-bold text-blue-600 uppercase tracking-wider mt-1">Gerenciamento</p>
+        <p class="text-xs font-bold text-[#5279FF] uppercase tracking-wider mt-1">Gerenciamento</p>
       </div>
     </div>
     <div class="flex items-center gap-3">
@@ -60,9 +60,9 @@
 
   <!-- ABA USUÁRIOS -->
   <div id="aba-usuarios">
-    <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8 mb-8">
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 mb-8">
       <div class="flex items-center gap-3 mb-6">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" x2="22" y1="11" y2="13"/><line x1="21" x2="23" y1="12" y2="12"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5279FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="22" x2="22" y1="11" y2="13"/><line x1="21" x2="23" y1="12" y2="12"/></svg>
         <h3 class="font-black text-xl text-slate-900 uppercase tracking-tight">Criar novo usuário</h3>
       </div>
       <div id="alerta-criar" class="hidden mb-5 rounded-2xl px-5 py-4"></div>
@@ -72,7 +72,7 @@
           <div class="relative">
             <svg class="absolute left-4 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
             <input id="inp-email-novo" type="email" placeholder="usuario@email.com" required
-              class="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 transition-all" />
+              class="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-[#5279FF] focus:bg-white transition-all" />
           </div>
         </div>
         <div class="mb-6">
@@ -80,28 +80,28 @@
           <div class="relative">
             <svg class="absolute left-4 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             <input id="inp-nome-novo" type="text" placeholder="Nome do usuário" required
-              class="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-blue-300 transition-all" />
+              class="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-[#5279FF] focus:bg-white transition-all" />
           </div>
         </div>
-        <div class="bg-blue-50 border border-blue-200 rounded-2xl px-5 py-4 mb-6">
-          <p class="font-bold text-blue-700 text-sm">🔑 Senha padrão: <code class="bg-white px-2 py-1 rounded font-mono">123mudar</code></p>
-          <p class="text-xs text-blue-600 mt-1">O usuário será obrigado a trocar a senha no primeiro acesso.</p>
+        <div class="bg-[#D0FF03]/15 border border-[#D0FF03]/50 rounded-2xl px-5 py-4 mb-6">
+          <p class="font-bold text-[#0D0056] text-sm">🔑 Senha padrão: <code class="bg-white px-2 py-1 rounded font-mono">123mudar</code></p>
+          <p class="text-xs text-slate-600 mt-1">O usuário será obrigado a trocar a senha no primeiro acesso.</p>
         </div>
         <button type="submit" id="btn-criar"
-          class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105 active:scale-95">
+          class="w-full py-5 bg-[#0D0056] hover:bg-[#5279FF] text-white rounded-2xl font-black uppercase tracking-wider text-sm flex items-center justify-center gap-3 transition-all shadow-md active:scale-[0.98]">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
           Criar usuário agora
         </button>
       </form>
     </div>
-    <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8">
       <div class="flex items-center justify-between mb-6">
         <div class="flex items-center gap-3">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5279FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <h3 class="font-black text-xl text-slate-900 uppercase tracking-tight">Usuários cadastrados</h3>
         </div>
-        <button onclick="carregarUsuarios()" class="p-3 bg-blue-50 rounded-xl hover:bg-blue-100 transition-all">
-          <svg id="ico-refresh-lista" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        <button onclick="carregarUsuarios()" class="p-3 bg-[#5279FF]/10 rounded-xl hover:bg-[#5279FF]/20 transition-all">
+          <svg id="ico-refresh-lista" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5279FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
         </button>
       </div>
       <div id="lista-usuarios"></div>
@@ -160,7 +160,7 @@ async function carregarUsuarios(){
   const container=document.getElementById('lista-usuarios');
   const ico=document.getElementById('ico-refresh-lista');
   ico.style.animation='spin 1s linear infinite';
-  container.innerHTML='<div class="py-12 text-center"><svg class="animate-spin mx-auto text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p class="font-bold text-slate-400 text-sm uppercase">Carregando...</p></div>';
+  container.innerHTML='<div class="py-12 text-center"><svg class="animate-spin mx-auto text-[#5279FF] mb-4" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p class="font-bold text-slate-400 text-sm uppercase">Carregando...</p></div>';
   try{
     const{data,error}=await sb.from('perfis_usuarios').select('*').order('criado_em',{ascending:false});
     if(error)throw error;
@@ -168,12 +168,12 @@ async function carregarUsuarios(){
     container.innerHTML=data.map(u=>`
       <div class="bg-slate-50 rounded-2xl p-5 mb-3 flex items-center justify-between hover:bg-slate-100 transition-all">
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center font-black text-blue-600 text-lg">${u.nome.charAt(0).toUpperCase()}</div>
+          <div class="w-12 h-12 rounded-full bg-[#0D0056] flex items-center justify-center font-black text-[#D0FF03] text-lg">${u.nome.charAt(0).toUpperCase()}</div>
           <div><p class="font-black text-slate-800 text-sm">${u.nome}</p><p class="text-xs text-slate-500 font-bold">${u.user_id}</p></div>
         </div>
         <div class="flex items-center gap-3">
           ${u.senha_alterada?'<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black">✅ Senha alterada</span>':'<span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-black">⏳ Aguardando troca</span>'}
-          ${u.ativo?'<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black">✅ Ativo</span>':'<span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-black">❌ Inativo</span>'}
+          ${u.ativo?'<span class="px-3 py-1 bg-[#5279FF]/10 text-[#0D0056] rounded-full text-xs font-black">✅ Ativo</span>':'<span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-black">❌ Inativo</span>'}
         </div>
       </div>`).join('');
   }catch(err){
