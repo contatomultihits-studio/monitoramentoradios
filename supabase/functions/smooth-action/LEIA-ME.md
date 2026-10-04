@@ -5,8 +5,18 @@ e grava em `radio_airplay` a música tocando em cada rádio.
 
 | Arquivo | O que é |
 |---|---|
-| `monitoramento-musical.ts` | Versão publicada (v102, 04/10/2026) |
-| `backup-v101.ts` | Versão anterior (v101), que funcionava até 04/10/2026. Use para voltar atrás. |
+| `monitoramento-musical.ts` | Versão publicada (v103, 04/10/2026) |
+| `backup-v102.ts` | Versão anterior (v102). Use para voltar atrás da v103. |
+| `backup-v101.ts` | Versão v101, que funcionava até 04/10/2026. |
+
+## Mudanças da v103 em relação à v102
+- Pré-checagem de repetição **antes** de buscar capa/gênero/BPM: se a execução já
+  está gravada (mesmo horário vindo da rádio, ou mesma música da última tocada há
+  menos de 10 min), pula sem consultar Deezer/iTunes/Last.fm/MusicBrainz.
+  A deduplicação original continua no mesmo lugar, como segunda barreira.
+- Reaproveitamento do histórico corrigido: busca em MAIÚSCULAS (como o banco grava)
+  e não exige mais Tom/Camelot (só ~13% das músicas têm), então músicas já
+  conhecidas não são pesquisadas de novo.
 
 ## Mudanças da v102 em relação à v101
 - Pedidos às rádios com identificação de navegador completa (antes `Mozilla/5.0` sozinho,
@@ -14,6 +24,10 @@ e grava em `radio_airplay` a música tocando em cada rádio.
 - Recuo após bloqueio: se uma rádio responder 403/429, a coleta espera 15 min antes
   de tentar de novo (estado em `public.coleta_bloqueios`), em vez de insistir a cada minuto.
 - Kiss FM fora da lista (não publica o nome das músicas desde 14/09/2026).
+
+## Como voltar atrás
+Publicar `backup-v102.ts` (ou `backup-v101.ts`) como entrypoint `monitoramento-musical.ts`
+da função `smooth-action` (verify_jwt = true).
 
 ## Como voltar para a v101
 Publicar `backup-v101.ts` como entrypoint `monitoramento-musical.ts` da função

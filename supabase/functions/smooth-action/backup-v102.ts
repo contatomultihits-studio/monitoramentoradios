@@ -71,7 +71,7 @@ function limparTexto(v?: string): string {
     .replace(/&#039;|&apos;/gi, "'")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
-    .replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[\u0000-\u001F\u007F-\u009F​-‍﻿]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -129,7 +129,7 @@ function isSystemMessage(artista: string, musica: string): boolean {
 function normalizarTexto(v?: string): string {
   return limparTexto(v)
     .normalize("NFD")
-    .replace(/[\u0300-\u036F]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .replace(/\b(ft|feat|featuring|part|pt)\.?\b/g, " ")
     .replace(/\((ao vivo|live|remix|radio edit|versao radio|versão radio|explicit|official)\)/gi, " ")
@@ -872,70 +872,26 @@ serve(async () => {
         console.log(`[DEBUG] ${radio.nome} - Artista (normalizado): ${normalizarTexto(artista)}, Música (normalizada): ${normalizarTexto(musica)}`);
         console.log(`[DEBUG] ${radio.nome} - tocouEm (gerado): ${timestampApi || getTimestampUTC()}`);
 
-        // =============================================================
-        // PRÉ-CHECAGEM DE REPETIÇÃO (v103)
-        //
-        // A coleta roda a cada minuto e a mesma música costuma aparecer
-        // 3-4 vezes seguidas. Antes de buscar capa/gênero/BPM nos serviços
-        // externos, verifica se essa execução já está gravada. Usa as
-        // mesmas regras da deduplicação lá embaixo (que continua valendo):
-        //   a) mesmo horário de início vindo da rádio → já existe (UNIQUE radio+tocou_em);
-        //   b) mesma música da última tocada da rádio há menos de 10 min.
-        // =============================================================
-        {
-          const tocouEmPrevio = timestampApi || getTimestampUTC();
-          const tocouEmPrevioMs = new Date(tocouEmPrevio).getTime();
-
-          // (a) Só quando o horário não está no futuro, para não interferir na
-          // correção de horário da Educadora feita pelo banco.
-          if (timestampApi && tocouEmPrevioMs <= Date.now() + 5 * 60 * 1000) {
-            const { data: mesmoHorario } = await supabase
-              .from("radio_airplay")
-              .select("id")
-              .eq("radio", radio.nome.toUpperCase())
-              .eq("tocou_em", tocouEmPrevio.replace("Z", ""))
-              .limit(1)
-              .maybeSingle();
-            if (mesmoHorario) {
-              console.log(`⏭️ ${radio.nome}: execução já gravada (mesmo horário), sem buscar metadados`);
-              return `${radio.nome}: Registro já existente`;
-            }
-          }
-
-          // (b)
-          const { data: ultima } = await supabase
-            .from("radio_airplay")
-            .select("artista, musica, tocou_em")
-            .ilike("radio", radio.nome)
-            .order("tocou_em", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          if (
-            ultima &&
-            normalizarTexto(ultima.artista) === normalizarTexto(artista) &&
-            normalizarTexto(ultima.musica) === normalizarTexto(musica) &&
-            (tocouEmPrevioMs - new Date(ultima.tocou_em).getTime()) < 10 * 60 * 1000
-          ) {
-            console.log(`⏭️ ${radio.nome}: mesma música da última tocada, sem buscar metadados`);
-            return `${radio.nome}: Duplicata (mesma tocada)`;
-          }
-        }
-
         let info: InfoExtra;
 
-        // Reaproveita metadados do histórico. v103: busca em MAIÚSCULAS (como o
-        // banco grava) e não exige mais Tom/Camelot (só ~13% das músicas têm),
-        // preferindo um registro que tenha Tom quando existir.
+        // Nota: NÃO exigimos "tom_musical"/"camelot" não-nulos aqui de propósito.
+        // Isso evita invalidar todo o histórico já catalogado (que ainda não tem
+        // essas colunas preenchidas) — os registros antigos continuam sendo
+        // reaproveitados normalmente, e o Camelot só é gravado quando disponível
+        // em buscas novas. Se quiser forçar a re-busca de tudo para preencher o
+        // Camelot retroativamente, adicione:
+        //   .not("tom_musical", "is", null).not("camelot", "is", null)
         const { data: historico } = await supabase
           .from("radio_airplay")
           .select("capa, genero, bpm, ano_lancamento, tom_musical, camelot")
-          .eq("artista", artista.toUpperCase())
-          .eq("musica", musica.toUpperCase())
+          .eq("artista", artista)
+          .eq("musica", musica)
           .not("capa", "is", null)
           .not("genero", "is", null)
           .not("bpm", "is", null)
           .not("ano_lancamento", "is", null)
-          .order("camelot", { ascending: true, nullsFirst: false })
+          .not("tom_musical", "is", null)
+          .not("camelot", "is", null)
           .limit(1)
           .maybeSingle();
 
