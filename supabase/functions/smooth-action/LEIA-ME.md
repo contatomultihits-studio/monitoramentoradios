@@ -5,9 +5,16 @@ e grava em `radio_airplay` a música tocando em cada rádio.
 
 | Arquivo | O que é |
 |---|---|
-| `monitoramento-musical.ts` | Versão publicada (v103, 04/10/2026) |
-| `backup-v102.ts` | Versão anterior (v102). Use para voltar atrás da v103. |
+| `monitoramento-musical.ts` | Versão publicada (v104, 04/10/2026) |
+| `backup-v103.ts` | Versão anterior (v103). Use para voltar atrás da v104. |
+| `backup-v102.ts` | Versão v102. |
 | `backup-v101.ts` | Versão v101, que funcionava até 04/10/2026. |
+
+## Mudanças da v104 em relação à v103
+- BPM não é mais estimado pela duração da música: sem BPM real (Deezer/AcousticBrainz),
+  a música fica sem BPM.
+- O histórico não reaproveita BPM com valor da antiga estimativa (128, 120, 110, 100,
+  95, 90), porque não dá para saber se era real ou inventado; nesses casos busca de novo.
 
 ## Mudanças da v103 em relação à v102
 - Pré-checagem de repetição **antes** de buscar capa/gênero/BPM: se a execução já
@@ -26,7 +33,7 @@ e grava em `radio_airplay` a música tocando em cada rádio.
 - Kiss FM fora da lista (não publica o nome das músicas desde 14/09/2026).
 
 ## Como voltar atrás
-Publicar `backup-v102.ts` (ou `backup-v101.ts`) como entrypoint `monitoramento-musical.ts`
+Publicar `backup-v103.ts` (ou `backup-v102.ts` / `backup-v101.ts`) como entrypoint `monitoramento-musical.ts`
 da função `smooth-action` (verify_jwt = true).
 
 ## Como voltar para a v101

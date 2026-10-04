@@ -212,10 +212,6 @@ async function fetchComTimeout(url: string, init: RequestInit = {}, timeoutMs = 
   }
 }
 
-// Valores que a antiga estimativa por duração gravava (até a v103). No histórico
-// não dá para separar o estimado do real, então esses valores não são reaproveitados.
-const BPM_ESTIMATIVA_ANTIGA = new Set([128, 120, 110, 100, 95, 90]);
-
 function estimarBpmPorDuracao(durationMs?: number | null): number | null {
   if (!durationMs || durationMs <= 0) return null;
   const sec = Math.round(durationMs / 1000);
@@ -496,8 +492,11 @@ async function buscarInfoExtra(artista: string, musica: string): Promise<InfoExt
     camelot    = camelotInfo.camelot;
   }
 
-  // v104: sem BPM real (Deezer/AcousticBrainz), a música fica sem BPM.
-  // A estimativa pela duração (estimarBpmPorDuracao) não é mais usada.
+  if (!bpm) {
+    const durationRef = itunes.durationMs || lastfmDuration;
+    bpm = estimarBpmPorDuracao(durationRef);
+    if (bpm) console.log(`[INFO EXTRA] ✅ BPM estimado por duração: ${bpm}`);
+  }
   const capa = itunes.capa ?? deezer.capa ?? null;
 
   // Nome "bonito": só usamos o nome canônico do Deezer/iTunes quando o match
@@ -925,25 +924,20 @@ serve(async () => {
         let info: InfoExtra;
 
         // Reaproveita metadados do histórico. v103: busca em MAIÚSCULAS (como o
-        // banco grava) e não exige mais Tom/Camelot (só ~13% das músicas têm).
-        // v104: não reaproveita BPM com valor da antiga estimativa (pode ser
-        // inventado); aceita registro sem BPM. Prefere registro com BPM e com Tom.
-        const { data: candidatosHistorico } = await supabase
+        // banco grava) e não exige mais Tom/Camelot (só ~13% das músicas têm),
+        // preferindo um registro que tenha Tom quando existir.
+        const { data: historico } = await supabase
           .from("radio_airplay")
           .select("capa, genero, bpm, ano_lancamento, tom_musical, camelot")
           .eq("artista", artista.toUpperCase())
           .eq("musica", musica.toUpperCase())
           .not("capa", "is", null)
           .not("genero", "is", null)
+          .not("bpm", "is", null)
           .not("ano_lancamento", "is", null)
-          .order("created_at", { ascending: false })
-          .limit(20);
-        const historico = (candidatosHistorico ?? [])
-          .filter((h) => h.bpm == null || !BPM_ESTIMATIVA_ANTIGA.has(Number(h.bpm)))
-          .sort((a, b) =>
-            Number(b.bpm != null) - Number(a.bpm != null) ||
-            Number(b.camelot != null) - Number(a.camelot != null)
-          )[0];
+          .order("camelot", { ascending: true, nullsFirst: false })
+          .limit(1)
+          .maybeSingle();
 
         if (historico) {
           console.log(`♻️ Metadados reutilizados do histórico: ${artista} - ${musica}`);
