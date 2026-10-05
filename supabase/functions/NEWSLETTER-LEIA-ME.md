@@ -20,3 +20,13 @@ mercado, **sem nomes de rádio**. Kiss FM, Gazeta FM e Mix Rio FM (Rio de Janeir
 `news@novidades.ianoradio.com`, subdomínio separado para não afetar a entrega dos relatórios
 dos clientes. Enquanto o subdomínio não estiver verificado no Resend, o teste sai por
 `relatorios@ianoradio.com` e o envio real fica **bloqueado** (resposta 409).
+
+## Agendamento
+Cron `newsletter-radar-segunda-9h` (`0 12 * * 1` = segunda 9h de Brasília) chama
+`newsletter-semanal` com o segredo `cron_shared_secret`. Para pausar:
+`select cron.alter_job((select jobid from cron.job where jobname='newsletter-radar-segunda-9h'), active := false);`
+
+## Páginas no ianoradio.com
+Formulário de cadastro, `/news/confirmar` e `/news/cancelar` (feitas no repositório do site).
+O token de cada inscrito não expira: é o mesmo dos links de confirmar e de cancelar em toda
+news. Com ele só é possível confirmar ou cancelar aquela inscrição.
