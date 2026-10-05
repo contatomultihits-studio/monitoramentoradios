@@ -7,7 +7,6 @@ import {
   Trophy, X, Youtube, CalendarDays, ChevronDown, ChevronLeft, ChevronRight,
   TrendingDown, Volume2
 } from 'lucide-react';
-import { jsPDF } from 'jspdf';
 
 const REFRESH_INTERVAL_MS = 30000;
 
@@ -40,6 +39,20 @@ const getShiftLabel = (shift: string): string => SHIFT_FILTER_OPTIONS.find(o => 
 const LASTFM_API_KEY = '2a416b64ded1827a7e82e61d9a87b2e0';
 const REPEAT_THRESHOLD = 2;
 const PAGE_SIZE = 1000;
+// No banco os nomes das rádios ficam em MAIÚSCULAS. Buscar pelo nome exato usa o
+// índice (radio, tocou_em) e lê só a rádio escolhida (o ilike lia todas as rádios).
+const nomeRadioDb = (radio: string) => radio.trim().toUpperCase();
+// A API do Supabase devolve no máximo 1000 linhas por consulta: busca em páginas.
+async function buscarTodasPaginas(montarConsulta: () => any): Promise<any[]> {
+  const linhas: any[] = [];
+  for (let de = 0; ; de += PAGE_SIZE) {
+    const { data, error } = await montarConsulta().range(de, de + PAGE_SIZE - 1);
+    if (error) throw error;
+    linhas.push(...(data || []));
+    if (!data || data.length < PAGE_SIZE) break;
+  }
+  return linhas;
+}
 const getSupabaseClient = () => (window as any)._supabaseClient;
 
 // ─────────────────────────────────────────────────────────────
@@ -928,14 +941,16 @@ async function loadTracksForPeriod(radio: string, period: TopPeriod): Promise<an
   const supabase = getSupabaseClient();
   if (!supabase) return [];
   const cutoff = getPeriodCutoff(period);
-  const { data: rows, error } = await supabase
-    .from('radio_airplay')
-    .select('artista, musica, capa, genero, tocou_em, bpm, tom_musical, camelot')
-    .ilike('radio', radio)
-    .gte('tocou_em', cutoff)
-    .lte('tocou_em', getMaxTocouEm())
-    .order('tocou_em', { ascending: false });
-  if (error) return [];
+  let rows: any[];
+  try {
+    rows = await buscarTodasPaginas(() => supabase
+      .from('radio_airplay')
+      .select('artista, musica, capa, genero, tocou_em, bpm, tom_musical, camelot')
+      .eq('radio', nomeRadioDb(radio))
+      .gte('tocou_em', cutoff)
+      .lte('tocou_em', getMaxTocouEm())
+      .order('tocou_em', { ascending: false }));
+  } catch { return []; }
   return (rows || [])
     .map((t: any) => {
       const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
@@ -1542,12 +1557,12 @@ async function loadDayData(radio: string, date: string): Promise<any[]> {
   const supabase = getSupabaseClient();
   if (!supabase || !date) return [];
   const { dayStart, dayEnd } = getBrasiliaDateBounds(date);
-  const { data: tracks, error } = await supabase
-    .from('radio_airplay').select('*')
-    .ilike('radio', radio)
+  const tracks = await buscarTodasPaginas(() => supabase
+    .from('radio_airplay')
+    .select('id, artista, musica, radio, genero, tocou_em, capa, bpm, ano_lancamento, tom_musical, camelot')
+    .eq('radio', nomeRadioDb(radio))
     .gte('tocou_em', dayStart).lte('tocou_em', dayEnd < getMaxTocouEm() ? dayEnd : getMaxTocouEm())
-    .order('tocou_em', { ascending: false });
-  if (error) throw error;
+    .order('tocou_em', { ascending: false }));
   return (tracks || [])
     .map((t: any) => {
       const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
@@ -1562,14 +1577,16 @@ async function loadWeeklyData(radio: string): Promise<any[]> {
   const now = new Date();
   const twoWeeksAgo = new Date(now);
   twoWeeksAgo.setDate(now.getDate() - 14);
-  const { data: tracks, error } = await supabase
-    .from('radio_airplay')
-    .select('artista, musica, capa, genero, tocou_em, bpm, tom_musical, camelot')
-    .ilike('radio', radio)
-    .gte('tocou_em', twoWeeksAgo.toISOString())
-    .lte('tocou_em', getMaxTocouEm())
-    .order('tocou_em', { ascending: false });
-  if (error) return [];
+  let tracks: any[];
+  try {
+    tracks = await buscarTodasPaginas(() => supabase
+      .from('radio_airplay')
+      .select('artista, musica, capa, genero, tocou_em, bpm, tom_musical, camelot')
+      .eq('radio', nomeRadioDb(radio))
+      .gte('tocou_em', twoWeeksAgo.toISOString())
+      .lte('tocou_em', getMaxTocouEm())
+      .order('tocou_em', { ascending: false }));
+  } catch { return []; }
   return (tracks || [])
     .map((t: any) => {
       const { data: d, hora, timestamp } = parseTocouEm(t.tocou_em);
@@ -1584,7 +1601,7 @@ async function loadLatestDate(radio: string): Promise<string> {
   const { data: rows } = await supabase
     .from('radio_airplay')
     .select('tocou_em')
-    .ilike('radio', radio)
+    .eq('radio', nomeRadioDb(radio))
     .lte('tocou_em', getMaxTocouEm())
     .order('tocou_em', { ascending: false })
     .limit(1)
@@ -1602,7 +1619,7 @@ async function loadAvailableDates(radio: string): Promise<string[]> {
     const { data: rows, error } = await supabase
       .from('radio_airplay')
       .select('tocou_em')
-      .ilike('radio', radio)
+      .eq('radio', nomeRadioDb(radio))
       .lte('tocou_em', getMaxTocouEm())
       .order('tocou_em', { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
@@ -1717,7 +1734,8 @@ const App = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       const { radio, date } = filtersRef.current;
-      if (date) doFetch(radio, date, true);
+      // Dias anteriores não mudam: só recarrega quando a data aberta é hoje.
+      if (date && date >= getTodayBrasilia()) doFetch(radio, date, true);
     }, REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [doFetch]);
@@ -1959,6 +1977,7 @@ const App = () => {
 
   const exportPDF = async () => {
     if (!filteredData.length) { alert('Nenhum registro.'); return; }
+    const { jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     doc.setFontSize(20); doc.setFont('helvetica', 'bold'); doc.text(`IA NO RADIO - ${filters.radio}`, 14, 20);
     doc.setFontSize(10); doc.setFont('helvetica', 'normal');
@@ -2040,7 +2059,7 @@ const App = () => {
       <div className="relative z-10 bg-white border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
           <div className="flex gap-2 flex-wrap">
-            {['Metropolitana FM', 'ALPHA FM SÃO PAULO', 'Antena 1', 'Forbes Radio', 'MIX Rio FM', 'Dumont FM', 'Gazeta FM', 'Kiss FM', 'EDUCADORA FM'].map(r => (
+            {['Metropolitana FM', 'ALPHA FM SÃO PAULO', 'Antena 1', 'Forbes Radio', 'MIX Rio FM', 'Dumont FM', 'Gazeta FM', 'EDUCADORA FM'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wide transition-all ${
                   filters.radio === r ? 'bg-[#0D0056] text-white border border-[#0D0056] shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:border-[#5279FF] hover:text-[#0D0056]'
