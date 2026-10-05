@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* O Tailwind do navegador (cdn.tailwindcss.com), usado até aqui, deixava o texto
+   de exemplo dos campos em #6b7280. Mantém a mesma cor de antes. */
+@layer base {
+  input::placeholder,
+  textarea::placeholder {
+    color: #6b7280;
+  }
+}
