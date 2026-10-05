@@ -1,9 +1,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// TOP 10 analítico (versão em teste). Só envia para o e-mail passado em
-// `test_email`; sem ele, recusa. O TOP 10 dos clientes continua sendo o
-// `relatorio-diario-radios` até esta versão ser aprovada.
+// TOP 10 analítico (aprovado em 05/10/2026; a versão anterior está em backup-v17.ts).
+// Semana (7 dias) comparada com a anterior, movimento de posição, TOP 10 do mercado,
+// quem tocou primeiro nos lançamentos, cobertura de dados por rádio e resumo.
+// Com `test_email` no corpo, envia só para ele.
+
+const RECIPIENTS = [
+  "jany.lima@radiod.com.br",
+  "Francielly.Garcia@radiod.com.br",
+  "Simone.Evangelista@radiod.com.br",
+  "joao.guilherme@radiod.com.br",
+];
 
 const LINK_MONITORAMENTO = "https://monitoramento.ianoradio.com/";
 // Kiss FM: sem nomes de música desde 14/09/2026. Gazeta FM: nomes em branco desde 30/09/2026.
@@ -94,7 +102,7 @@ Deno.serve(async (req: Request) => {
       const body = await req.json();
       if (typeof body?.test_email === "string" && body.test_email.includes("@")) testEmail = body.test_email;
     } catch (_e) { /* sem body */ }
-    if (!testEmail) return Response.json({ error: "versão em teste: informe test_email" }, { status: 400 });
+    const destinatarios = testEmail ? [testEmail] : RECIPIENTS;
 
     // Janelas: 7 dias completos até hoje 00h (Brasília) e os 7 dias anteriores.
     const agora = new Date();
@@ -229,7 +237,7 @@ Deno.serve(async (req: Request) => {
 
     const html = `
       <div style="max-width:640px;margin:0 auto;font-family:${F};color:#1a1a1a;">
-        <div style="background:#FEF3C7;color:#92400E;padding:10px 16px;border-radius:8px;font-size:14px;margin:16px 0;">VERSÃO DE TESTE do novo TOP 10 &mdash; enviada só para ${esc(testEmail)}</div>
+        ${testEmail ? `<div style="background:#FEF3C7;color:#92400E;padding:10px 16px;border-radius:8px;font-size:14px;margin:16px 0;">ENVIO DE TESTE &mdash; só para ${esc(testEmail)}</div>` : `<div style="height:16px;"></div>`}
         <p style="font-size:16px;margin:0 0 4px 0;">Bom dia, você está recebendo o <b>TOP 10</b> das rádios monitoradas pelo sistema <b>IA NO RÁDIO</b>.</p>
         <p style="font-size:16px;margin:0 0 4px 0;"><b>Semana: ${periodo}</b> <span style="color:#777;">(comparada com ${periodoAntes})</span></p>
         <p style="font-size:14px;color:#666;margin:0 0 18px 0;">Mais detalhes em <a href="${LINK_MONITORAMENTO}" style="color:#0D0056;">${LINK_MONITORAMENTO}</a></p>
@@ -253,7 +261,7 @@ Deno.serve(async (req: Request) => {
         <p style="color:#aaa;font-size:13px;">Relatório automático do sistema ianoradio.</p>
       </div>`;
 
-    const texto = `TOP 10 IA NO RÁDIO (TESTE) - semana ${periodo}\n\n` +
+    const texto = `TOP 10 IA NO RÁDIO - semana ${periodo}\n\n` +
       resumo.map((t) => "- " + t.replace(/<[^>]+>/g, "")).join("\n") + "\n\nTOP 10 DO MERCADO\n" +
       topMercado.map((m) => `${posMercado.get(m)}. ${m.artista} - ${m.musica} (${m.radios.size} rádios, ${m.atual}x)`).join("\n");
 
@@ -262,8 +270,8 @@ Deno.serve(async (req: Request) => {
       headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         from: "Relatório ianoradio <relatorios@ianoradio.com>",
-        to: [testEmail],
-        subject: `[TESTE] TOP 10 RÁDIOS - SEMANA ${periodo} - IA NO RÁDIO`,
+        to: destinatarios,
+        subject: `${testEmail ? "[TESTE] " : ""}TOP 10 RÁDIOS - SEMANA ${periodo} - IA NO RÁDIO`,
         html,
         text: texto,
       }),
@@ -271,7 +279,7 @@ Deno.serve(async (req: Request) => {
     if (!envio.ok) return Response.json({ error: "resend failed", detail: await envio.text() }, { status: 502 });
 
     return Response.json({
-      ok: true, para: testEmail, linhas_lidas: linhas.length, linhas_semana: atuais.length, radios,
+      ok: true, para: destinatarios, linhas_lidas: linhas.length, linhas_semana: atuais.length, radios,
       cobertura: Object.fromEntries(cobertura), lancamentos: topLancamentos.length,
     });
   } catch (err) {
