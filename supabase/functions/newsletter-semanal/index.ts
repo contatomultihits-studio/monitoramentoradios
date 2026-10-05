@@ -28,8 +28,10 @@ function posicoes<T>(itens: T[], valor: (x: T) => number): Map<T, number> {
   return pos;
 }
 
-function movimento(atual: number, anterior: number | undefined): { texto: string; cor: string } {
-  if (anterior === undefined) return { texto: "NOVA", cor: "#2563EB" };
+// Sem execução na semana anterior: NOVIDADE (nenhuma rádio tinha tocado antes, desde o início
+// do monitoramento) ou VOLTOU (já tinha tocado antes). Mesma regra do TOP 10 dos clientes.
+function movimento(atual: number, anterior: number | undefined, jaTocouAntes = false): { texto: string; cor: string } {
+  if (anterior === undefined) return jaTocouAntes ? { texto: "VOLTOU", cor: "#9333EA" } : { texto: "NOVIDADE", cor: "#2563EB" };
   const d = anterior - atual;
   if (d > 0) return { texto: `▲${d}`, cor: "#16A34A" };
   if (d < 0) return { texto: `▼${-d}`, cor: "#DC2626" };
@@ -153,11 +155,20 @@ Deno.serve(async (req: Request) => {
       resumo.push(`<b>Lançamento se espalhando:</b> ${esc(l.artista)} – ${esc(l.musica)}, já em ${l.radios} rádios; a primeira começou a tocar em ${dataBR(l.inicio)}.`);
     }
 
+    // ---- NOVIDADE x VOLTOU no TOP 10 do mercado ----
+    const jaTocou = new Map<string, boolean>();
+    const semAntes = top.filter((m) => !posAntes.has(m));
+    const resHist = await Promise.all(semAntes.map((m) =>
+      supabase.from("radio_airplay").select("id").eq("artista", m.artista).eq("musica", m.musica)
+        .lt("tocou_em", ini14.toISOString())
+        .not("radio", "in", `(${RADIOS_EXCLUIDAS.map((x) => `"${x}"`).join(",")})`).limit(1)));
+    resHist.forEach(({ data }, j) => jaTocou.set(`${semAntes[j].artista}|||${semAntes[j].musica}`, (data ?? []).length > 0));
+
     // ---- E-mail ----
     const th = (t: string, a = "left") => `<th style="text-align:${a};padding:8px 6px;font-size:11px;color:#6B7280;font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #E5E7EB;">${t}</th>`;
     const td = (t: string, x = "") => `<td style="padding:9px 6px;border-bottom:1px solid #F0F0F0;font-size:14px;color:#1a1a1a;${x}">${t}</td>`;
     const linhasTop = top.map((m) => {
-      const mv = movimento(pos.get(m)!, posAntes.get(m));
+      const mv = movimento(pos.get(m)!, posAntes.get(m), jaTocou.get(`${m.artista}|||${m.musica}`));
       return `<tr>${td(`<b>${pos.get(m)}</b>`, "width:24px;")}${td(`<b>${esc(m.artista)}</b><br><span style="color:#555;">${esc(m.musica)}</span>`)}${td(`${m.radios.size}/${radios.length}`, "text-align:center;")}${td(String(m.atual), "text-align:center;")}${td(`<b style="color:${mv.cor};">${mv.texto}</b>`, "text-align:center;")}</tr>`;
     }).join("");
 
@@ -169,7 +180,7 @@ Deno.serve(async (req: Request) => {
         ${resumo.map((t) => `<p style="font-size:14px;line-height:1.55;margin:0 0 6px 0;">• ${t}</p>`).join("")}
       </div>
       <h2 style="font-size:18px;margin:0 0 4px 0;color:#0D0056;">🏆 TOP 10 do mercado</h2>
-      <p style="font-size:12px;color:#777;margin:0 0 8px 0;">Todas as rádios juntas: primeiro as músicas tocando em mais rádios, depois as com mais execuções. ▲ subiu, ▼ caiu, = manteve, NOVA = entrou agora.</p>
+      <p style="font-size:12px;color:#777;margin:0 0 8px 0;">Todas as rádios juntas: primeiro as músicas tocando em mais rádios, depois as com mais execuções. ▲ subiu e ▼ caiu (posições no ranking), = manteve. NOVIDADE = nenhuma rádio tinha tocado antes; VOLTOU = já tinha tocado e voltou.</p>
       <table style="width:100%;border-collapse:collapse;margin-bottom:24px;"><thead><tr>${th("#")}${th("Música")}${th("Rádios", "center")}${th("Exec.", "center")}${th("Mov.", "center")}</tr></thead><tbody>${linhasTop}</tbody></table>
       <div style="background:#0D0056;border-radius:12px;padding:18px 20px;text-align:center;">
         <p style="color:#ffffff;font-size:15px;margin:0 0 12px 0;">Quer ver a programação completa e os dados da sua rádio?</p>
