@@ -5,10 +5,17 @@ e grava em `radio_airplay` a música tocando em cada rádio.
 
 | Arquivo | O que é |
 |---|---|
-| `monitoramento-musical.ts` | Versão publicada (v104, 04/10/2026) |
-| `backup-v103.ts` | Versão anterior (v103). Use para voltar atrás da v104. |
+| `monitoramento-musical.ts` | Versão publicada (v105, 05/10/2026) |
+| `backup-v104.ts` | Versão anterior (v104). Use para voltar atrás da v105. |
+| `backup-v103.ts` | Versão v103. |
 | `backup-v102.ts` | Versão v102. |
 | `backup-v101.ts` | Versão v101, que funcionava até 04/10/2026. |
+
+## Mudanças da v105 em relação à v104
+- Só aceita chamadas com a chave `service_role` (a do cron). A chave pública (anon), que
+  está no código do site, recebe 401: antes qualquer pessoa podia disparar a coleta.
+- O cron `monitoramento-musical` lê a chave do cofre (`vault`, segredo
+  `coleta_service_role_key`) em vez de tê-la escrita no comando.
 
 ## Mudanças da v104 em relação à v103
 - BPM não é mais estimado pela duração da música: sem BPM real (Deezer/AcousticBrainz),
@@ -33,7 +40,7 @@ e grava em `radio_airplay` a música tocando em cada rádio.
 - Kiss FM fora da lista (não publica o nome das músicas desde 14/09/2026).
 
 ## Como voltar atrás
-Publicar `backup-v103.ts` (ou `backup-v102.ts` / `backup-v101.ts`) como entrypoint `monitoramento-musical.ts`
+Publicar `backup-v104.ts` (ou uma versão mais antiga) como entrypoint `monitoramento-musical.ts`
 da função `smooth-action` (verify_jwt = true).
 
 ## Como voltar para a v101

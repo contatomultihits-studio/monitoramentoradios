@@ -119,7 +119,7 @@
       .eq('user_id', session.user.id);
 
     // 3. Redireciona para o sistema
-    const redirect = new URLSearchParams(window.location.search).get('redirect') || '/comercial';
+    const redirect = new URLSearchParams(window.location.search).get('redirect') || '/musical';
     window.location.href = redirect;
   }
 </script>
