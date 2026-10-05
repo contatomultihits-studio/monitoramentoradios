@@ -712,28 +712,7 @@ async function buscarIcyMetadata(streamUrl: string): Promise<{ artista?: string;
   }
 }
 
-// v105: só o agendamento (cron com a chave service_role) pode disparar a coleta.
-// A chave pública (anon), que está no código do site, é recusada: sem isso qualquer
-// pessoa poderia chamar a coleta sem parar e fazer as rádios nos bloquearem.
-// A assinatura do token já é conferida pelo Supabase (verify_jwt = true).
-function ehServiceRole(req: Request): boolean {
-  try {
-    const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-    const payload = token.split(".")[1] ?? "";
-    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(payload.length / 4) * 4, "="));
-    return JSON.parse(json)?.role === "service_role";
-  } catch (_e) {
-    return false;
-  }
-}
-
-serve(async (req: Request) => {
-  if (!ehServiceRole(req)) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" }
-    });
-  }
+serve(async () => {
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? Deno.env.get("PROJECT_URL") ?? "",

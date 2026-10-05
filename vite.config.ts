@@ -9,11 +9,9 @@ export default defineConfig({
       input: {
         main: './index.html',
         musical: './musical.html',
-        comercial: './comercial.html',
         login: './login.html',
         trocarSenha: './trocar-senha.html',
-        gerenciamento: './gerenciamento.html',
-        comparacoes: './comparacoes.html'
+        gerenciamento: './gerenciamento.html'
       }
     }
   }
