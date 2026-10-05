@@ -2059,7 +2059,8 @@ const App = () => {
       <div className="relative z-10 bg-white border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
           <div className="flex gap-2 flex-wrap">
-            {['Metropolitana FM', 'ALPHA FM SÃO PAULO', 'Antena 1', 'Forbes Radio', 'MIX Rio FM', 'Dumont FM', 'Gazeta FM', 'EDUCADORA FM'].map(r => (
+            {/* Gazeta FM fora temporariamente (sem dados desde 30/09); para voltar, recolocar 'Gazeta FM' antes de 'EDUCADORA FM' */}
+            {['Metropolitana FM', 'ALPHA FM SÃO PAULO', 'Antena 1', 'Forbes Radio', 'MIX Rio FM', 'Dumont FM', 'EDUCADORA FM'].map(r => (
               <button key={r} onClick={() => handleRadioChange(r)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wide transition-all ${
                   filters.radio === r ? 'bg-[#0D0056] text-white border border-[#0D0056] shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:border-[#5279FF] hover:text-[#0D0056]'

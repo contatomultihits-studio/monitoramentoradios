@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// TOP 10 analítico (v19: NOVIDADE/VOLTOU no lugar de NOVA; versões anteriores em backup-v18.ts e backup-v17.ts).
+// TOP 10 analítico (aprovado em 05/10/2026; a versão anterior está em backup-v17.ts).
 // Semana (7 dias) comparada com a anterior, movimento de posição, TOP 10 do mercado,
 // quem tocou primeiro nos lançamentos, cobertura de dados por rádio e resumo.
 // Com `test_email` no corpo, envia só para ele.
@@ -47,10 +47,8 @@ function posicoes<T>(itens: T[], valor: (x: T) => number): Map<T, number> {
   return pos;
 }
 
-// Sem execução na semana anterior: NOVIDADE (nunca tocou antes, desde o início do
-// monitoramento) ou VOLTOU (já tinha tocado antes e ficou pelo menos uma semana fora).
-function movimento(posAtual: number, posAnterior: number | undefined, jaTocouAntes = false): { texto: string; cor: string } {
-  if (posAnterior === undefined) return jaTocouAntes ? { texto: "VOLTOU", cor: "#9333EA" } : { texto: "NOVIDADE", cor: "#2563EB" };
+function movimento(posAtual: number, posAnterior: number | undefined): { texto: string; cor: string } {
+  if (posAnterior === undefined) return { texto: "NOVA", cor: "#2563EB" };
   const d = posAnterior - posAtual;
   if (d > 0) return { texto: `▲${d}`, cor: "#16A34A" };
   if (d < 0) return { texto: `▼${-d}`, cor: "#DC2626" };
@@ -199,33 +197,6 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // ---- TOP 10 de cada rádio + NOVIDADE x VOLTOU ----
-    const topsPorRadio = new Map<string, { pos: Map<Contagem, number>; posAntes: Map<Contagem, number>; top: Contagem[] }>();
-    for (const r of radios) {
-      const lista = [...porRadio.get(r)!.values()];
-      const pos = posicoes(lista, (c) => c.atual);
-      const posAntes = posicoes(lista, (c) => c.anterior);
-      const top = lista.filter((c) => pos.has(c) && pos.get(c)! <= 10).sort((a, b) => pos.get(a)! - pos.get(b)! || b.atual - a.atual).slice(0, 12);
-      topsPorRadio.set(r, { pos, posAntes, top });
-    }
-    // Para quem não tocou na semana anterior: já tinha tocado antes disso? (radio null = mercado)
-    const jaTocou = new Map<string, boolean>();
-    const verificar: { chave: string; radio: string | null; artista: string; musica: string }[] = [];
-    for (const m of topMercado) {
-      if (!posMercadoAntes.has(m)) verificar.push({ chave: `*|||${m.artista}|||${m.musica}`, radio: null, artista: m.artista, musica: m.musica });
-    }
-    for (const [r, t] of topsPorRadio) {
-      for (const c of t.top) if (!t.posAntes.has(c)) verificar.push({ chave: `${r}|||${c.artista}|||${c.musica}`, radio: r, artista: c.artista, musica: c.musica });
-    }
-    for (let i = 0; i < verificar.length; i += 8) {
-      const res = await Promise.all(verificar.slice(i, i + 8).map((v) => {
-        let q = supabase.from("radio_airplay").select("id").eq("artista", v.artista).eq("musica", v.musica).lt("tocou_em", ini14.toISOString());
-        q = v.radio ? q.eq("radio", v.radio) : q.not("radio", "in", `(${RADIOS_EXCLUIDAS.map((x) => `"${x}"`).join(",")})`);
-        return q.limit(1);
-      }));
-      res.forEach(({ data }, j) => jaTocou.set(verificar[i + j].chave, (data ?? []).length > 0));
-    }
-
     // ---- HTML ----
     const F = "Arial, sans-serif";
     const th = (t: string, alinhar = "left") => `<th style="text-align:${alinhar};padding:8px 6px;font-size:12px;color:#6B7280;font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #E5E7EB;">${t}</th>`;
@@ -234,7 +205,7 @@ Deno.serve(async (req: Request) => {
     const periodoAntes = `${dataBR(ini14)} a ${dataBR(new Date(ini7.getTime() - 1))}`;
 
     const linhasMercado = topMercado.map((m) => {
-      const mv = movimento(posMercado.get(m)!, posMercadoAntes.get(m), jaTocou.get(`*|||${m.artista}|||${m.musica}`));
+      const mv = movimento(posMercado.get(m)!, posMercadoAntes.get(m));
       return `<tr>${td(`<b>${posMercado.get(m)}</b>`, "width:28px;")}${td(`<b>${esc(m.artista)}</b><br><span style="color:#555;">${esc(m.musica)}</span>`)}${td(`${m.radios.size}/${radios.length}`, "text-align:center;")}${td(String(m.atual), "text-align:center;")}${td(`<b style="color:${mv.cor};">${mv.texto}</b>`, "text-align:center;")}</tr>`;
     }).join("");
 
@@ -244,13 +215,16 @@ Deno.serve(async (req: Request) => {
 
     let blocosRadios = "";
     for (const r of radios) {
-      const { pos, posAntes, top } = topsPorRadio.get(r)!;
+      const lista = [...porRadio.get(r)!.values()];
+      const pos = posicoes(lista, (c) => c.atual);
+      const posAntes = posicoes(lista, (c) => c.anterior);
+      const top = lista.filter((c) => pos.has(c) && pos.get(c)! <= 10).sort((a, b) => pos.get(a)! - pos.get(b)! || b.atual - a.atual).slice(0, 12);
       const cob = cobertura.get(r) ?? 0;
       const aviso = cob < COBERTURA_ALERTA
         ? `<div style="background:#FEF3C7;color:#92400E;padding:8px 14px;font-size:13px;font-family:${F};">⚠️ Dados em ${cob}% das horas da semana (programas gravados, rede ou falha na fonte da rádio). Compare com cautela.</div>`
         : `<div style="background:#F9FAFB;color:#6B7280;padding:6px 14px;font-size:12px;font-family:${F};">Dados em ${cob}% das horas da semana.</div>`;
       const linhasTop = top.map((c) => {
-        const mv = movimento(pos.get(c)!, posAntes.get(c), jaTocou.get(`${r}|||${c.artista}|||${c.musica}`));
+        const mv = movimento(pos.get(c)!, posAntes.get(c));
         return `<tr>${td(`<b>${pos.get(c)}</b>`, "width:28px;")}${td(`<b>${esc(c.artista)}</b><br><span style="color:#555;">${esc(c.musica)}</span>`)}${td(String(c.atual), "text-align:center;")}${td(String(c.anterior || "–"), "text-align:center;color:#999;")}${td(`<b style="color:${mv.cor};">${mv.texto}</b>`, "text-align:center;")}</tr>`;
       }).join("");
       blocosRadios += `
@@ -274,7 +248,7 @@ Deno.serve(async (req: Request) => {
         </div>
 
         <h2 style="font-size:19px;margin:0 0 4px 0;">🏆 TOP 10 do mercado</h2>
-        <p style="font-size:13px;color:#777;margin:0 0 8px 0;">Todas as rádios juntas: primeiro as músicas tocando em mais rádios, depois as com mais execuções. Aqui, NOVIDADE = nenhuma das rádios tinha tocado antes.</p>
+        <p style="font-size:13px;color:#777;margin:0 0 8px 0;">Todas as rádios juntas: primeiro as músicas tocando em mais rádios, depois as com mais execuções.</p>
         <table style="width:100%;border-collapse:collapse;margin-bottom:26px;"><thead><tr>${th("#")}${th("Música")}${th("Rádios", "center")}${th("Execuções", "center")}${th("Mov.", "center")}</tr></thead><tbody>${linhasMercado}</tbody></table>
 
         <h2 style="font-size:19px;margin:0 0 4px 0;">🚀 Quem tocou primeiro</h2>
@@ -282,7 +256,7 @@ Deno.serve(async (req: Request) => {
         <div style="margin-bottom:26px;">${blocoLancamentos}</div>
 
         <h2 style="font-size:19px;margin:0 0 10px 0;">📻 TOP 10 por rádio</h2>
-        <p style="font-size:13px;color:#777;margin:0 0 12px 0;">▲ subiu e ▼ caiu (número de posições no ranking em relação à semana anterior), = manteve a posição. <b style="color:#2563EB;">NOVIDADE</b> = primeira vez na rádio desde o início do monitoramento. <b style="color:#9333EA;">VOLTOU</b> = já tinha tocado, ficou fora na semana anterior e voltou. Músicas empatadas dividem a posição.</p>
+        <p style="font-size:13px;color:#777;margin:0 0 12px 0;">▲ subiu, ▼ caiu, = manteve a posição, NOVA = não tocou na semana anterior. Músicas empatadas dividem a posição.</p>
         ${blocosRadios}
         <p style="color:#aaa;font-size:13px;">Relatório automático do sistema ianoradio.</p>
       </div>`;
